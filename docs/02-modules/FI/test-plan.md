@@ -2503,7 +2503,7 @@ Test class: `tests/backend.integration/MyERP.IntegrationTests/Database/NumberRul
 
 | ID | Category | Scenario | Level | Status |
 |---|---|---|---|---|
-| FI-COLL-NRSEED-001 | Normal | Number-rule seeder registered after the SYS seed and before the FI seed; FI provider registered; first run adds exactly the missing rules, second run adds 0 | I | Pass |
+| FI-COLL-NRSEED-001 | Normal | Number-rule seeder registered after the SYS seed and before the FI seed; FI provider registered; first run adds exactly the missing FI and SD rules (including sales invoice and return), second run adds 0 | I | Pass（2026-11-27 重試，5/5） |
 | FI-COLL-NRSEED-002 | Normal (saved data) | TW01 and HK01 each have AR.COLLECTION 銷售收款 RC and AR.SETTLEMENT 收款核銷 RS, YearMonth, 4 digits, Monthly, active (read back by SQL) | I | Pass |
 | FI-COLL-NRSEED-003 | Normal (usable) | `INumberGenerator` in TW01 issues RC202611nnnn and RS202611nnnn for 2026-11-15; the transaction is rolled back so no number is used | I | Pass |
 | FI-COLL-NRSEED-004 | Duplicate / user data kept | User changes the TW01 RC prefix to TWRC and deactivates HK01 RS; reseed adds 0, prefix, active flag and version unchanged, still one rule per type; restored afterwards | I | Pass |

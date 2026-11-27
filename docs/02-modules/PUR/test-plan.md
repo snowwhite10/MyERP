@@ -921,6 +921,8 @@ U=單元、I=真實 SQL／HTTP 整合、E=Playwright 畫面與保存資料雙斷
 | PUR-RFQ-058 | 權限 | 匿名 401、缺 AWARD 權 403、他公司或資料範圍外 404。 | I | REQ_F4114.6.2 | PASS（RfqAwardTests 真實 SQL 公司隔離；受權 HTTP 本人範圍 404、401／403） |
 | PUR-RFQ-059 | 錯誤／交易 | MD 查詢或保存故障整交易回滾；恢復後同版本可重試，快照不被 SQL UPDATE／DELETE 改寫。 | I | REQ_F4114.6.2 | PASS（RfqAwardTests；INSERT 注入故障後零決標、報價／版本未變，同版重試成功） |
 
+2026-11-27T09:26:16+08:00 重試驗收：PUR-RFQ-055～059 對應 `RfqAwardTests` 與受權 HTTP 專項 2/2；Release 後端全量 4071/4071。正式 SQL 已有 `Purchasing_RfqAward` migration、`pur_rfq_award` 表及 `(company_id, rfq_line_id)` 唯一索引；帶 SQL DocGen 0 Error／613 Warning。本單元無新增畫面；決標畫面仍屬 WU-PUR-005f3c2。
+
 ## WU-PUR-005d4 撤回、過期、決標守衛與引用故障
 
 依 `myerp-test-scenarios` 逐類核對：正常撤回、過期日界與版本零、重複撤回／雙連線競態、MD 停用或軟刪、公司與 QUOTE 權限、關閉／已決標狀態、400／409／422 與故障回滾均由下列 SQL／受權 HTTP 測試覆蓋。報價無批次略過或檔案上傳，部分成功、全部略過、空檔與編碼不適用；前端 500／逾時提示及畫面與資料雙斷言留 005f。

@@ -21,7 +21,7 @@ namespace MyERP.IntegrationTests.Database;
 public sealed class NumberRuleSeedTests(TestDatabase database) : IAsyncLifetime
 {
     private static readonly string[] FinanceTypes = ["AR.COLLECTION", "AR.SETTLEMENT"];
-    private static readonly string[] SalesTypes = ["SAL.DELIVERY", "SAL.ORDER", "SAL.QUOTATION"];
+    private static readonly string[] SalesTypes = ["SAL.DELIVERY", "SAL.INVOICE", "SAL.ORDER", "SAL.QUOTATION", "SAL.RETURN"];
     private static readonly string[] SeededTypes = [.. FinanceTypes, .. SalesTypes];
     private WebApplicationFactory<Program> factory = null!;
 
@@ -110,8 +110,10 @@ public sealed class NumberRuleSeedTests(TestDatabase database) : IAsyncLifetime
                 Assert.Equal(
                     [
                         ("SAL.DELIVERY", "銷售出庫", "DN", NumberDateFormat.YearMonth, 4, NumberResetPeriod.Monthly, true),
+                        ("SAL.INVOICE", "銷售發票", "SI", NumberDateFormat.YearMonth, 4, NumberResetPeriod.Monthly, true),
                         ("SAL.ORDER", "銷售訂單", "SO", NumberDateFormat.YearMonth, 4, NumberResetPeriod.Monthly, true),
                         ("SAL.QUOTATION", "銷售報價", "SQ", NumberDateFormat.YearMonth, 4, NumberResetPeriod.Monthly, true),
+                        ("SAL.RETURN", "銷售退貨", "SR", NumberDateFormat.YearMonth, 4, NumberResetPeriod.Monthly, true),
                     ],
                     rules.Select(r => (r.DocumentType, r.Name, r.Prefix, r.DateFormat, r.SequenceLength, r.ResetPeriod, r.IsActive))
                         .ToArray());

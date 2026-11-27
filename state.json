@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "PUR",
-    "currentWorkUnit": "WU-PUR-005e3",
-    "lastCompletedWorkUnit": "WU-PUR-008b6c",
-    "nextAction": "【人手 2026-11-26T18:52:42+08:00 第一階段衝刺最優先】WU-PUR-008b6c 已完成：真實 API 4.19 過帳 6/6，畫面與 SQL 的發票 Posted、FI 來源／應付／傳票各 1、收貨預留轉已開票量一致；008b6 父項結清。下一輪只重試 WU-PUR-005e3（backlog 第一週次序 2）：先讀 blocked.md 與該單元需求／設計／測試，確認既有 AWARD 端點、快照 migration、雙連線專項；SQL 服務現可用，跑 Release 全量及定向 PUR-RFQ-055～059，修正真實失敗並結案，然後才輪到 005e4／005f2a2／005f3e。此為人手明示重試已 BLOCKED 單元，勿因舊 workUnitAttempts=3 略過；重試結果按 MASTER_PROMPT 第 1 節記錄。後續 006a 實作採購單時必須保存 base_currency_code／exchange_rate；008c2 依賴 006a～c。CR-008 未寫入 MASTER_PROMPT 前仍按現行測試規則；第一期範圍外 PP／CO 等暫緩。正式 myerp 已由 008b6c 真實 API 腳本套用 migration 並載入種子；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-PUR-005e4",
+    "lastCompletedWorkUnit": "WU-PUR-005e3",
+    "nextAction": "【人手 2026-11-26T18:52:42+08:00 第一階段衝刺次序 2】WU-PUR-005e3 已解除 BLOCKED：Release 後端全量 4071/4071、決標 2/2、帶 SQL DocGen 0 Error；下一輪只重試 WU-PUR-005e4。先讀 blocked.md、PUR-RFQ-060～068、既有 CONVERT 輸入驗證與三表／端點設計；SQL 現可用，先寫真實 SQL／受權 HTTP 紅燈，再實作可逆 migration、SYS 同交易單號與 CONVERT 原子端點，驗雙連線唯一性、回滾、權限、Release 全量及帶 DB DocGen。此為人手明示重試已 BLOCKED 單元，勿因舊 attempts=3 略過；若守衛 DEFER，按 MASTER_PROMPT 第 1 節延後。後續依序 005f2a2／005f3e，006a 需保存 base_currency_code／exchange_rate；008c2 依賴 006a～c。CR-008 未寫入 MASTER_PROMPT 前仍按現行測試規則；第一期範圍外 PP／CO 等暫緩。P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 與外部 Runner 變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -47,7 +47,6 @@
     },
     "blockedWorkUnits": [
         "WU-P0-015",
-        "WU-PUR-005e3",
         "WU-PUR-005e4",
         "WU-PUR-005f2a2",
         "WU-PUR-005f3e",
@@ -67,6 +66,6 @@
         "rounds": 0,
         "consecutiveRoundsWithoutIdea": 0
     },
-    "lastSuccessfulPush":  "2026-11-27T08:58:32+08:00",
-    "updatedAt": "2026-11-27T08:58:32+08:00"
+    "lastSuccessfulPush": "2026-11-27T08:58:32+08:00",
+    "updatedAt": "2026-11-27T09:26:16+08:00"
 }

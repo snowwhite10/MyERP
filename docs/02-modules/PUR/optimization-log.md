@@ -682,6 +682,12 @@ SQL 守衛三次 1.951／1.991／2.077 GiB，結果 DEFER。先 CS0103 紅燈，
 - 設計：最小訂單表頭、行與來源連結三表，複合公司 FK、永久單號與決標唯一索引；訂單行只複製保存的決標快照，轉單不改請購已轉量或庫存。PUR-RFQ-060～068 覆蓋正常、邊界、競態、原子回滾、權限、狀態、錯誤與檔案不適用。
 - 驗證限制：`MSSQL$MSSQLSERVER2022` 為 Stopped，目前帳號 `Start-Service` 失敗；因此未開始需真實 SQL 的紅燈測試、migration 與 API，不能宣稱 005e4 完成。DocGen 測試改以 in-process runner 執行，7/7 通過；初試 `dotnet test --project` 因 MTP 命令不適用退出，屬指令問題。離線 DocGen 因 `MyERP_SDS.docx` 正被 WINWORD PID 43724 開啟而無法覆寫；已還原這次未完成產生的 SRS 輸出，未關閉他人的 Word。
 
+## WU-PUR-005e3 重試與全量驗收（2026-11-27T09:26:16+08:00）
+
+- 守衛三樣本 6.497／6.485／6.516 GiB PASS，SQL 服務可用且 DMV 未見長時間阻擋。Release 建置零警告／錯誤；整合診斷首輪 1263/1264，唯一失敗 `NumberRuleSeedTests.SeedCreatesFinanceRulesPerCompanyIssuesNumbersAndSecondRunAddsNothing`：預期 10、實際 14。單例重跑同樣失敗（10／14），確認可重現。
+- 原因：測試的 `SalesTypes` 仍只列報價、訂單、出庫；銷售發票與退貨種子早已加入，同兩間公司合計四筆未納入缺少筆數。產品種子依所有提供者建立七種規則，並無重複註冊。修正測試清單，同時逐種核對發票 SI、退貨 SR 的保存值，保留二次執行零新增與 FI 的精確斷言；沒有削弱測試。
+- 修正後 `NumberRuleSeedTests` 5/5、`RfqAwardTests` 加受權 HTTP 2/2、Release 全解決方案 4071/4071。正式 myerp 已套用決標 migration、建表與詢價行唯一索引；帶 SQL 隔離 DocGen 0 Error／613 Warning。決標產品程式及資料表無需更改；其餘 Warning 屬既有來源追溯待補。
+
 ## WU-PUR-005e3 決標快照與唯一性（2026-10-21T17:27:48+08:00）
 
 - 2026-10-21T21:24:02+08:00 補齊 PUR-RFQ-056～059：真實 SQL 驗未生效報價、草稿拒絕及跨公司 404；受權 HTTP 驗本人範圍外 404；在決標 INSERT 注入保存故障，確認報價狀態、詢價版本與決標表均未改，同版恢復後可成功。專項 2/2 通過。全量 Release 單執行緒重跑時，既有 `SafetyStockTests` 連續五例各在 SQL 命令 35～43 秒逾時；中途 DMV 無持續阻擋請求，可用記憶體約 0.65 GB，已停止無法通過的全量執行。同一失敗類的 `CompanyScopedIdPagingHasCoveringIndex` 隔離重跑 1/1 通過。未找到可重複的單例失敗，不改庫存產品程式；全量回歸待主機資源恢復後再驗。
