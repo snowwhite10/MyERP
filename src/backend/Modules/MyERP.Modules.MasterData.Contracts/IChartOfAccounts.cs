@@ -21,6 +21,11 @@ public interface IChartOfAccounts
     Task<AccountInfo?> FindAsync(string code, CancellationToken token = default);
 
     /// <summary>
+    /// 依 ID 找目前公司的科目，含停用；不存在、已刪除、ID 非正或屬其他公司回 null（WU-FI-008a4：FI 其他付款費用對照只存科目 ID）。
+    /// </summary>
+    Task<AccountInfo?> FindByIdAsync(long id, CancellationToken token = default);
+
+    /// <summary>
     /// 過帳前驗證：不存在 404 <c>MD.ACCOUNT.NOT_FOUND</c>；停用 422 <c>MD.ACCOUNT.INACTIVE</c>；
     /// 有子科目 422 <c>MD.ACCOUNT.NOT_POSTABLE</c>。
     /// </summary>

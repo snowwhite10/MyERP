@@ -81,6 +81,10 @@ public sealed class FinanceModule : IErpModule
         services.AddScoped<SalesCollectionAccountMapService>();
         services.AddScoped<CollectionReceiptDocumentService>();
         services.AddScoped<OtherPaymentDocumentService>();
+        // 其他付款原子過帳（WU-FI-008a4、ADR-211）：FI/OtherPayment 映射版本依本 scope 正在過帳的費用類別讀取
+        services.AddScoped<OtherPaymentPostingScope>();
+        services.AddScoped<IGlPostingMappingVersionSource, OtherPaymentMappingVersionSource>();
+        services.AddScoped<IOtherPaymentPostingService, OtherPaymentPostingService>();
         services.AddScoped<CollectionReceiptQueryService>();
         services.AddScoped<CollectionSettlementDocumentService>();
         services.AddScoped<CollectionSettlementQueryService>();

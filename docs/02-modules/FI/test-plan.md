@@ -984,6 +984,23 @@ A real `myerp` Down to `Finance_OtherPaymentDocument` with a Draft row and a map
 | FI-OP-DOC-008 | Partial / Error / File | Not applicable at service layer: one document per call, no batch or file; HTTP 400/500/timeout display belongs to 008b/008c. | — | REQ_F4116.4.2 (FI-AP-OTHER-010/017/020) | N/A |
 
 Result: guard PASS 15.58 GiB; targeted real SQL 16/16 (7 new + same-pattern siblings). FI-AP-OTHER-* statuses stay TODO until HTTP/UI acceptance.
+
+### WU-FI-008a4 other payment atomic GL posting scenarios (2026-11-27T20:03:14+08:00)
+
+`myerp-test-scenarios` categories applied to `IOtherPaymentPostingService` (ADR-211). Real SQL `FinancePostingServiceTests.OtherPaymentPosting.cs`; MD category, fund, accounts and GL period are real seeds, the map row is written through EF. The implementation was written before the first run, so red-first is replaced by a recorded mutation check: forcing "no replay row" and dropping the Expense/Cost account-type rule made FI-OP-POST-002/004/007 fail (3/3 red), restored → green.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-OP-POST-001 | Normal | Caller rollback leaves zero rows and Draft v1; commit writes Dr 6101 / Cr 1102 `12,345.6789`, GL key `FI/OtherPayment` with version+fingerprint, source snapshot (category, expense account ID, map version 1, bank, reference, TWD), Draft → Posted v2, detail shows journal; zero `ap_posted_payable`. | I | REQ_F4116.4.4 (FI-AP-OTHER-002/016) | Pass: 008a4 I |
+| FI-OP-POST-002 | Duplicate/conflict | Same claim replays Unchanged with the original IDs, document version unchanged, no extra GL; other fingerprint or version 409 SOURCE_CONFLICT; Posted document edit 422 INVALID_STATUS. | I | REQ_F4116.4.4 (FI-AP-OTHER-007/008/013) | Pass: 008a4 I |
+| FI-OP-POST-003 | State/permission/boundary | Stale version or fingerprint 409 SOURCE_MISMATCH; Rejected and soft-deleted 422 SOURCE_NOT_POSTABLE; missing, other-company document and other-company command 404; malformed fingerprint, version 0, null 400; Pending posts. | I | REQ_F4116.4.4 (FI-AP-OTHER-008/012/014) | Pass: 008a4 I |
+| FI-OP-POST-004 | Relation | Missing map 422 MAPPING_MISSING; map to AP control 2101, unapplied 2191 (liabilities), prepaid 1141 (asset), parent 6, inactive 6102, unknown ID → 422 ACCOUNT_INVALID line 1; inactive category 422 CATEGORY_INVALID; inactive fund 422 FUND_ACCOUNT_INVALID with the caller transaction still open; zero rows; after fixes posts with map version 7. | I | REQ_F4116.4.4 (FI-AP-OTHER-015/016) | Pass: 008a4 I |
+| FI-OP-POST-005 | Boundary/relation | Date outside any period 422 PERIOD_MISSING; Closed period 422 PERIOD_CLOSED, zero rows; after posting a map change (version 2) leaves source snapshot and journal unchanged; updating the source gets SQL 51039. | I | REQ_F4116.4.4 (FI-AP-OTHER-005/019) | Pass: 008a4 I |
+| FI-OP-POST-006 | Partial/error | No caller transaction → programming error; caller failure after posting rolls back source, journal, GL key and Posted state; the same claim then posts once. | I | REQ_F4116.4.4 (FI-AP-OTHER-009) | Pass: 008a4 I |
+| FI-OP-POST-007 | Concurrency | Two connections with the same claim wait on the bank-reference key (case-folded); after release one Posted, one Unchanged with the same receipt; one journal and one source row. | I | REQ_F4116.4.4 (FI-AP-OTHER-008) | Pass: 008a4 I |
+| FI-OP-POST-008 | Error/lock | Held bank-reference or source key → 409 LOCK_TIMEOUT with the caller transaction open, zero rows; after release posts. | I | REQ_F4116.4.4 (FI-AP-OTHER-017) | Pass: 008a4 I |
+
+Not applicable here: batch/partial-success and file (one document per call, FI-AP-OTHER-010/020); HTTP 401/403/500 display and UI messages belong to 008b/008c. Result: guard PASS 16.67 GiB; targeted real SQL 8/8 new, other-payment siblings 52/52.
 ## WU-FI-009d statement source scenarios (design; product tests TODO)
 
 The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories follow. U=unit, I=real SQL/authorised HTTP, E=Playwright. Each E case compares the translated screen and export with a fresh FI source read using the same cutoff. WU-FI-009a/b first write failing tests; this design unit has no executable financial product test.

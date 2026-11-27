@@ -68,7 +68,7 @@ public sealed class GlPostingTransactionPortTests
                 && x.Lifetime == ServiceLifetime.Scoped);
         // Mapping sources: the Development demo seed (ADR-105, version 0 outside Development so it fails closed) and
         // the SD invoice account map (ADR-109, one row per company). SD/Return (ADR-113) reuses that row through its own source.
-        // PUR/PurchaseInvoice reads its own FI purchase invoice account map (ADR-116); FI/SalesCollection and FI/CollectionWriteOff share the collection map (ADR-120). Each source type has exactly one implementation.
+        // PUR/PurchaseInvoice reads its own FI purchase invoice account map (ADR-116); FI/SalesCollection and FI/CollectionWriteOff share the collection map (ADR-120); FI/OtherPayment reads the per-category map row of the scope's category (ADR-211). Each source type has exactly one implementation.
         services.Where(x => x.ServiceType == typeof(IGlPostingMappingVersionSource))
             .Select(x => (x.ImplementationType, x.Lifetime)).Should().BeEquivalentTo(new[]
             {
@@ -78,6 +78,7 @@ public sealed class GlPostingTransactionPortTests
                 (typeof(PurchaseInvoiceAccountMapStore), ServiceLifetime.Scoped),
                 (typeof(SalesCollectionAccountMapStore), ServiceLifetime.Scoped),
                 (typeof(CollectionWriteOffMappingVersionSource), ServiceLifetime.Scoped),
+                (typeof(OtherPaymentMappingVersionSource), ServiceLifetime.Scoped),
             });
 
         await using var provider = Provider(3);

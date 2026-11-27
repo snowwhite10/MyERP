@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-008a4",
-    "lastCompletedWorkUnit": "WU-FI-008a3",
-    "nextAction": "做 WU-FI-008a4（其他付款原子 GL 過帳）：只依賴已真實 SQL 驗證的 008a1～008a3。仿 005b2／005b3 收款過帳模式（CollectionReceiptPostingService、CollectionReceiptDocumentSource）：FI 在呼叫者交易內重讀已存 Draft／Pending 與版本、指紋；經 MD 契約核對有效類別與資金帳戶及對應科目；讀 gl_other_payment_account_map（無對照 422）並經 MD 核對費用科目可過帳、排除應付控制／暫付／預付科目；固定順序鎖公司＋銀行＋參考、來源鍵、GL 期間；保存日期須落在唯一 Open 期間；經 IGlPostingService 借費用貸銀行同額；寫 ap_other_payment_source（金額以型別化 EF 屬性寫入）、Draft 轉 Posted；相同版本／指紋重放 changed=false 且無額外 GL／稽核；變更指紋、舊版本、參考衝突 409；類別失效／期間關閉／對照缺失／注入失敗全部回滾。含雙連線競態測試。先寫真實 SQL 紅燈。只跑一次記憶體守衛，DEFER 就提交可編譯部分並加入 deferredVerifications。不得單獨補驗 FI-007a1／006a1／006a／005c3b2 或 PUR 延後項，也不要挑依賴 007a1／006a1 SQL 驗證的 007a2／006a2；008a3 留給 008b 的權限登錄、AP.OTHER_PAYMENT 單號規則種子與 IIncomeExpenseCategoryUsage 見 backlog。",
+    "currentWorkUnit": "WU-FI-008b",
+    "lastCompletedWorkUnit": "WU-FI-008a4",
+    "nextAction": "做 WU-FI-008b（其他付款受權草稿／審批 API）：008a1～008a4 已真實 SQL 驗證。先寫真實 SQL／HTTP 紅燈。內容：登錄 AP.OTHER_PAYMENT.VIEW/CREATE/EDIT/SUBMIT/DELETE/APPROVE 權限與角色；種子 AP.OTHER_PAYMENT SYS 單號規則；送審／撤回（仿 CollectionReceiptSubmissionService）與 SYS 最終審批處理器（仿 CollectionReceiptApprovalResultHandler）在同交易以已存版本＋OtherPaymentFingerprint 呼叫 IOtherPaymentPostingService（ADR-211），Rejected／Fault 轉 BR-FI-065 HTTP 錯誤；控制器＋Swagger（401/403/404/400/409/422/500 traceId）；FI 實作 IIncomeExpenseCategoryUsage；費用類別對照維護 API（gl_other_payment_account_map）。單輪超過 90 分鐘先在 backlog 拆 008b1（權限／單號／對照 API）、008b2（送審審批過帳）、008b3（HTTP 控制器）。只跑一次記憶體守衛，DEFER 就提交可編譯部分並加入 deferredVerifications。不得單獨補驗 FI-007a1／006a1／005c3b2 或 PUR 延後項，也不要挑依賴 007a1／006a1 SQL 驗證的 007a2／006a2。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 221,
-        "ADR": 209,
+        "ADR": 211,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -144,5 +144,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-27T19:47:53+08:00",
-    "updatedAt": "2026-11-27T19:47:53+08:00"
+    "updatedAt": "2026-11-27T20:11:29+08:00"
 }

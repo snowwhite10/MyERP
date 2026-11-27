@@ -132,14 +132,23 @@ public sealed class AccountService(MyErpDbContext db, IEnumerable<IAccountUsage>
 /// <summary><see cref="IChartOfAccounts"/> 的 MD 實作；只讀目前公司未刪除科目。</summary>
 public sealed class ChartOfAccounts(MyErpDbContext db) : IChartOfAccounts
 {
-    public async Task<AccountInfo?> FindAsync(string code, CancellationToken token = default)
+    public Task<AccountInfo?> FindAsync(string code, CancellationToken token = default)
+    {
+        var normalized = code?.Trim();
+        return FindWhereAsync(x => x.Code == normalized, token);
+    }
+
+    public Task<AccountInfo?> FindByIdAsync(long id, CancellationToken token = default) =>
+        FindWhereAsync(x => id > 0 && x.Id == id, token);
+
+    private async Task<AccountInfo?> FindWhereAsync(System.Linq.Expressions.Expression<Func<Account, bool>> filter,
+        CancellationToken token)
     {
         if (db.CurrentCompanyId is not > 0)
             throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
-        var normalized = code?.Trim();
         // 上層代碼與是否有子科目以子查詢一次取回；公司與軟刪除篩選同樣套用在子查詢。
         var accounts = db.Set<Account>().AsNoTracking();
-        var account = await accounts.Where(x => x.Code == normalized).Select(x => new
+        var account = await accounts.Where(filter).Select(x => new
         {
             x.Id, x.CompanyId, x.Version, x.Code, x.Name, x.AccountType, x.BalanceDirection, x.IsActive,
             ParentCode = accounts.Where(p => p.Id == x.ParentId).Select(p => p.Code).FirstOrDefault(),
