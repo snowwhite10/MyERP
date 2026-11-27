@@ -23,6 +23,8 @@
 
 ## 進行中
 
+- 2026-11-27T09:38:13+08:00 WU-PUR-005e4 重新開啟並完成設計修訂：守衛三樣本 5.650／5.643／5.648 GiB PASS。最初按舊設計建立新模型時編譯揭示 `PurchaseOrderSource` 已存在；調查確認 `pur_purchase_order`／`pur_purchase_order_line` 已由發票來源建表（REQ_DS43.186／187），且有既有三單比對／過帳依賴。撤回重複模型，改為擴充兩張既有表＋新增不可重用來源連結，補 PUR-RFQ-069 升降級保存發票來源的真實 SQL 情境。Debug 全解決方案 0 警告／錯誤，DocGen 測試 22/22，`git diff --check` 通過。CONVERT 端點與 migration 尚未交付，下一輪續做同一工作單元。
+
 - 2026-11-27T09:26:16+08:00 WU-PUR-005e3 解除 BLOCKED：記憶體守衛三樣本 6.497／6.485／6.516 GiB PASS，SQL 無長時間阻擋；Release 診斷首輪整合 1263/1264，唯一失敗為舊種子測試漏計 SAL.INVOICE／SAL.RETURN 兩種規則（兩公司共 4 筆）。補足類型與精確保存值斷言後，種子 5/5、決標 2/2、Release 後端全量 4071/4071；正式 myerp 有 Purchasing_RfqAward migration、表及詢價行唯一索引，帶 DB DocGen 0 Error／613 Warning。下一輪按第一週次序重試 WU-PUR-005e4。
 
 - 2026-11-27T08:57:16+08:00 WU-PUR-008b6c 完成並結清 008b6 父項：4.19 真實 API 過帳從已比對發票走確認框與 POST，畫面顯示 Posted、成功訊息和 FI 三參照；sqlcmd 獨立讀回 `pur_purchase_invoice`、`ap_purchase_source`、`ap_posted_payable`、`gl_journal` 各一及收貨預留 4→0／已開票 0→4。採購單夾具補 TWD 匯率快照，FI 映射沿 Development 種子。記憶體守衛 PASS，Debug 建置零警告／錯誤、migration 與種子成功，真實 API Playwright 6/6；新增 Posted 截圖已檢視，無 P1／P2。首跑新測試因期待「憑證」而介面實際用「傳票」失敗，修正測試文案後全套通過；產品代碼未改。下一輪按第一期次序重試 WU-PUR-005e3（SQL 服務已恢復）。

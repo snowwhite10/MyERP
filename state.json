@@ -6,7 +6,7 @@
     "currentModule": "PUR",
     "currentWorkUnit": "WU-PUR-005e4",
     "lastCompletedWorkUnit": "WU-PUR-005e3",
-    "nextAction": "【人手 2026-11-26T18:52:42+08:00 第一階段衝刺次序 2】WU-PUR-005e3 已解除 BLOCKED：Release 後端全量 4071/4071、決標 2/2、帶 SQL DocGen 0 Error；下一輪只重試 WU-PUR-005e4。先讀 blocked.md、PUR-RFQ-060～068、既有 CONVERT 輸入驗證與三表／端點設計；SQL 現可用，先寫真實 SQL／受權 HTTP 紅燈，再實作可逆 migration、SYS 同交易單號與 CONVERT 原子端點，驗雙連線唯一性、回滾、權限、Release 全量及帶 DB DocGen。此為人手明示重試已 BLOCKED 單元，勿因舊 attempts=3 略過；若守衛 DEFER，按 MASTER_PROMPT 第 1 節延後。後續依序 005f2a2／005f3e，006a 需保存 base_currency_code／exchange_rate；008c2 依賴 006a～c。CR-008 未寫入 MASTER_PROMPT 前仍按現行測試規則；第一期範圍外 PP／CO 等暫緩。P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 與外部 Runner 變更勿納入產品提交。",
+    "nextAction": "續做 WU-PUR-005e4（第一階段衝刺次序 2，已重新開啟）：先讀 PUR data-structure.md 005e4 修訂與 PUR-RFQ-060～069。重要發現：pur_purchase_order／pur_purchase_order_line 已由 008a 建表（REQ_DS43.186／187），EF 類別 PurchaseOrderSource／PurchaseOrderSourceLine 已供發票使用；不可重建或雙重映射。先寫真實 SQL 升級／還原及受權 HTTP 紅燈；擴充既有兩表與同一 EF 類別，新增 pur_order_source（單獨分配下一個 REQ_DS43 ID），保護既有發票夾具與匯率快照；再實作 SYS 同交易單號與 CONVERT 原子端點，驗唯一性、回滾、權限、Release 全量及帶 DB DocGen。005e4 完成後依序 005f2a2／005f3e。既有外部 Runner 兩檔未提交變更禁止代理修改或納入提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -33,7 +33,7 @@
         "WU-SD-001": 3,
         "WU-P0-015": 3,
         "WU-PUR-005e3": 3,
-        "WU-PUR-005e4": 3,
+        "WU-PUR-005e4": 0,
         "WU-PUR-005f2a2": 3,
         "WU-PUR-005f3e": 3,
         "WU-PUR-006a": 3,
@@ -47,7 +47,6 @@
     },
     "blockedWorkUnits": [
         "WU-P0-015",
-        "WU-PUR-005e4",
         "WU-PUR-005f2a2",
         "WU-PUR-005f3e",
         "WU-PUR-006a",
@@ -67,5 +66,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-27T09:30:25+08:00",
-    "updatedAt": "2026-11-27T09:30:25+08:00"
+    "updatedAt": "2026-11-27T09:38:13+08:00"
 }

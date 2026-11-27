@@ -691,7 +691,7 @@
 | WU-PUR-005e1 | PUR | MD 匯率／稅率公開快照契約及真實 SQL 日期、公司、失效測試 | P1 | DONE | 005d | 契約及真實 SQL 專項 2/2；Release 整合專案單獨單執行緒全量 617/617 通過，SQL 採樣無持續阻擋；帶 DB DocGen 0 Error／67 Warning。 |
 | WU-PUR-005e2 | PUR | 逐行跨幣別含稅比價 API、不可比原因、受權 SQL／HTTP 測試 | P1 | DONE | 005e1 | 唯讀 COMPARE 端點、MD 快照單請求快取與完整不可比原因；真實 SQL／HTTP 專項及 Release 整合全量 618/618，帶 DB DocGen 0 Error／67 Warning。 |
 | WU-PUR-005e3 | PUR | 決標快照資料模型、migration、AWARD 端點及雙連線唯一性 | P1 | DONE | 005e2 | 2026-11-27 重試：守衛 PASS；修正跨模組單號種子測試漏計兩種 SD 規則，專項 5/5、決標 2/2、Release 後端全量 4071/4071；正式 SQL migration／唯一索引存在，帶 DB DocGen 0 Error／613 Warning。詳見 blocked.md 解除記錄。 |
-| WU-PUR-005e4 | PUR | 最小採購單草稿模型、CONVERT 端點、SYS 單號、原子回滾與全量驗收 | P1 | BLOCKED | 005e3 | 需求、三表／端點設計與輸入驗證 9/9 已提交；連續三輪 SQL 服務停止且目前帳號無權啟動，紅燈 SQL 測試、migration、API 與全量待續。服務恢復後按 blocked.md 重試；請購餘量於 006 提交才消耗。 |
+| WU-PUR-005e4 | PUR | 最小採購單草稿模型、CONVERT 端點、SYS 單號、原子回滾與全量驗收 | P1 | IN_PROGRESS | 005e3 | 2026-11-27 人手指示重試，守衛 PASS；發現兩張採購單表已由 008a 建立並供發票使用，已修訂設計與遷移回歸案例。下一輪擴充既有表、只新增決標來源連結，再做交易端點與真實 SQL／HTTP 全量；請購餘量於 006 提交才消耗。 |
 | WU-PUR-005f | PUR | 詢價／報價／比價及轉單三語亮暗頁面、E2E、CSV／列印與畫面 QA | P1 | IN_PROGRESS | 005e | 拆為可獨立驗收的 005f1 起；005e3／e4 受阻，轉單畫面不能先稱可用。子單元全部完成後關閉父 005。 |
 | WU-PUR-005f1 | PUR | 詢價唯讀列表／保存詳情、三語亮暗、權限／錯誤與畫面 QA | P1 | DONE | 005c1 | GET RFQ 三語亮暗列表／詳情、URL 篩選、20 張 QA 截圖；RFQ 專項 8/8（最後兩案分別重跑）、全量模擬 E2E 283 通過／5 略過，前端 685/685。發送、關閉或轉單留後續。 |
 | WU-PUR-005f2 | PUR | 詢價建立／修訂、發送／關閉、CSV／列印與畫面 QA | P1 | IN_PROGRESS | 005f1 | 拆為 005f2a1～a2、005f2b～c；a2 真實 SQL 驗收仍受阻，b 已完成，c 待做。 |

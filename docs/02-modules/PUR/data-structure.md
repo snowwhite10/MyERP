@@ -79,9 +79,9 @@ erDiagram
 
 INV movement 與 SYS approval 僅為保存的外部 ID；圖中不畫跨模組 FK。Posted 後 INV 異動不可變，退貨新增另一方向異動。007a／007b 建表前要先解決 005e4／006a 的採購單行實體依賴。
 
-## WU-PUR-006d 採購單與請購餘量設計（尚未建表）
+## WU-PUR-006d 採購單與請購餘量設計（既有來源表待擴充）
 
-沿用 005e4 預定的 `pur_purchase_order`、`pur_purchase_order_line`、`pur_order_source` 三表及永久唯一決標來源連結。006d 不分配 REQ_DS43 ID；005e4 建表時連續分配。採購單表頭狀態預定 Draft／PendingApproval／Approved／Rejected／Cancelled，`deleted_at` 僅供未提交草稿軟刪；行保存 `requisition_line_id?`、基本單位數量與商業快照。轉單行的 `award_id` 可經不可變來源連結追溯，禁止在編輯時替換或刪除。人工行沒有決標來源，可選同公司已核准請購行。
+`pur_purchase_order` 與 `pur_purchase_order_line` 已由發票來源工作單元建表，分配 REQ_DS43.186／187；005e4 須擴充這兩表並新增 `pur_order_source`，不得重建或建立第二個 EF 映射。006d 不分配新 ID，005e4 只為新來源連結分配 ID，既有兩表按變更記錄遞增版本。採購單表頭狀態已有 Draft／PendingApproval／Approved／Rejected／Cancelled，`deleted_at` 僅供未提交草稿軟刪；行待補 `requisition_line_id?`、基本單位數量與商業快照。轉單行的 `award_id` 經不可變來源連結追溯，禁止在編輯時替換或刪除。人工行沒有決標來源，可選同公司已核准請購行。
 
 請購的已轉量以同一交易維護的 `pur_requisition_line.converted_quantity` 表示，最初值為零；`remaining = requested_quantity - converted_quantity`，資料庫 CHECK 限 `0 <= converted_quantity <= quantity`。005e4 只建草稿時不增加它。提交時按請購行 ID 升冪取得更新鎖；先聚合同一請購行在本訂單的全部行，再核對餘量，逐行增加已轉量及寫 SYS 審批實例。駁回或允許的取消同交易按保存的訂單行精確扣回一次。訂單表頭保存 `requisition_consumption_active` 或等價持久旗標以防重複釋回；其狀態與請購已轉量在同一 SQL 交易中轉換。未引用請購的人工行不影響已轉量。
 
@@ -101,9 +101,9 @@ WU-PUR-005f2c 的 CSV／列印只讀現有 `pur_rfq`、行及邀請快照；沒�
 
 ## WU-PUR-005e4 轉單草稿設計（待 migration）
 
-預計新增 `pur_purchase_order`、`pur_purchase_order_line`、`pur_order_source` 三表；正式 `REQ_DS43` ID 在 migration 同輪分配，此處不把尚未存在的表宣稱為已落地。表頭只保存公司、SYS 永久唯一單號、詢價 ID、供應商 ID、業務日、擁有人／分店／部門、Draft 狀態、原幣與本位幣總額、版本及審計。單據只能來自同一詢價的一個供應商；不同決標行若原幣不同則拒絕同單轉換，不暗中合併貨幣。行保存行號、物料 ID、可空請購行 ID、六位數量與原幣單價、原幣及本位幣逐行金額，以及決標時的稅率／匯率來源與數值快照；表頭金額只加總已取整的行金額。來源連結保存訂單行 ID 與決標 ID，`(company_id,award_id)` 永久唯一，不因日後取消訂單而刪除；取消與重新轉單規則由 WU-PUR-006 明訂。
+既有 `pur_purchase_order`、`pur_purchase_order_line` 分別已配 REQ_DS43.186／187 並供三單比對、發票過帳使用，005e4 只擴充兩表；新建 `pur_order_source` 一表並為其分配下一個 REQ_DS43 ID。表頭需補 SYS 永久唯一單號、詢價 ID、業務日、擁有人／分店／部門、原幣與本位幣總額；保留已有的 `supplier_id`、`currency`、`base_currency_code`、`exchange_rate`、狀態、審計及版本，不更名或移除。單據只能來自同一詢價的一個供應商；不同決標行若原幣不同則拒絕同單轉換。行保留既有 `purchase_order_id`、`material_id`、數量、單價、稅率，補可空請購行 ID 及決標稅率／匯率、逐行金額快照。新欄對既有來源夾具須可平滑遷移，避免破壞發票流程。來源連結保存訂單行 ID 與決標 ID，`(company_id,award_id)` 永久唯一，不因日後取消訂單而刪除。
 
-三表均用 `bigint identity`、`company_id`、審計時間／用戶及 `version`；同公司複合 FK 連結訂單表頭、行、詢價及決標，不對 MD／SYS 建 FK。`(company_id,document_no)` 永久唯一，`(company_id,order_id,line_no)` 唯一。每個 FK 欄位手動建立索引，另外建立公司／供應商／業務日及來源詢價查詢索引。SQL CHECK 限正數 ID／數量、非負價格與金額、006d 所列合法狀態及金額守恆；005e4 首次建立時狀態只能為 Draft，006 後續擴充狀態轉換。Application 在送 SQL 前拒絕超六位小數，以免 SQL 自動取整。來源連結不允許 UPDATE／DELETE。migration 的 Down 依來源、行、表頭順序還原；必須以真實 SQL 驗證約束與索引。
+新來源表用 `bigint identity`、`company_id`、審計時間／用戶及 `version`；同公司複合 FK 連結既有訂單行與決標，不對 MD／SYS 建 FK。為既有表補 `(company_id,document_no)` 永久唯一，沿用既有 `(company_id,purchase_order_id,line_no)` 唯一索引。每個新 FK 欄位建索引。SQL CHECK 限正數 ID／數量、非負價格與金額及金額守恆；005e4 新建訂單只能為 Draft。Application 在送 SQL 前拒絕超六位小數，以免 SQL 自動取整。來源連結不允許 UPDATE／DELETE。migration 的 Down 先刪新來源表，再撤回新增欄位／約束，保留既有兩表及所有發票資料；須以真實 SQL 驗證升級、還原與既有發票回歸。
 
 ```mermaid
 erDiagram
