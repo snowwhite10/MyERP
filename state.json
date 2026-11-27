@@ -64,6 +64,7 @@
             ],
             "remaining": "FI 模組收尾或人手指定時先跑一次記憶體守衛；PASS 後實跑 FI-COLL-REAL-001～005、確認核銷發票來源與 Draft／Pending／Posted 畫面及 SQL 餘額、檢視截圖並修復；全域 E2E typecheck 的四個既有錯誤另列範圍處理。此項不得單獨選為下一輪工作單元。",
             "branch": "main",
+            "commit": "7ae2df63",
             "deferredAt": "2026-11-27T14:50:32+08:00"
         },
         {
@@ -129,6 +130,6 @@
         "rounds": 0,
         "consecutiveRoundsWithoutIdea": 0
     },
-    "lastSuccessfulPush": "2026-11-27T14:36:13+08:00",
-    "updatedAt": "2026-11-27T14:50:32+08:00"
+    "lastSuccessfulPush": "2026-11-27T14:51:57+08:00",
+    "updatedAt": "2026-11-27T14:51:57+08:00"
 }
