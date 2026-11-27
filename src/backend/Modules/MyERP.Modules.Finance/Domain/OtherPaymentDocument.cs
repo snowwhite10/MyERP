@@ -20,4 +20,6 @@ public sealed class OtherPaymentDocument : BusinessEntity, ISoftDeletable
     public DateTime? DeletedAt { get; set; }
 }
 
+/// <summary>Saved other payment state; serialized by name in API responses and query strings.</summary>
+[System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<OtherPaymentDocumentStatus>))]
 public enum OtherPaymentDocumentStatus { Draft, Pending, Rejected, Approved, Posted }

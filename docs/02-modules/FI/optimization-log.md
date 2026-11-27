@@ -1014,3 +1014,10 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - **Finding:** the posting service already marks the tracked document Posted; the approval wrapper's own `Status = Posted` is a no-op kept for the Unchanged replay path (no write by the posting service), matching the receipt wrapper.
 - **Test note:** written before registration; first run red 2/2 (`No service for type OtherPaymentSubmissionService`); mutation (Rejected not resubmittable, rejection → Draft) turned FI-OP-WF-003 red, restored → green.
 - **Boundary:** the rejection reason lives only in SYS approval history (no FI column, same as receipts); 008b3 detail/UI should read it from SYS when showing a Rejected payment.
+
+## WU-FI-008b3a other payment HTTP (2026-11-27)
+
+- **Finding:** `OtherPaymentDocumentStatus` had no JSON converter, so the first green run of the new routes still returned `status` as a number (FI-OP-HTTP-003～007 failed on `GetString`). Added `JsonStringEnumConverter<OtherPaymentDocumentStatus>` on the enum (same as `GlJournalStatus`/`FinanceCollectionReceiptState`), which also makes the `?status=` filter and Swagger use names. EF storage is unchanged (enum-to-string convention).
+- **Review:** `OtherPaymentQueryService` mirrors `CollectionReceiptQueryService`: one count + one page query with a correlated sub-select for the Posted journal (no N+1 against FI tables); MD labels are fetched once per distinct category / fund account on the page (≤ page size lookups, usually 1–3). A batch MD label contract would only matter for very mixed pages; not added now (no evidence of slowness).
+- **Review:** the controller derives everything server-side; the update request carries only the editable input plus `version`, so journal, account, amount override or AP target cannot be supplied.
+- **Test note:** 8/8 red before the controller existed; mutation (keyword no longer matches payee) turned FI-OP-HTTP-004 red, restored → green.

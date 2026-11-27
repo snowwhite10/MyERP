@@ -1034,6 +1034,24 @@ Not applicable: batch/partial/file (no new input surface); HTTP 401/403 belong t
 | FI-OP-WF-009 | Registration | Exactly one scoped `IApprovalResultHandler` for `AP.OTHER_PAYMENT`; submission and approval posting scoped. | U | REQ_F4116.4.3 | Pass: 008b2 U |
 
 Not applicable: batch/partial/file (single-document actions); duplicate reference at approval is covered by FI-OP-POST (posting service). HTTP 401/Swagger belong to 008b3.
+
+## WU-FI-008b3a other payment HTTP scenarios
+
+`myerp-test-scenarios` categories applied to the `/api/v1/ap/other-payments` routes. Real SQL + real SYS authorization, number rule and approval engine (`OtherPaymentHttpTests`, WebApplicationFactory); the COURIER→6101 category map is written with SQL because the map API is WU-FI-008b3b. Red first: 8/8 failed (routes missing); a mutation (keyword no longer matches payee) turned FI-OP-HTTP-004 red, restored → green.
+
+| ID | Category | Scenario | Level | Trace | Result |
+|---|---|---|---|---|---|
+| FI-OP-HTTP-001 | Permission/Swagger | Anonymous list, create and submit are 401; OpenAPI lists GET/POST collection, GET/PUT/DELETE item, submit and withdraw. | I | REQ_F4116.4.1–4.6 | Pass: 008b3a I |
+| FI-OP-HTTP-002 | Permission | VIEW reads only; CREATE cannot read; no SUBMIT → submit/withdraw 403; no DELETE → delete 403; AR.COLLECTION permissions cannot list or create; refusals change nothing. | I | REQ_F4116.4.1–4.6 | Pass: 008b3a I |
+| FI-OP-HTTP-003 | Normal/boundary/conflict | 201 + Location, `OP202611` number, trimmed payee/reference/remark, MD category/fund labels, no journal; PUT v2; stale PUT/DELETE 409; 400 names payee (201 chars), category, bank, reference, amount (5 decimals), remark (501); USD fund 422 CURRENCY_MISMATCH; income category 422 NOT_EXPENSE; reference duplicate (case-insensitive) 409; DELETE 204 → GET/DELETE 404, reference released; audit rows. | I | REQ_F4116.4.2/4.3/4.6 | Pass: 008b3a I |
+| FI-OP-HTTP-004 | Query/company | Default businessDate desc with ID tie-break; sort amount/documentNo; status, category, bank, date range and keyword (number, reference or payee) filters; page 2 total; Posted row shows journal, Draft null; 400 for unknown/multiple sort, `Deleted`, reversed dates, non-positive IDs, pageSize 201, 51-char keyword; other company sees 0 rows and gets 404 for GET/PUT/submit, row unchanged. | I | REQ_F4116.4.1 | Pass: 008b3a I |
+| FI-OP-HTTP-005 | State/normal | One-step flow: submit → Pending v2; PUT/DELETE/submit 422 INVALID_STATUS; stale withdraw 409; withdraw → Draft + SYS Cancelled; resubmit; SYS approve → Posted, journal Dr 6101 750.25 / Cr 1102; Posted withdraw/delete 422. | I | REQ_F4116.4.3/4.4 | Pass: 008b3a I |
+| FI-OP-HTTP-006 | Rejection | SYS reject → Rejected, no source/journal; PUT returns Draft; resubmit Pending. | I | REQ_F4116.4.3/4.5 | Pass: 008b3a I |
+| FI-OP-HTTP-007 | Zero-step/error | No flow → submit returns Posted + Approved with posting (amount, expense account, reference) and detail journal matches; RENT without map → 422 `FI.OTHER_PAYMENT_POSTING.MAPPING_MISSING`, Draft v1, no SYS round, no source; inactive fund → 422 FUND_ACCOUNT_INACTIVE, Draft v1. | I | REQ_F4116.4.4 (BR-FI-065) | Pass: 008b3a I |
+| FI-OP-HTTP-008 | Configuration | No `AP.OTHER_PAYMENT` number rule → 422 `SYS.NUMBER_RULE.NOT_CONFIGURED`, nothing saved. | I | REQ_F4116.4.2 | Pass: 008b3a I |
+
+Every ProblemDetails assertion also checks a non-empty `traceId`. Not applicable: batch/partial/file (single-document routes). 500 with traceId is the shared ProblemDetails path (`ProblemDetailsTests`), not repeated per route. Category map maintenance API (`GL.OTHER_PAYMENT_MAP.*`) is WU-FI-008b3b; UI and Playwright are WU-FI-008c.
+
 ## WU-FI-009d statement source scenarios (design; product tests TODO)
 
 The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories follow. U=unit, I=real SQL/authorised HTTP, E=Playwright. Each E case compares the translated screen and export with a fresh FI source read using the same cutoff. WU-FI-009a/b first write failing tests; this design unit has no executable financial product test.

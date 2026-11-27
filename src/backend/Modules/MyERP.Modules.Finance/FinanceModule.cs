@@ -92,6 +92,7 @@ public sealed class FinanceModule : IErpModule
         services.AddScoped<OtherPaymentSubmissionService>();
         services.AddScoped<IApprovalResultHandler, OtherPaymentApprovalResultHandler>();
         services.AddScoped<CollectionReceiptQueryService>();
+        services.AddScoped<OtherPaymentQueryService>();
         services.AddScoped<CollectionSettlementDocumentService>();
         services.AddScoped<CollectionSettlementQueryService>();
         services.AddScoped<OpenReceivableQueryService>();
