@@ -1,5 +1,18 @@
 # PUR 測試計劃
 
+## WU-PUR-008b6c 真實 API Playwright：發票過帳
+
+來源採購單／收貨尚無 API，沿 ADR-204 以單一 SQL 交易安排；採購單帶 TWD 本位幣與匯率 1，FI 科目映射由 Development seed 提供。發票建立經受權 API，其後 MATCH／POST 走 4.19 畫面；畫面訊息與 SQL 保存值雙重斷言。
+
+| ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-INV-REAL-007 | 正常／狀態／關聯 | Matched 發票有過帳鈕，確認框顯示號碼及金額；畫面 POST 後顯示 Posted、成功訊息帶應付／傳票 ID、明細財務參照與過帳時間、列表同步、不再有過帳鈕；SQL 發票 FI 三 ID 與 ap_purchase_source／ap_posted_payable／gl_journal 各一且相同，收貨預留 4→0、已開票 0→4。 | E | REQ_F4114.8.5、REQ_IO_A4.19.8～9 | PASS（真實 API／SQL） |
+| PUR-INV-REAL-NA2 | 邊界／衝突／部分結果／權限／錯誤／檔案 | 此 E2E 為單張一行，沒有批次部分結果或檔案；金額與來源邊界、同時 POST／重放、版本 409、非 Matched 422、無權限 403、FI 映射缺失 422 與回滾由 PUR-POST-001～007、105～108 驗證；畫面拒絕、500、逾時由 PUR-INV-UI-020～025 驗證。 | I,U | REQ_F4114.8.5 | 已覆蓋於所列測試 |
+
+本 E2E 使用已存在的業務流程，不新增產品 API 或 migration。
+
+執行記錄：2026-11-27T08:56:22+08:00；SQL 記憶體守衛 PASS（三次 10.100／10.302／10.305 GiB）；Debug 建置 0 警告／錯誤，migration 與 Development seed 成功；`Invoke-RealApiE2E.ps1 -NoBuild -Specs specs/real-api-purchase-invoice.spec.ts` 6/6。首跑新情境已成功過帳，但測試文字誤寫「憑證」（實際介面用「傳票」），修正斷言後全套通過。截圖 `tests/qa/PUR/screenshots/4.19-real-posted-light-zh-Hant.png` 已檢視：狀態、成功訊息、FI 參照與列表一致，無 P1／P2 問題。
+
 ## WU-PUR-008c3c3 真實 API Playwright：MATCH／RESOLVE／匯出（2026-11-26T23:49:18+08:00）
 
 來源：採購單／收貨尚無 API，以 sqlcmd 安排來源列（ADR-204）；Draft 經 `POST /api/v1/pur/invoices` 建立，其後全部經畫面；每步畫面與 SQL 讀回雙斷言。

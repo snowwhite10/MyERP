@@ -4,7 +4,7 @@ import { chooseLanguage, chooseTheme } from '../support/fixtures';
 import { realApiLogin, type RealApiTokens } from '../support/real-api';
 import { companyId, sql, sqlArrange, utf16 } from '../support/real-api-sql';
 
-// WU-PUR-008c3c3 (PUR-INV-REAL-001–006): screen 4.19 MATCH / RESOLVE / CSV export against the running API and SQL Server.
+// WU-PUR-008c3c3 / 008b6c (PUR-INV-REAL-001–007): screen 4.19 MATCH / RESOLVE / CSV export / POST against the running API and SQL Server.
 // Purchase orders and receipts have no HTTP API yet (006/007), so each test source is arranged with sqlcmd (ADR-204);
 // invoices are created through POST /api/v1/pur/invoices and every later step goes through the screen. Each screen result
 // is checked against the rows SQL Server saved. Invoice numbers carry a per-run prefix: invoices are never deleted.
@@ -50,8 +50,8 @@ test.describe('真實 API 採購發票比對／差異決定／匯出（SQL 讀�
   function arrangeSource(received: number): Source {
     return sqlArrange<Source>(`
       DECLARE @o bigint, @ol bigint, @r bigint, @rl bigint;
-      INSERT dbo.pur_purchase_order(company_id, supplier_id, currency, status, is_deleted, created_at, created_by, version)
-        VALUES (${company}, ${supplierId}, 'TWD', 'Approved', 0, '${TODAY}', ${userId}, 1); SET @o = SCOPE_IDENTITY();
+      INSERT dbo.pur_purchase_order(company_id, supplier_id, currency, base_currency_code, exchange_rate, status, is_deleted, created_at, created_by, version)
+        VALUES (${company}, ${supplierId}, 'TWD', 'TWD', 1, 'Approved', 0, '${TODAY}', ${userId}, 1); SET @o = SCOPE_IDENTITY();
       INSERT dbo.pur_purchase_order_line(company_id, purchase_order_id, line_no, material_id, quantity, unit_price, tax_rate_percent,
         created_at, created_by, version) VALUES (${company}, @o, 1, ${materialId}, ${received}, ${PO_PRICE}, ${TAX}, '${TODAY}', ${userId}, 1);
       SET @ol = SCOPE_IDENTITY();
@@ -288,5 +288,48 @@ test.describe('真實 API 採購發票比對／差異決定／匯出（SQL 讀�
     await expect(page.getByTestId('pur-invoice-resolve-submit')).toHaveCount(0);
     await expect(page.getByTestId('pur-invoice-reject-1')).toHaveCount(0);
     await capture(page, 'viewer-disputed-light-zh-Hant');
+  });
+
+  test('PUR-INV-REAL-007 matched invoice posts from screen 4.19 once and exposes the saved FI references', async ({ page }) => {
+    const invoice = invoices.exact;
+    expect(savedInvoice(invoice.id).status).toBe('Matched');
+    expect(reserved(invoice.source.receiptLineId)).toBe(4);
+    expect(sql<{ id: number }>(`SELECT id FROM ap_purchase_source WHERE company_id = ${company} AND source_id = ${invoice.id}`)).toEqual([]);
+    expect(sql<{ id: number }>(`SELECT id FROM gl_purchase_invoice_account_map WHERE company_id = ${company}`),
+      'TW01 FI purchase map: run --seed').toHaveLength(1);
+
+    await login(page, 'purchase');
+    await open(page, invoice);
+    await expect(page.getByTestId('pur-invoice-post')).toBeEnabled();
+    await page.getByTestId('pur-invoice-post').click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toContainText(invoice.number);
+    await expect(dialog).toContainText('8.4');
+    await dialog.getByRole('button', { name: '過帳到應付帳款' }).click();
+
+    await expect(page.getByTestId('pur-invoice-detail-status')).toHaveText('已過帳');
+    await expect(page.getByTestId('pur-invoice-post')).toHaveCount(0);
+    await expect(page.getByTestId(`pur-invoice-status-${invoice.id}`)).toHaveText('已過帳');
+    const saved = sql<{ status: string; version: number; sourceId: number; payableId: number; journalId: number; postedAt: string }>(
+      `SELECT status, version, fi_purchase_source_id AS sourceId, fi_payable_id AS payableId, fi_journal_id AS journalId,
+       CONVERT(varchar(33), posted_at, 126) AS postedAt FROM pur_purchase_invoice WHERE id = ${invoice.id}`)[0]!;
+    expect(saved).toMatchObject({ status: 'Posted', version: invoice.version + 2 });
+    expect(saved.postedAt).toBeTruthy();
+    expect(saved.sourceId).toBeGreaterThan(0);
+    expect(saved.payableId).toBeGreaterThan(0);
+    expect(saved.journalId).toBeGreaterThan(0);
+    await expect(page.getByTestId('pur-invoice-detail')).toContainText(`應付 #${saved.payableId}`);
+    await expect(page.getByTestId('pur-invoice-detail')).toContainText(`傳票 #${saved.journalId}`);
+    await expect(page.getByText(`發票 ${invoice.number} 已過帳到應付帳款（應付 #${saved.payableId}，傳票 #${saved.journalId}）。`)).toBeVisible();
+    expect(sql<{ id: number; journalId: number }>(`SELECT id, gl_journal_id AS journalId FROM ap_purchase_source
+      WHERE company_id = ${company} AND source_id = ${invoice.id}`)).toEqual([{ id: saved.sourceId, journalId: saved.journalId }]);
+    expect(sql<{ id: number }>(`SELECT id FROM ap_posted_payable WHERE company_id = ${company} AND purchase_source_id = ${saved.sourceId}`))
+      .toEqual([{ id: saved.payableId }]);
+    expect(sql<{ id: number }>(`SELECT id FROM gl_journal WHERE company_id = ${company} AND id = ${saved.journalId}`))
+      .toEqual([{ id: saved.journalId }]);
+    expect(sql<{ posted: string; reserved: string }>(`SELECT CONVERT(varchar(40), posted_invoiced) AS posted,
+      CONVERT(varchar(40), matched_reserved) AS reserved FROM pur_purchase_receipt_line WHERE id = ${invoice.source.receiptLineId}`)[0])
+      .toEqual({ posted: '4.000000', reserved: '0.000000' });
+    await capture(page, 'posted-light-zh-Hant');
   });
 });
