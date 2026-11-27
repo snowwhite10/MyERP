@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-006b",
-    "lastCompletedWorkUnit":  "WU-PUR-006a4",
-    "nextAction":  "做 WU-PUR-006b（006a 已全部完成並結清）：SUBMIT 鎖請購行、同訂單多行引用同一請購行先聚合、原子消耗 ordered_quantity 並設 requisition_consumption_active、建 SYS 審批實例（零步驟立即核准）；只認已保存訂單快照。先依 90 分鐘邊界評估是否拆 b1（SUBMIT＋消耗＋零步驟，真實 SQL 先紅）／b2（SYS 決策處理器：駁回釋回一次、最終核准不重消耗）／b3（受權 HTTP、雙連線餘量競態、故障回滾）。參考 PurchaseOrderDraftService（Serializable、RollbackAsync）與 docs/02-modules/PUR business-rules BR-PUR-02x、test-plan PUR-PO-003／004／007／009～011／014／015／018。勿與後端全量並行跑定向整合測試；勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
+    "currentWorkUnit":  "WU-PUR-006b2",
+    "lastCompletedWorkUnit":  "WU-PUR-006b1",
+    "nextAction":  "做 WU-PUR-006b2（006b 已拆 b1～b3，ADR-214；b1 SUBMIT 已完成）：新增 PUR.ORDER 的 IApprovalResultHandler（仿 RequisitionApprovalResultHandler、在 PurchasingModule 註冊）：最終核准→Approved 並保留 requisition_consumption_active／已轉量；駁回→Rejected，同交易按已保存行聚合釋回 ordered_quantity（UPDLOCK 升冪鎖請購行、不可低於 0）並清旗標；非 PendingApproval 或旗標不符回 409 不二次釋回；多級中間核准不呼叫處理器。真實 SQL＋真實 SYS ApproveAsync／RejectAsync（參考 PurchaseOrderSubmissionTests 與 SalesReturnSubmissionTests.Approval 的 DecideAsync），覆蓋 PUR-PO-004／015／022（駁回釋回故障回滾）。之後 006b3 受權 HTTP。勿與後端全量並行跑定向整合測試；勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  221,
-                       "ADR":  213,
+                       "ADR":  214,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -35,6 +35,7 @@
                              "WU-PUR-005e3":  3,
                              "WU-PUR-005e4":  0,
                              "WU-PUR-006a":  0,
+                             "WU-PUR-006b1":  0,
                              "WU-P0-016":  3,
                              "WU-SD-002a":  3,
                              "WU-FI-001a":  3,
@@ -113,5 +114,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T06:04:08+08:00",
-    "updatedAt":  "2026-11-28T06:04:08+08:00"
+    "updatedAt":  "2026-11-28T06:22:27+08:00"
 }

@@ -1,5 +1,13 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-28T06:16:01+08:00 — WU-PUR-006b1 SUBMIT、聚合消耗與零步驟核准切片
+
+1. 問題：ADR-213 原定 SUBMIT 用 SERIALIZABLE；但 SYS `SubmitAsync` 會先讀 `sys_approval_instance`／流程再 INSERT，SERIALIZABLE 的範圍鎖會使兩張不共用請購行的訂單在實例 INSERT 互鎖。修改：改 READ COMMITTED＋明確 UPDLOCK／HOLDLOCK（先訂單，後請購行 ID 升冪逐行），ADR-214 記錄。效果：雙連線競爭同一餘量恰一單成功，敗者 422 不足或 409。
+2. 問題：一次以 `IN (...)` 鎖多個請購行需拼接 SQL，EF1003 分析器（警告視為錯誤）拒絕。修改：改為逐行參數化 `SqlQuery` 升冪鎖定，保持固定鎖順序且無拼接。
+3. 審查：零步驟核准會先由 SYS 以 PendingApproval 保存再改 Approved，版本一次增加 2；回應帶實際版本，屬可接受行為，已於 ADR-214 註明。來源檢查先收集全部無效行與不足行才拋出，回應一次列出所有原因（`lineNos`／`shortages`），不在第一行停止。
+4. 驗證：變異測試（停用餘量檢查）使 2 個案例轉紅，再還原後 12/12 綠。
+5. 剩餘：SYS 決策處理器（駁回釋回、過時決定 409）屬 006b2；受權 HTTP 與 ProblemDetails 擴充欄位屬 006b3。在 006b2 前不應為 `PUR.ORDER` 設定多步流程。
+
 ## 2026-11-28T06:02:50+08:00 — WU-PUR-006a4 受權 HTTP、交易回滾、競態與溢位切片
 
 1. 問題：EDIT 表頭合計直接累加決標行保存值與人工行重算值，`PurchaseOrderAmounts.Calculate` 只看輸入單價重算（決標行數量 × 單價很小），保存值極大時未檢查上限；邊界測試先紅（`DbUpdateException`：參數 1110000000000000.0000 超出範圍，會成 500）。
