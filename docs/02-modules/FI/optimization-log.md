@@ -1,5 +1,11 @@
 # FI optimization log
 
+## WU-FI-005c3b2 real receivable E2E review — 2026-11-27T14:50:32+08:00
+
+- The fixture creates its receivable through MD, INV and SD APIs and the existing FI posting integration. It does not insert an AR row. The test checks Draft and Pending keep both balances, then compares Posted screen values with the immutable allocation and SQL balances.
+- Reused the approval-flow restoration path for collection, settlement, order and delivery; review caught that the open-receivable picker does not filter by document number, so the test selects the known receivable ID instead.
+- The memory gate returned DEFER at 1.944/1.891/1.881 GiB. The focused spec type-checks, but real API execution and screenshots remain unverified. The repository-wide E2E typecheck also reports four pre-existing errors in unrelated specs; the focused check has none.
+
 ## WU-FI-006a payment foundation review — 2026-11-27T14:33:49+08:00
 
 - The first migration was empty because `PurchasePaymentDbModel` was not registered. Registered it before regenerating the migration; the real SQL table test changed from 0/3 to 3/3. The generated migration also needs the existing `ap_posted_payable` company alternate key for company-scoped allocation FKs.

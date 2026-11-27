@@ -1,4 +1,5 @@
 import { mkdir } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import { expect, request, test, type APIRequestContext, type APIResponse, type Page } from '@playwright/test';
 import { realApiLogin, type RealApiTokens } from '../support/real-api';
 import { companyId, sql } from '../support/real-api-sql';
@@ -61,13 +62,13 @@ test.describe('真實 API 銷售收款（SQL 讀回雙斷言）', () => {
   test.setTimeout(180_000);
 
   const run = `${Date.now() % 1_000_000_000}${Math.floor(Math.random() * 100)}`;
-  const tokens: Partial<Record<'finance' | 'manager' | 'admin', RealApiTokens>> = {};
-  const apis: Partial<Record<'finance' | 'manager' | 'admin', APIRequestContext>> = {};
+  const tokens: Partial<Record<'finance' | 'manager' | 'admin' | 'sales', RealApiTokens>> = {};
+  const apis: Partial<Record<'finance' | 'manager' | 'admin' | 'sales', APIRequestContext>> = {};
   let tw01: number;
   let customer: { id: number; code: string; name: string };
   let fund: { id: number; code: string; name: string };
-  let originalFlow: Flow | undefined;
-  let flowTouched = false;
+  const originalFlows = new Map<string, Flow | undefined>();
+  const touchedFlows = new Set<string>();
   let postedReceipt: SavedReceipt | undefined;
   let consoleErrors: string[];
   let serverErrors: string[];
@@ -75,7 +76,8 @@ test.describe('真實 API 銷售收款（SQL 讀回雙斷言）', () => {
   test.beforeAll(async () => {
     test.setTimeout(300_000); // realApiLogin may wait out the login rate-limit window
     tw01 = companyId('TW01');
-    for (const [user, password] of [['finance', 'Demo@2026'], ['manager', 'Demo@2026'], ['admin', 'az5911']] as const) {
+    for (const [user, password] of [['finance', 'Demo@2026'], ['manager', 'Demo@2026'], ['admin', 'az5911'],
+      ['sales', 'Demo@2026']] as const) {
       tokens[user] = await realApiLogin(apiUrl!, user, password);
       apis[user] = await request.newContext({ baseURL: apiUrl, extraHTTPHeaders: {
         Authorization: `Bearer ${tokens[user]!.accessToken}`, 'X-Company-Id': String(tw01) } });
@@ -95,24 +97,29 @@ test.describe('真實 API 銷售收款（SQL 讀回雙斷言）', () => {
     expect(approved?.reviewStatus, 'MD.CUSTOMER must have no active approval flow for this spec').toBe('Approved');
     customer = created;
     const flows = await json(admin.get(`${root}/sys/approval-flows?pageSize=100`));
-    originalFlow = flows.items.find((flow: Flow) => flow.documentType === DOCUMENT_TYPE);
-    if (originalFlow) originalFlow = await json(admin.get(`${root}/sys/approval-flows/${originalFlow.id}`));
+    for (const type of [DOCUMENT_TYPE, 'AR.SETTLEMENT', 'SAL.ORDER', 'SAL.DELIVERY']) {
+      const summary: Flow | undefined = flows.items.find((flow: Flow) => flow.documentType === type);
+      originalFlows.set(type, summary ? await json(admin.get(`${root}/sys/approval-flows/${summary.id}`)) : undefined);
+    }
   });
 
   test.afterAll(async () => {
     const admin = apis.admin;
     try {
-      if (admin && flowTouched) {
+      if (admin) {
+        for (const type of touchedFlows) {
         const flows = await json(admin.get(`${root}/sys/approval-flows?pageSize=100`));
-        const now: Flow | undefined = flows.items.find((flow: Flow) => flow.documentType === DOCUMENT_TYPE);
+        const now: Flow | undefined = flows.items.find((flow: Flow) => flow.documentType === type);
         if (now) {
           const current: Flow = await json(admin.get(`${root}/sys/approval-flows/${now.id}`));
+          const originalFlow = originalFlows.get(type);
           const restore = originalFlow
             ? { name: originalFlow.name, allowSelfApproval: originalFlow.allowSelfApproval, isActive: originalFlow.isActive,
                 steps: originalFlow.steps, version: current.version }
             : { name: current.name, allowSelfApproval: current.allowSelfApproval, isActive: false, steps: current.steps,
                 version: current.version };
           await json(admin.put(`${root}/sys/approval-flows/${now.id}`, { data: restore }));
+        }
         }
       }
     } finally {
@@ -121,11 +128,11 @@ test.describe('真實 API 銷售收款（SQL 讀回雙斷言）', () => {
   });
 
   /** Sets the AR.COLLECTION flow: no steps (inactive) or one step approved by `manager`, self-approval off. */
-  async function setFlow(steps: 'none' | 'manager'): Promise<void> {
+  async function setFlow(steps: 'none' | 'manager', documentType = DOCUMENT_TYPE): Promise<void> {
     const admin = apis.admin!;
-    flowTouched = true;
+    touchedFlows.add(documentType);
     const flows = await json(admin.get(`${root}/sys/approval-flows?pageSize=100`));
-    const existing: Flow | undefined = flows.items.find((flow: Flow) => flow.documentType === DOCUMENT_TYPE);
+    const existing: Flow | undefined = flows.items.find((flow: Flow) => flow.documentType === documentType);
     if (steps === 'none') {
       if (!existing?.isActive) return;
       const current: Flow = await json(admin.get(`${root}/sys/approval-flows/${existing.id}`));
@@ -136,13 +143,13 @@ test.describe('真實 API 銷售收款（SQL 讀回雙斷言）', () => {
     const users = await json(admin.get(`${root}/sys/users?pageSize=100`));
     const managerId = users.items.find((user: { username: string }) => user.username === 'manager')?.id;
     expect(managerId).toBeTruthy();
-    const input = { name: `E2E ${DOCUMENT_TYPE}`, allowSelfApproval: false,
+    const input = { name: `E2E ${documentType}`, allowSelfApproval: false,
       steps: [{ name: 'E2E 主管核准', approverType: 'User', roleId: null, userId: managerId, minAmount: null }] };
     if (existing) {
       const current: Flow = await json(admin.get(`${root}/sys/approval-flows/${existing.id}`));
       await json(admin.put(`${root}/sys/approval-flows/${existing.id}`, { data: { ...input, isActive: true, version: current.version } }));
     } else {
-      await json(admin.post(`${root}/sys/approval-flows`, { data: { ...input, documentType: DOCUMENT_TYPE } }), 201);
+      await json(admin.post(`${root}/sys/approval-flows`, { data: { ...input, documentType } }), 201);
     }
   }
 
@@ -296,5 +303,96 @@ test.describe('真實 API 銷售收款（SQL 讀回雙斷言）', () => {
     await capture(page, 'settlement-no-open-light-zh-Hant');
     await page.getByTestId('erp-select-cancel').click();
     await expect(page.getByTestId('fi-settle-form-no-lines')).toBeVisible();
+  });
+
+  test('FI-COLL-REAL-005 SD invoice becomes a real AR source; final SYS approval reduces both balances', async ({ page }) => {
+    expect(postedReceipt, 'FI-COLL-REAL-002 must post the receipt first').toBeDefined();
+    const receipt = postedReceipt!;
+    const admin = apis.admin!;
+    const sales = apis.sales!;
+    for (const type of ['SAL.ORDER', 'SAL.DELIVERY']) await setFlow('none', type);
+    await setFlow('manager', 'AR.SETTLEMENT');
+
+    // Arrange through published module APIs. FI must never be given an ad-hoc receivable row.
+    const uom = await json(admin.post(`${root}/md/uoms`, { data: { code: `E2ESU${run}`, name: `E2E 核銷單位 ${run}`,
+      decimalPlaces: 0 } }), 201);
+    const item = await json(admin.post(`${root}/md/items`, { data: { code: `E2ESI${run}`, name: `E2E 核銷品項 ${run}`,
+      specification: null, baseUomId: uom.id, brandId: null, categoryId: null } }), 201);
+    const warehouse = await json(admin.post(`${root}/md/warehouses`, { data: { code: `E2ESW${run}`,
+      name: `E2E 核銷倉 ${run}`, address: null, contactName: null, phone: null } }), 201);
+    const tax = await json(admin.post(`${root}/md/tax-codes`, { data: { code: `E2EST${run}`, name: `E2E 核銷銷項稅 ${run}`,
+      taxType: 'Output' } }), 201);
+    const rate = await json(admin.post(`${root}/md/tax-codes/${tax.id}/rates`, { data: {
+      effectiveFrom: '2020-01-01', effectiveTo: null, ratePercent: 5 } }), 201);
+    await json(admin.post(`${root}/ar/credit-limits`, { data: { customerId: customer.id,
+      effectiveFrom: '2020-01-01', effectiveTo: '2099-12-31', amount: 1_000_000 } }), 201);
+    await json(admin.post(`${root}/inv/opening-stocks`, { data: { requestKey: randomUUID(), openingDate: today(),
+      remark: `E2E 核銷期初 ${run}`, lines: [{ lineNo: 1, itemId: item.id, warehouseId: warehouse.id,
+        locationId: null, quantity: 5, unitCost: 50 }] } }), 201);
+    const order = await json(sales.post(`${root}/sal/orders`, { data: { customerId: customer.id,
+      businessDate: today(), currencyCode: 'TWD', remark: null, lines: [{ lineNo: 1, itemId: item.id,
+        quantity: 5, unitPrice: 100, discountRate: 0, taxRateId: rate.id,
+        overrideReason: `E2E 核銷手動定價 ${run}` }] } }), 201);
+    const orderDecision = await json(sales.post(`${root}/sal/orders/${order.id}/submit`, { data: { version: order.version } }));
+    expect(orderDecision.order.status).toBe('Approved');
+    const delivery = await json(sales.post(`${root}/sal/deliveries`, { data: { orderId: order.id,
+      businessDate: today(), lines: [{ lineNo: 1, orderLineId: order.lines[0].id, warehouseId: warehouse.id,
+        locationId: null, quantity: 5 }] } }), 201);
+    const delivered = await json(sales.post(`${root}/sal/deliveries/${delivery.id}/submit`, {
+      data: { version: delivery.version } }));
+    expect(delivered.status).toBe('Posted');
+    const invoice = await json(sales.post(`${root}/sal/invoices`, { data: { requestKey: randomUUID(),
+      businessDate: today(), lines: [{ lineNo: 1, deliveryLineId: delivery.lines[0].id, quantity: 4 }] } }), 201);
+    expect(invoice.status).toBe('Posted');
+    const receivableId: number = invoice.fiReceivableId;
+    const open = () => sql<{ amount: string }>(`SELECT CONVERT(varchar(40), open_base_amount) AS amount
+      FROM ar_posted_receivable WHERE company_id = ${tw01} AND id = ${receivableId}`)[0]?.amount;
+    expect(open()).toBe('420.0000');
+    expect(savedPosting(tw01, receipt.id)?.unappliedAmount).toBe(receipt.amount);
+
+    await login(page);
+    await page.goto('/ar/collection-settlements/new');
+    await pick(page, 'fi-settle-receipt-pick', receipt.documentNo, receipt.id);
+    await page.getByTestId('fi-settle-add-lines').click();
+    await expect(page.getByTestId('erp-select-table')).toContainText(`#${receivableId}`);
+    await page.getByTestId(`erp-select-row-${receivableId}`).click();
+    await page.getByTestId('erp-select-confirm').click();
+    await expect(page.getByTestId(`fi-settle-form-amount-${receivableId}`)).toHaveValue('420');
+    await expect(page.getByTestId('fi-settle-form-total')).toHaveText('420');
+    await page.getByTestId('fi-settle-save').click();
+    await expect(page).toHaveURL(/\/ar\/collection-settlements$/);
+    const [draft] = sql<{ id: number; documentNo: string; status: string; amount: string }>(`SELECT TOP 1 id,
+      document_no AS documentNo, status, CONVERT(varchar(40), total_amount) AS amount
+      FROM ar_collection_settlement_doc WHERE company_id = ${tw01} AND receipt_id = ${receipt.id}
+      AND is_deleted = 0 ORDER BY id DESC`);
+    expect(draft).toMatchObject({ status: 'Draft', amount: '420.0000' });
+    expect(open(), 'saving a draft does not reduce AR').toBe('420.0000');
+    await expect(page.getByTestId('fi-settle-notice')).toContainText(draft!.documentNo);
+    await page.getByTestId(`fi-settle-submit-${draft!.id}`).click();
+    await expect(page.getByTestId('fi-settle-notice')).toContainText('已送審，等待審批；尚未減少任何應收');
+    expect(open(), 'pending approval does not reduce AR').toBe('420.0000');
+    expect(savedPosting(tw01, receipt.id)?.unappliedAmount).toBe(receipt.amount);
+
+    const [instance] = sql<{ id: number }>(`SELECT TOP 1 id FROM sys_approval_instance WHERE company_id = ${tw01}
+      AND document_type = 'AR.SETTLEMENT' AND document_id = ${draft!.id} ORDER BY id DESC`);
+    expect(instance).toBeDefined();
+    const pending = await json(apis.manager!.get(`${root}/sys/approvals/${instance!.id}`));
+    const approved = await json(apis.manager!.post(`${root}/sys/approvals/${instance!.id}/approve`, {
+      data: { comment: 'E2E 核准核銷', version: pending.version } }));
+    expect(approved.status).toBe('Approved');
+    await page.getByTestId('fi-settle-search').click();
+    await expect(page.getByTestId(`fi-settle-status-${draft!.id}`)).toHaveText('已過帳');
+    await page.getByTestId(`fi-settle-view-${draft!.id}`).click();
+    const [allocation] = sql<{ id: number; amount: string }>(`SELECT id,
+      CONVERT(varchar(40), amount) AS amount FROM ar_collection_allocation
+      WHERE company_id = ${tw01} AND receivable_id = ${receivableId} AND settlement_id =
+      (SELECT id FROM ar_collection_settlement WHERE company_id = ${tw01} AND source_id = ${draft!.id})`);
+    expect(allocation?.amount).toBe('420.0000');
+    await expect(page.getByTestId('fi-settle-line-open-1')).toHaveText('0');
+    const remaining = (Number(receipt.amount) - 420).toFixed(4);
+    await expect(page.getByTestId('fi-settle-detail-unapplied')).toContainText(grouped(Number(remaining)));
+    expect(open()).toBe('0.0000');
+    expect(savedPosting(tw01, receipt.id)?.unappliedAmount).toBe(remaining);
+    await capture(page, 'settlement-posted-light-zh-Hant');
   });
 });

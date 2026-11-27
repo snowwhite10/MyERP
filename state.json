@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-006a1",
+    "currentWorkUnit": "WU-FI-005c3b2",
     "lastCompletedWorkUnit": "WU-PUR-005e3",
-    "nextAction": "改做不依賴已延後 AP schema 驗證的 WU-FI-005c3b2：以 SD 已過帳發票作真實應收來源，補收款核銷真實 API E2E（建立→送審→最終核准→畫面及 SQL 餘額一致）；先讀該 backlog 行與既有 real-api-finance-collection.spec.ts，再寫失敗情境。不要單獨補驗 FI-006a1／006a、PUR-005e4／005f3c2；FI 收尾或人手指定才跑守衛補驗。",
+    "nextAction": "改做不依賴延後核銷 E2E／AP schema 驗證的 WU-FI-007a：先讀該 backlog 行、BR-FI-051～058 與 007d 情境，把其他收款 SQL 來源／類別快照工作拆成單輪可完成切片，先寫失敗測試後實作。不得單獨補驗 FI-005c3b2／006a1／006a 或 PUR 延後項；FI 收尾或人手指定才依規則跑守衛補驗。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -55,6 +55,17 @@
         "WU-P0-E2E-FLAKE-MENU"
     ],
     "deferredVerifications": [
+        {
+            "workUnit": "WU-FI-005c3b2",
+            "reason": "2026-11-27 唯一記憶體守衛 DEFER：1.944／1.891／1.881 GiB，低於 2.5 GiB。FI-COLL-REAL-005 已寫並通過定向 TypeScript 編譯；真實 API／SQL 和畫面截圖未執行。",
+            "commands": [
+                "& ./tools/scripts/Invoke-RealApiE2E.ps1 -Specs specs/real-api-finance-collection.spec.ts",
+                "& ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npm run typecheck"
+            ],
+            "remaining": "FI 模組收尾或人手指定時先跑一次記憶體守衛；PASS 後實跑 FI-COLL-REAL-001～005、確認核銷發票來源與 Draft／Pending／Posted 畫面及 SQL 餘額、檢視截圖並修復；全域 E2E typecheck 的四個既有錯誤另列範圍處理。此項不得單獨選為下一輪工作單元。",
+            "branch": "main",
+            "deferredAt": "2026-11-27T14:50:32+08:00"
+        },
         {
             "workUnit": "WU-FI-006a1",
             "reason": "2026-11-27 唯一記憶體守衛 DEFER：0.904／0.795／0.876 GiB，低於 2.5 GiB。付款 Draft schema 與 migration 已產生，架構測試先紅後綠 1/1；真實 SQL 未執行。",
@@ -119,5 +130,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-27T14:36:13+08:00",
-    "updatedAt": "2026-11-27T14:43:04+08:00"
+    "updatedAt": "2026-11-27T14:50:32+08:00"
 }

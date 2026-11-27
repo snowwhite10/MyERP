@@ -2535,12 +2535,15 @@ Spec: `tests/e2e/specs/real-api-finance-collection.spec.ts` (R = Playwright agai
 | FI-COLL-REAL-002 | Normal (zero-step posting) | No active AR.COLLECTION flow: Submit → "已核准並過帳：未核銷款 n TWD", "尚未核銷任何發票", 已過帳, unapplied = amount; SQL: Posted, `ar_collection_receipt` amount = unapplied, journal Dr 1102 / Cr seeded unapplied-cash account; detail journal link = SQL journal ID | R | Pass |
 | FI-COLL-REAL-003 | State (SYS approval) | One-step flow (manager, no self-approval): Submit → "已送審，等待審批；尚未過帳", 審批中, unapplied —; SQL Pending and no AR row; manager approves via SYS API → list re-read shows 已過帳 and unapplied = amount, SQL Posted | R | Pass |
 | FI-COLL-REAL-004 | Empty (screen = data) | Settlement form: pick the posted receipt by number → customer and unapplied shown; SQL has no open receivable for the fresh customer and the receivable picker shows 暫無資料 with Confirm disabled; cancel keeps "no lines" | R | Pass |
+| FI-COLL-REAL-005 | Normal, state, relation, data | Via MD, INV and SD APIs create an Approved customer, stock, Approved order, Posted delivery and Posted invoice. Verify FI has one open AR source. On screen allocate a Posted collection to that AR, save Draft, submit to a one-step SYS flow, then manager approves. Draft and Pending leave both balances unchanged; Posted reduces AR to zero and collection unapplied by exactly 420. Screen notice, state and detail must agree with SQL document, allocation and balances. | R | DEFER: memory gate 2026-11-27; test authored, real API not run |
 
 Not applicable / covered elsewhere:
 
 - Settling a real posted receivable (AR open and unapplied both reduced): WU-FI-005c3b2, waits for an AR source (SD-007a); ADR-136.
 - Validation, 409, 422, 5xx, network loss and three languages / dark mode: E (mocked) FI-COLL-UI-101～106 and FI-SETL-UI-*; real 5xx cannot be produced on demand.
 - Permission: AR.COLLECTION permissions are covered by FI-COLL-HTTP-*; files and batch results do not apply.
+- FI-COLL-REAL-005 boundary: one line of 420.0000 is below the collection balance; exact four-place arithmetic is checked in SQL. Max 1000 lines and date limits are covered by FI-SETL-UI-U05 and FI-AR-COLL integration tests.
+- FI-COLL-REAL-005 conflict, cross-company, invalid state, 400/409/422/500 and network: FI-COLL-SHTTP, FI-SETL-UI-007/008/009/014/016/018 and FI-SETL-UI-102/105 cover those paths. The real API spec covers the committed state transition and same-company link. A settlement is atomic; partial/all-skipped batch results do not apply (BR-FI-040). No file is involved.
 
 Traceability: REQ_F4116.1.13／1.14, REQ_F4116.5.11 → ADR-129／135／136 → `SalesCollectionsController`, `CollectionReceiptPage`, `CollectionSettlementForm` → FI-COLL-REAL-001～004.
 
