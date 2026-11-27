@@ -22,7 +22,15 @@ public sealed class PurchaseInvoiceSourceStorageTests
         receiptLine.GetTableName().Should().Be("pur_purchase_receipt_line");
         line.FindProperty(nameof(PurchaseOrderSourceLine.UnitPrice)).Should().NotBeNull();
         line.FindProperty(nameof(PurchaseOrderSourceLine.TaxRatePercent)).Should().NotBeNull();
-        line.GetForeignKeys().Should().ContainSingle();
+        line.GetForeignKeys().Should().HaveCount(2);
+        line.GetForeignKeys().Should().ContainSingle(fk =>
+            fk.PrincipalEntityType.ClrType == typeof(PurchaseOrderSource) &&
+            fk.Properties.Count == 2 && fk.Properties[0].Name == "CompanyId" &&
+            fk.Properties[1].Name == "PurchaseOrderId");
+        line.GetForeignKeys().Should().ContainSingle(fk =>
+            fk.PrincipalEntityType.ClrType == typeof(RequisitionLine) &&
+            fk.Properties.Count == 2 && fk.Properties[0].Name == "CompanyId" &&
+            fk.Properties[1].Name == "RequisitionLineId");
         receiptLine.GetForeignKeys().Should().HaveCount(2);
     }
 }

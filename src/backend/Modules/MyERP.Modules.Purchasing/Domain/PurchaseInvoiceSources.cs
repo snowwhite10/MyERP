@@ -14,6 +14,8 @@ public sealed class PurchaseOrderSource : BusinessEntity, ISoftDeletable
     public decimal? BaseNet { get; set; }
     public decimal? BaseTax { get; set; }
     public decimal? BaseGross { get; set; }
+    public string? Remark { get; set; }
+    public bool RequisitionConsumptionActive { get; set; }
     public long SupplierId { get; set; }
     public required string Currency { get; set; }
     /// <summary>Company base currency captured with the order rate (BR-PUR-043b); null only for pre-006a source rows.</summary>
@@ -33,6 +35,9 @@ public sealed class PurchaseOrderSourceLine : BusinessEntity
     public decimal? BaseNet { get; set; }
     public decimal? BaseTax { get; set; }
     public decimal? BaseGross { get; set; }
+    public decimal? OriginalNet { get; set; }
+    public decimal? OriginalTax { get; set; }
+    public decimal? OriginalGross { get; set; }
     public long PurchaseOrderId { get; set; }
     public int LineNo { get; set; }
     public long MaterialId { get; set; }

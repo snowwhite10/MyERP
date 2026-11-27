@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005f3d",
+    "currentWorkUnit":  "WU-PUR-006a",
     "lastCompletedWorkUnit":  "WU-PUR-005f3d",
-    "nextAction":  "WU-PUR-005f3d DONE（CONVERT 畫面、三語亮暗、真實 SQL 1/1、前端 1336/1336、模擬 E2E 17/17、後端 Debug 全量 4179/4179）。下一輪按 backlog 週次 1 次序 4 重試 WU-PUR-006a：原 SQL 服務阻礙已解除、005e4 已驗收；先讀 blocked.md 的 006a 記錄與 PUR-PO-001～024，按 90 分鐘邊界拆人工採購單草稿 migration／建立／編輯／唯讀 API，先測試再實作，必要時先交可編譯切片。不得與後端全量並行跑定向整合測試。 全量模擬 Playwright 711 通過／54 略過／1 失敗是既有 WU-P0-E2E-FLAKE-MENU（FI-COLL-UI-101 主題下拉未關，定向重跑 1/1 通過），已記 blocked.md；勿在 006a 跨單元修改選單。",
+    "nextAction":  "續做 WU-PUR-006a，仍為進行中而非 DONE。已交 ADR-213／Purchasing_OrderDraftFoundation schema（正式 myerp 已套用）、真實 SQL 1/1、後端全量 4180/4180、帶 DB DocGen 0 Error；請購已轉量沿用 ordered_quantity，草稿不可改它。下一輪先按 PUR-PO-001～024 寫人工 CREATE 真實 SQL／受權 HTTP 紅燈，再接 MD 公開契約重驗供應商、物料、幣別、匯率、進項稅與請購來源，Serializable 交易內 SYS 發號並保存完整原幣／本位幣行及表頭；之後 EDIT（版本、狀態、決標行不可變）與 VIEW／EDIT 詳情和資料範圍。補雙連線、失敗回滾及帶資料 migration Down／Up；按 90 分鐘邊界可再交編譯與全量通過切片。006b 才在 SUBMIT／拒絕／取消更新 ordered_quantity 與消耗旗標。勿與後端全量並行跑定向整合測試；勿跨單元修改既有 WU-P0-E2E-FLAKE-MENU。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  221,
-                       "ADR":  212,
+                       "ADR":  213,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -34,7 +34,7 @@
                              "WU-P0-015":  3,
                              "WU-PUR-005e3":  3,
                              "WU-PUR-005e4":  0,
-                             "WU-PUR-006a":  3,
+                             "WU-PUR-006a":  0,
                              "WU-P0-016":  3,
                              "WU-SD-002a":  3,
                              "WU-FI-001a":  3,
@@ -45,7 +45,6 @@
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
-                             "WU-PUR-006a",
                              "WU-SD-001",
                              "WU-P0-016",
                              "WU-P0-E2E-FLAKE-MENU"
@@ -114,5 +113,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T03:07:18+08:00",
-    "updatedAt":  "2026-11-28T03:07:18+08:00"
+    "updatedAt":  "2026-11-28T03:30:50+08:00"
 }

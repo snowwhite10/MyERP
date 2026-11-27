@@ -8637,6 +8637,15 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("owner_id");
 
+                    b.Property<string>("Remark")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("remark");
+
+                    b.Property<bool>("RequisitionConsumptionActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("requisition_consumption_active");
+
                     b.Property<long?>("RfqId")
                         .HasColumnType("bigint")
                         .HasColumnName("rfq_id");
@@ -8679,11 +8688,16 @@ namespace MyERP.Migrations.Migrations
                     b.HasIndex("CompanyId", "RfqId")
                         .HasDatabaseName("ix_pur_purchase_order_company_id_rfq_id");
 
+                    b.HasIndex("CompanyId", "Status", "BusinessDate", "Id")
+                        .HasDatabaseName("ix_pur_purchase_order_company_id_status_business_date_id");
+
                     b.HasIndex("CompanyId", "SupplierId", "Status", "Id")
                         .HasDatabaseName("ix_pur_purchase_order_company_id_supplier_id_status_id");
 
                     b.ToTable("pur_purchase_order", null, t =>
                         {
+                            t.HasCheckConstraint("ck_pur_order_consumption_state", "[requisition_consumption_active] = 0 OR ([is_deleted] = 0 AND [status] IN ('PendingApproval','Approved'))");
+
                             t.HasCheckConstraint("ck_pur_order_conversion_amount", "([base_net] IS NULL AND [base_tax] IS NULL AND [base_gross] IS NULL) OR ([base_net] >= 0 AND [base_tax] >= 0 AND [base_gross] = [base_net] + [base_tax])");
 
                             t.HasCheckConstraint("ck_pur_order_rate_snapshot", "([base_currency_code] IS NULL AND [exchange_rate] IS NULL) OR ([base_currency_code] IS NOT NULL AND [exchange_rate] IS NOT NULL AND [exchange_rate] > 0 AND ([currency] <> [base_currency_code] OR [exchange_rate] = 1))");
@@ -8742,6 +8756,21 @@ namespace MyERP.Migrations.Migrations
                     b.Property<long>("MaterialId")
                         .HasColumnType("bigint")
                         .HasColumnName("material_id");
+
+                    b.Property<decimal?>("OriginalGross")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("original_gross");
+
+                    b.Property<decimal?>("OriginalNet")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("original_net");
+
+                    b.Property<decimal?>("OriginalTax")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("original_tax");
 
                     b.Property<long>("PurchaseOrderId")
                         .HasColumnType("bigint")
@@ -8805,6 +8834,8 @@ namespace MyERP.Migrations.Migrations
                     b.ToTable("pur_purchase_order_line", null, t =>
                         {
                             t.HasCheckConstraint("ck_pur_order_line_conversion_amount", "([base_net] IS NULL AND [base_tax] IS NULL AND [base_gross] IS NULL) OR ([base_net] >= 0 AND [base_tax] >= 0 AND [base_gross] = [base_net] + [base_tax])");
+
+                            t.HasCheckConstraint("ck_pur_order_line_original_amount", "([original_net] IS NULL AND [original_tax] IS NULL AND [original_gross] IS NULL) OR ([original_net] >= 0 AND [original_tax] >= 0 AND [original_gross] = [original_net] + [original_tax])");
 
                             t.HasCheckConstraint("ck_pur_order_line_refs", "[purchase_order_id] > 0 AND [line_no] > 0 AND [material_id] > 0");
 
@@ -14482,6 +14513,13 @@ namespace MyERP.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_pur_purchase_order_line_pur_purchase_order_company_id_purchase_order_id");
+
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.RequisitionLine", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "RequisitionLineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_pur_purchase_order_line_pur_requisition_line_company_id_requisition_line_id");
                 });
 
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseReceiptSource", b =>

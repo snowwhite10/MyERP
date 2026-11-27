@@ -81,9 +81,11 @@ INV movement 與 SYS approval 僅為保存的外部 ID；圖中不畫跨模組 F
 
 ## WU-PUR-006d 採購單與請購餘量設計（既有來源表待擴充）
 
+2026-11-28T03:25:14+08:00，WU-PUR-006a 結構切片已在既有訂單表追加可空 `remark`、`original_net/tax/gross`，非空且預設 false 的 `requisition_consumption_active`，以及請購行同公司 FK、狀態／業務日索引與原幣金額 CHECK；舊發票來源列保持可讀。消耗計數沿用 `ordered_quantity`（ADR-213）。人工交易 API 與提交／釋回尚未交付。
+
 `pur_purchase_order` 與 `pur_purchase_order_line` 已由發票來源工作單元建表，分配 REQ_DS43.186／187；005e4 須擴充這兩表並新增 `pur_order_source`，不得重建或建立第二個 EF 映射。006d 不分配新 ID，005e4 只為新來源連結分配 ID，既有兩表按變更記錄遞增版本。採購單表頭狀態已有 Draft／PendingApproval／Approved／Rejected／Cancelled，`deleted_at` 僅供未提交草稿軟刪；行待補 `requisition_line_id?`、基本單位數量與商業快照。轉單行的 `award_id` 經不可變來源連結追溯，禁止在編輯時替換或刪除。人工行沒有決標來源，可選同公司已核准請購行。
 
-請購的已轉量以同一交易維護的 `pur_requisition_line.converted_quantity` 表示，最初值為零；`remaining = requested_quantity - converted_quantity`，資料庫 CHECK 限 `0 <= converted_quantity <= quantity`。005e4 只建草稿時不增加它。提交時按請購行 ID 升冪取得更新鎖；先聚合同一請購行在本訂單的全部行，再核對餘量，逐行增加已轉量及寫 SYS 審批實例。駁回或允許的取消同交易按保存的訂單行精確扣回一次。訂單表頭保存 `requisition_consumption_active` 或等價持久旗標以防重複釋回；其狀態與請購已轉量在同一 SQL 交易中轉換。未引用請購的人工行不影響已轉量。
+請購的已轉量沿用 `pur_requisition_line.ordered_quantity`（ADR-213），最初值為零；`remaining = quantity - ordered_quantity`，資料庫 CHECK 已限 `0 <= ordered_quantity <= quantity`。005e4 只建草稿時不增加它。提交時按請購行 ID 升冪取得更新鎖；先聚合同一請購行在本訂單的全部行，再核對餘量，逐行增加已轉量及寫 SYS 審批實例。駁回或允許的取消同交易按保存的訂單行精確扣回一次。訂單表頭保存 `requisition_consumption_active` 以防重複釋回；其狀態與請購已轉量在同一 SQL 交易中轉換。未引用請購的人工行不影響已轉量。
 
 既有請購行欄位、索引與 CHECK 由後續 migration 補齊，`REQ_DS43.162` 版本屆時遞增；不新增跨模組 FK。訂單對請購行可用同公司複合 FK，對 MD／SYS 只存 ID 並走公開契約。查詢索引至少涵蓋 `(company_id,requisition_line_id)` 的訂單行、`(company_id,status,business_date,id)` 的訂單表頭；所有 FK 欄位另建索引。SQL 約束與應用服務共同守住精度、非負餘量及來源不可重用；不可變來源連結不得因取消或軟刪被移除。採購入庫關聯由 WU-PUR-007 建立，取消前須經其公開契約檢查沒有已保存入庫，不直接讀 INV 表。
 
@@ -243,8 +245,8 @@ erDiagram
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
-| REQ_DS43.186 | 1.1 | pur_purchase_order | This table stores company-scoped purchase order supplier, currency, number, totals and approval identity. | Developer | REQ_F4114.1.2, REQ_F4114.6.3, REQ_F4114.8.2 |
-| REQ_DS43.187 | 1.1 | pur_purchase_order_line | This table stores saved order line price, tax, exchange and amount snapshots used by conversion and invoice matching. | Developer | REQ_F4114.1.2, REQ_F4114.6.3, REQ_F4114.8.3 |
+| REQ_DS43.186 | 1.2 | pur_purchase_order | This table stores company-scoped purchase order supplier, currency, number, totals, remark and requisition consumption state. | Developer | REQ_F4114.1.2, REQ_F4114.6.3, REQ_F4114.8.2 |
+| REQ_DS43.187 | 1.2 | pur_purchase_order_line | This table stores order line price, tax, exchange, original and base amounts, and company-scoped requisition source. | Developer | REQ_F4114.1.2, REQ_F4114.6.3, REQ_F4114.8.3 |
 | REQ_DS43.188 | 1.0 | pur_purchase_receipt | This table stores purchase receipt order, supplier, currency and posting identity. | Developer | REQ_F4114.2.2, REQ_F4114.8.2 |
 | REQ_DS43.211 | 1.0 | pur_purchase_receipt_line | This table stores receipt line order references and committed quantity counters. | Developer | REQ_F4114.2.2, REQ_F4114.8.2 |
 
