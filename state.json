@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-008a1",
-    "lastCompletedWorkUnit": "WU-DOC-P1-MAP",
-    "nextAction": "做衝刺次序 10 的 WU-FI-008a（其他付款），它不依賴任何延後驗證：先在 backlog 仿 007a 拆為 008a1～008a4（a1＝其他付款 Draft 表頭／行 schema，含 MASTER_PROMPT 6.4 的 custom_fields＋ISJSON、公司範圍單號、MD 費用類別與資金帳戶參考、CHECK、migration、架構測試及真實 SQL 測試），本輪只做 008a1。按 008d 設計與 REQ_F4116.4.1–6；REQ_DS43 從 219 起分配。只跑一次記憶體守衛，DEFER 就提交可編譯部分並加入 deferredVerifications。不得單獨補驗 FI-007a1／006a1／006a／005c3b2 或 PUR 延後項，也不要挑依賴 007a1／006a1 SQL 驗證的 007a2／006a2；FI 收尾或人手指定才跑守衛補驗。",
+    "currentWorkUnit": "WU-FI-008a2",
+    "lastCompletedWorkUnit": "WU-FI-008a1",
+    "nextAction": "做 WU-FI-008a2（其他付款 Posted 來源與 FI 費用類別對照表 schema），它只依賴已真實 SQL 驗證的 008a1：仿 006a 的 ap_payment_source 與 PurchaseInvoiceAccountMap，新增永久來源表（company_id+source_type+source_id 唯一、含已刪除歷史的 company+bank+withdrawal reference 唯一、posting fingerprint、費用類別／費用科目快照、journal_id、不可變觸發器）及 FI 費用類別→費用科目對照表（MD 類別／科目只存純量 ID、無跨模組 FK）；先寫真實 SQL 紅燈測試，REQ_DS43 從 220 起分配。只跑一次記憶體守衛，DEFER 就提交可編譯部分並加入 deferredVerifications。不得單獨補驗 FI-007a1／006a1／006a／005c3b2 或 PUR 延後項，也不要挑依賴 007a1／006a1 SQL 驗證的 007a2／006a2；FI 收尾或人手指定才跑守衛補驗。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -25,7 +25,7 @@
         "SCM": "IN_PROGRESS"
     },
     "idCounters": {
-        "REQ_DS43": 218,
+        "REQ_DS43": 219,
         "ADR": 209,
         "nextSrsModuleNo": 17
     },
@@ -144,5 +144,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-27T18:53:47+08:00",
-    "updatedAt": "2026-11-27T18:53:47+08:00"
+    "updatedAt": "2026-11-27T19:04:59+08:00"
 }

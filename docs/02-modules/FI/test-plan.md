@@ -955,6 +955,8 @@ The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permis
 
 Traceability: REQ_F4116.4.1–6 → BR-FI-059–066 → FI-AP-OTHER-001–020. Real SQL, HTTP and UI tests remain TODO.
 
+WU-FI-008a1 Draft schema (2026-11-27T18:59:33+08:00): the architecture registration test was red first (CS0246 `OtherPaymentDocumentDbModel`) and is green 5/5 after registration. `FinanceOtherPaymentFoundationTests` ran against real SQL 9/9 after one memory gate PASS (9.869–9.878 GiB): table, indexes, six CHECK constraints, `decimal(19,4)` and zero foreign keys (FI-AP-OTHER-019 storage layer); six rejected inserts (zero amount, lowercase currency, blank payee, zero category, unknown status, invalid JSON; FI-AP-OTHER-004 storage layer); live-reference duplicate, company document-number reuse, Posted soft-delete rejection and release after Draft soft delete (FI-AP-OTHER-006/013 storage layer); and reuse of the same withdrawal reference on another bank or company with the maximum `999999999999999.9999` amount stored exactly (FI-AP-OTHER-004/006). A real `myerp` Down to `Finance_OtherCollectionDocument` with one row and Up again passed. FI-AP-OTHER statuses stay TODO until the service/API/UI slices. Deleted Posted history reuse belongs to 008a2/008a3.
+
 ## WU-FI-009d statement source scenarios (design; product tests TODO)
 
 The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories follow. U=unit, I=real SQL/authorised HTTP, E=Playwright. Each E case compares the translated screen and export with a fresh FI source read using the same cutoff. WU-FI-009a/b first write failing tests; this design unit has no executable financial product test.

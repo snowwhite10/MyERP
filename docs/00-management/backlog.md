@@ -304,7 +304,11 @@
 | WU-FI-007b | FI/AR/GL | 其他收款受權草稿／審批 API、Swagger、公司範圍與真實 SQL／HTTP 驗收 | P1 | TODO | 007a | `AR.OTHER_COLLECTION.*` 分權，SYS 最終決定同交易，讀取和提示區分收入與未核銷收款。 |
 | WU-FI-007c | FI/AR | 其他收款三語亮暗列表／表單、錯誤及 Playwright 截圖 QA | P1 | TODO | 007b | 介面 4.4.1.6.4～6；實作時分配 REQ_IO_A，畫面與保存 GL/AR 雙斷言。 |
 | WU-FI-008d | FI/AP/GL | 定義其他付款的非應付費用來源、收支類別、GL 過帳與 AP 邊界及完整情境 | P1 | DONE | 004d、006d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4116.4.1～6、BR-FI-059～066、FI-AP-OTHER-001～020；純設計，無表、端點或產品驗收。 |
-| WU-FI-008a | FI/AP/GL | 其他付款真實 SQL 紅燈、來源與費用類別快照 migration、原子 GL 過帳與冪等 | P1 | TODO | 008d、004a、SQL 服務 | 分配 REQ_DS43；雙連線來源重放、類別失效、期間和審批回滾必驗；不得改 AP 餘額。 |
+| WU-FI-008a | FI/AP/GL | 其他付款真實 SQL 紅燈、來源與費用類別快照 migration、原子 GL 過帳與冪等 | P1 | 已拆分／進行中 | 008d、004a、SQL 服務 | 仿 007a 依單輪 90 分鐘邊界拆 008a1 Draft schema、008a2 Posted 來源／費用類別快照與對照表 schema、008a3 Draft 服務、008a4 原子過帳／競態；父項不計。 |
+| WU-FI-008a1 | FI/AP | 其他付款 Draft `ap_other_payment_doc` 模型、映射與 migration；真實 SQL 驗 schema、約束及帶資料 Down／Up | P1 | DONE | 008d | 2026-11-27T18:59:33+08:00：REQ_DS43.219、custom_fields＋ISJSON、`Finance_OtherPaymentDocument` migration；架構先紅 CS0246 後綠 5/5，守衛 PASS 9.87 GiB，真實 SQL 9/9，正式 myerp 帶資料 Down／Up 通過，後端全量 4093/4093。 |
+| WU-FI-008a2 | FI/AP/GL | 其他付款 Posted 來源（永久來源鍵、含已刪除歷史的提款參考鍵、指紋、類別／費用科目快照、journal）與 FI 費用類別對照表 schema；真實 SQL 先紅 | P1 | TODO | 008a1 | 仿 006a Posted 來源表與 PurchaseInvoiceAccountMap；不可變觸發器；不得連 AP 應付或付款分配。 |
+| WU-FI-008a3 | FI/AP | 其他付款 Draft 建立／修改／軟刪除服務、MD 費用類別／資金帳戶公開契約核對、提款參考衝突；真實 SQL 先紅 | P1 | TODO | 008a2 | 依 006a2／005b1 模式；不得建立 AP 或改應付餘額。 |
+| WU-FI-008a4 | FI/AP/GL | 原子 GL 過帳（費用借／銀行貸）、來源重放 changed=false、期間鎖、雙連線競態及類別失效／期間／審批回滾 | P1 | TODO | 008a3、SQL 服務 | 完成後結清 008a 父項。 |
 | WU-FI-008b | FI/AP/GL | 其他付款受權草稿／審批 API、Swagger、公司範圍與真實 SQL／HTTP 驗收 | P1 | TODO | 008a | `AP.OTHER_PAYMENT.*` 分權，SYS 最終決定同交易，讀取和提示區分費用與未核銷付款。 |
 | WU-FI-008c | FI/AP | 其他付款三語亮暗列表／表單、錯誤及 Playwright 截圖 QA | P1 | TODO | 008b | 介面 4.4.1.6.10～12；實作時分配 REQ_IO_A，畫面與保存 GL/AP 雙斷言。 |
 | WU-FI-009d | FI/AR/AP | 定義客戶／供應商對帳單的 FI 已過帳來源、截止日餘額、BI 公開契約與完整情境 | P1 | DONE | 002d、003d、005d、006d 設計基線 | REQ_F4116.11.1～3、BR-FI-067～074、FI-STMT-001～020；純設計，BlueWhale 報表 REQ_F4117.5.4～5 與介面 7.20～21 仍屬 BI。 |

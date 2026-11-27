@@ -222,7 +222,7 @@ This slice specifies BlueWhale Accounting 6.4 Other Payment: a payment for an al
 | REQ_F4116.4.5 | 1.0 | System should allow user to reject other payments. | Developer | Authorised Pending rejection saves reason and workflow history without GL, bank or AP posting. |
 | REQ_F4116.4.6 | 1.0 | System should allow user to delete other payment records. | Developer | Only unposted Draft/Rejected may be soft deleted. Posted source key, journal and audit remain permanent; correction needs a separately specified compensating source. |
 
-Acceptance is planned for WU-FI-008a/b/c. The base-currency slice excludes supplier advance, purchase-invoice settlement, prepaid-asset recognition, FX, refund, bank reconciliation, batch import and posted reversal. See BR-FI-059–066 and FI-AP-OTHER-001–020.
+Acceptance is planned for WU-FI-008a/b/c. WU-FI-008a1 delivered the REQ_F4116.4.2 Draft schema (REQ_DS43.219) with real SQL storage-layer checks 9/9; create/edit/delete services, posting, API and UI are not yet accepted. The base-currency slice excludes supplier advance, purchase-invoice settlement, prepaid-asset recognition, FX, refund, bank reconciliation, batch import and posted reversal. See BR-FI-059–066 and FI-AP-OTHER-001–020.
 
 Change record: 2026-10-24T17:07:19+08:00 WU-FI-008d defines the 6.4 baseline without allocating table/interface IDs or claiming product verification.
 

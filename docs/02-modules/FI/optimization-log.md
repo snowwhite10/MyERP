@@ -971,3 +971,8 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 
 - **Finding:** The previous round's uncommitted draft model omitted the document-header `custom_fields NVARCHAR(MAX)` + ISJSON check required by MASTER_PROMPT 6.4 (the sibling `ap_purchase_payment_doc` has it). Added the property/check, discarded the unverified migration and regenerated `Finance_OtherCollectionDocument`; added the repository CA1861 suppression for EF-generated arrays. Build 0 warnings/0 errors; architecture 1/1.
 - **Boundary:** The filtered live-reference index does not protect against reuse of a reference held by deleted Posted history; that check belongs to the 007a2 transaction service with the permanent source key. SQL constraints, rollback and Down/Up are unverified (memory gate DEFER).
+
+# WU-FI-008a1 review (2026-11-27T18:59:33+08:00)
+
+- **Finding:** Mirrored the reviewed 007a1 shape, so the `custom_fields` + ISJSON check and the CA1861 migration suppression were included from the start; the generated migration only creates `ap_other_payment_doc` (no drift in other tables). Added a reuse test the 007a1 sibling lacked: the same withdrawal reference on another bank or company is accepted and the maximum `decimal(19,4)` amount round-trips exactly.
+- **Boundary:** The descriptive supplier ID from the 008d design is intentionally not stored; payee is free text so the table cannot be mistaken for an AP payable or allocation source. The filtered live-reference index does not cover deleted Posted history; 008a2/008a3 must enforce that with the permanent source key under ordered locks.

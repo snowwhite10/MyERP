@@ -152,6 +152,8 @@ SYS owns final approve/reject routes; the final callback requires `AR.OTHER_COLL
 
 ## WU-FI-008d planned other payment API
 
+WU-FI-008a1 adds only the Draft persistence model `ap_other_payment_doc` (no endpoint or contract).
+
 No endpoint or C# interface is implemented here. Proposed FI Contracts operation `ApproveOtherPaymentAsync(savedPaymentId, version, fingerprint, transaction)` is callable only from SYS final approval in the caller transaction. It re-reads the saved FI document, validates MD category/bank and FI mapping, then calls `IGlPostingService`. `FindCommittedOtherPaymentAsync(companyId, paymentId)` resolves an unknown timeout by permanent source key in a fresh transaction. The result contains payment/source/journal IDs, company, category/bank/reference/date, base amount, saved version/fingerprint and `changed`, with no AP allocation or payable delta.
 
 | Method | Proposed route | Permission | Purpose |
