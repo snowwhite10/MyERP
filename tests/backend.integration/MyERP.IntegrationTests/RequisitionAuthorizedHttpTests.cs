@@ -187,6 +187,127 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
     }
 
     [Fact]
+    public async Task QuotationContextHidesRetiredChoicesAndOtherCompanyRfqs()
+    {
+        // PUR-QUOTE-CTX-002～005：停用／軟刪幣別、稅別與稅率不可選；空選項 200；他公司詢價 404。
+        long company, emptyCompany;
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var organizations = scope.ServiceProvider.GetRequiredService<OrganizationService>();
+            company = (await organizations.CreateCompanyAsync("P" + Guid.NewGuid().ToString("N")[..12],
+                "Quote choices", Ct)).Id;
+            emptyCompany = (await organizations.CreateCompanyAsync("P" + Guid.NewGuid().ToString("N")[..12],
+                "Quote empty", Ct)).Id;
+        }
+        using var http = factory.CreateClient();
+        var (userId, token) = await CreateUserAsync(http);
+        long draftId, closedId;
+        var fixedCompany = new FixedCompany(company);
+        var stamp = new AuditStamper(new FixedClock(new DateTime(2026, 10, 21)),
+            new FixedUser(userId), fixedCompany);
+        await using (var db = new MyErpDbContext(new DbContextOptionsBuilder<MyErpDbContext>()
+            .UseMyErpSqlServer(database.ConnectionString)
+            .AddInterceptors(new AuditSaveChangesInterceptor(stamp)).Options,
+            [new RfqDbModel(), new CurrencyDbModel(), new TaxDbModel()], fixedCompany))
+        {
+            var deletedCurrency = new Currency { CompanyId = company, Code = "EUR", Name = "Euro",
+                IsDeleted = true };
+            var inputCode = new TaxCode { CompanyId = company, Code = "IN", Name = "Input", TaxType = "Input" };
+            var bothCode = new TaxCode { CompanyId = company, Code = "BOTH", Name = "Both" };
+            var inactiveCode = new TaxCode { CompanyId = company, Code = "OFF", Name = "Off",
+                TaxType = "Input", IsActive = false };
+            var deletedCode = new TaxCode { CompanyId = company, Code = "GONE", Name = "Gone",
+                TaxType = "Input", IsDeleted = true };
+            db.AddRange(new Currency { CompanyId = company, Code = "JPY", Name = "Yen" },
+                deletedCurrency, inputCode, bothCode, inactiveCode, deletedCode);
+            await db.SaveChangesAsync(Ct);
+            var from = new DateOnly(2028, 1, 1);
+            db.AddRange(
+                new TaxRate { CompanyId = company, TaxCodeId = inputCode.Id, EffectiveFrom = from, RatePercent = 5m },
+                new TaxRate { CompanyId = company, TaxCodeId = inputCode.Id, EffectiveFrom = from, RatePercent = 6m,
+                    IsDeleted = true },
+                new TaxRate { CompanyId = company, TaxCodeId = inputCode.Id,
+                    EffectiveFrom = new DateOnly(2028, 3, 1), RatePercent = 7m },
+                new TaxRate { CompanyId = company, TaxCodeId = bothCode.Id, EffectiveFrom = from, RatePercent = 0m },
+                new TaxRate { CompanyId = company, TaxCodeId = inactiveCode.Id, EffectiveFrom = from, RatePercent = 8m },
+                new TaxRate { CompanyId = company, TaxCodeId = deletedCode.Id, EffectiveFrom = from, RatePercent = 9m });
+            Rfq NewRfq(string suffix, RfqStatus status)
+            {
+                var rfq = new Rfq { CompanyId = company, DocumentNo = $"Q-CH-{company}-{suffix}",
+                    BusinessDate = new DateOnly(2028, 2, 29), ReplyDeadline = new DateOnly(2028, 3, 1),
+                    OwnerId = userId, Status = status,
+                    SentAt = status == RfqStatus.Draft ? null : new DateTime(2026, 10, 21) };
+                rfq.Lines.Add(new RfqLine { CompanyId = company, LineNo = 1, ItemId = 11,
+                    RequiredDate = new DateOnly(2028, 3, 2), Quantity = 2m });
+                return rfq;
+            }
+            var draft = NewRfq("D", RfqStatus.Draft);
+            var closed = NewRfq("C", RfqStatus.Closed);
+            db.AddRange(draft, closed);
+            await db.SaveChangesAsync(Ct);
+            (draftId, closedId) = (draft.Id, closed.Id);
+        }
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
+            foreach (var target in new[] { company, emptyCompany })
+            {
+                var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                    "Quote company", null, DataScope.Company, false,
+                    [PurchasingPermissions.QuotationQuote]), Ct)).Id;
+                await roles.AssignAsync(userId, target,
+                    new UserCompanyAssignment(null, null, false, true, [role]), Ct);
+            }
+        }
+        var draftResponse = await SendAsync(http,
+            $"/api/v1/pur/rfqs/{draftId}/quotation-context?quoteDate=2028-02-29", token, company);
+        Assert.Equal(HttpStatusCode.OK, draftResponse.StatusCode);
+        var body = await draftResponse.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal("Draft", body.GetProperty("rfq").GetProperty("status").GetString());
+        Assert.Equal(["JPY"], body.GetProperty("currencies").EnumerateArray()
+            .Select(x => x.GetProperty("code").GetString()));
+        Assert.Equal([("BOTH", 0m), ("IN", 5m)], body.GetProperty("taxRates").EnumerateArray()
+            .Select(x => (x.GetProperty("code").GetString(), x.GetProperty("ratePercent").GetDecimal())));
+        var closedResponse = await SendAsync(http,
+            $"/api/v1/pur/rfqs/{closedId}/quotation-context?quoteDate=2028-03-01", token, company);
+        Assert.Equal(HttpStatusCode.OK, closedResponse.StatusCode);
+        var closedBody = await closedResponse.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal("Closed", closedBody.GetProperty("rfq").GetProperty("status").GetString());
+        Assert.Equal([("BOTH", 0m), ("IN", 5m), ("IN", 7m)], closedBody.GetProperty("taxRates").EnumerateArray()
+            .Select(x => (x.GetProperty("code").GetString(), x.GetProperty("ratePercent").GetDecimal())));
+        // 他公司：可讀自己的詢價但選項為空陣列；不可經他公司標頭讀到本公司詢價或選項。
+        long emptyRfqId;
+        var emptyFixed = new FixedCompany(emptyCompany);
+        await using (var db = new MyErpDbContext(new DbContextOptionsBuilder<MyErpDbContext>()
+            .UseMyErpSqlServer(database.ConnectionString)
+            .AddInterceptors(new AuditSaveChangesInterceptor(new AuditStamper(
+                new FixedClock(new DateTime(2026, 10, 21)), new FixedUser(userId), emptyFixed))).Options,
+            [new RfqDbModel()], emptyFixed))
+        {
+            var rfq = new Rfq { CompanyId = emptyCompany, DocumentNo = $"Q-CH-{emptyCompany}-E",
+                BusinessDate = new DateOnly(2028, 2, 29), ReplyDeadline = new DateOnly(2028, 3, 1),
+                OwnerId = userId, Status = RfqStatus.Sent, SentAt = new DateTime(2026, 10, 21) };
+            rfq.Lines.Add(new RfqLine { CompanyId = emptyCompany, LineNo = 1, ItemId = 11,
+                RequiredDate = new DateOnly(2028, 3, 2), Quantity = 1m });
+            db.Add(rfq);
+            await db.SaveChangesAsync(Ct);
+            emptyRfqId = rfq.Id;
+        }
+        var emptyResponse = await SendAsync(http,
+            $"/api/v1/pur/rfqs/{emptyRfqId}/quotation-context?quoteDate=2028-02-29", token, emptyCompany);
+        Assert.Equal(HttpStatusCode.OK, emptyResponse.StatusCode);
+        var emptyBody = await emptyResponse.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(0, emptyBody.GetProperty("currencies").GetArrayLength());
+        Assert.Equal(0, emptyBody.GetProperty("taxRates").GetArrayLength());
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(http,
+            $"/api/v1/pur/rfqs/{draftId}/quotation-context?quoteDate=2028-02-29", token, emptyCompany)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(http,
+            $"/api/v1/pur/rfqs/{emptyRfqId}/quotation-context?quoteDate=2028-02-29", token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(http,
+            $"/api/v1/pur/rfqs/{draftId}/quotation-context?quoteDate=0001-01-01", token, company)).StatusCode);
+    }
+
+    [Fact]
     public async Task QuotationReadEndpointsRequireOwnPermissionAndReturnSavedHistory()
     {
         long company;

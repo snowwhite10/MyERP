@@ -1085,3 +1085,12 @@ SQL 守衛 DEFER；沒有執行真實 SQL Up／Down、交易、HTTP 或競態驗
 # WU-PUR-005e4 設計與模型衝突（2026-11-27T09:38:13+08:00）
 
 舊設計要求新建三張表，實作時發現 `PurchaseOrderSource` 已存在，編譯報 CS0101。查核 `PurchaseInvoiceSourceDbModel`、正式資料結構清單與發票流程後，確認 `pur_purchase_order`／`pur_purchase_order_line` 已由 008a 建立並供三單比對、FI 過帳使用。已撤回重複實體與映射，更新 005e4／006d 設計為擴充既有兩表、只新增不可重用決標來源連結；新增 PUR-RFQ-069 防止升降級破壞既有發票來源。修後 Debug 全解決方案建置 0 警告／錯誤，DocGen 22/22。尚未實作 migration 或 CONVERT 端點。
+
+# WU-PUR-005f3e BLOCKED 重試（2026-11-28T01:31:28+08:00）
+
+- 記憶體守衛 16.27／16.25／16.27 GiB PASS；SQL 服務正常。既有 `QuotationContextRequiresQuoteOnlyAndHidesOutOfScopeRfqs` 首次真實執行 1/1 通過。
+- 新增真實 SQL `RfqQueryTests.QuoteContextFollowsQuoteScopeAndHidesOtherCompanies`：QUOTE 的本人／部門／分店／公司範圍逐一核對草稿、已關閉、已送出詢價；只有 RFQ.VIEW 時 403；他公司即使全權限也 404。
+- 新增真實 HTTP `QuotationContextHidesRetiredChoicesAndOtherCompanyRfqs`：軟刪幣別、停用／軟刪稅別、軟刪及未生效稅率不列入；`Both` 稅別列入；沒有主資料的公司回 200 與兩個空陣列；雙向跨公司 404。
+- **問題**：`quoteDate=0001-01-01` 回 200。**原因**：`quoteDate == default` 中 `default` 推斷為 `DateOnly?` 的 null，條件 `null && HasValue` 恆為假。**修改**：改比較已提供值是否為 `DateOnly.MinValue`。**效果**：新測試先紅（200）後綠（400）；全 repo 搜尋無同類寫法。
+- 首跑兩個新測試失敗於 `ck_pur_rfq_sent`（非草稿必須有 SentAt）— 是測試夾具錯誤，補 SentAt 後通過，未改約束。
+- 新增模擬 E2E `PUR-QUOTE-CTX-005`：0 筆選項只剩預設選項，保存只顯示欄位錯誤、0 個寫入請求、無成功訊息。亮暗截圖審查：版面與對比正常；但用戶看不到「為何沒有選項」，拆成 WU-PUR-005f3e2。

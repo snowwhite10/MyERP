@@ -39,7 +39,8 @@ public sealed class RfqsController(RfqQueryService queries, RfqDraftService draf
         CancellationToken token)
     {
         var rfq = await queries.GetForQuoteAsync(id, token);
-        if (quoteDate == default && quoteDate.HasValue)
+        // default(DateOnly?) 是 null，必須比較已提供的值本身，才會拒絕 0001-01-01。
+        if (quoteDate is { } requested && requested == DateOnly.MinValue)
             throw new MyERP.Shared.Errors.RequestValidationException("quoteDate", "Quote date is required.");
         var options = await quotationOptions.GetAsync(quoteDate ?? DateOnly.FromDateTime(clock.LocalNow), token);
         return new QuotationContext(new QuotationRfqContext(rfq.Id, rfq.Status.ToString(),

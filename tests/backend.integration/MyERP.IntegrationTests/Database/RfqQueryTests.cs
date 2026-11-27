@@ -134,6 +134,65 @@ public sealed class RfqQueryTests(TestDatabase database)
         await Assert.ThrowsAsync<NotFoundException>(() => otherQuery.GetAsync(branch.Id, Ct));
     }
 
+    [Fact]
+    public async Task QuoteContextFollowsQuoteScopeAndHidesOtherCompanies()
+    {
+        // PUR-QUOTE-CTX-002／003：QUOTE 的本人／部門／分店／公司範圍；草稿與已關閉可讀狀態；他公司 404。
+        var companyId = TestCompanies.Next();
+        var company = new FixedCompany(companyId);
+        var stamp = new AuditStamper(new FixedClock(new DateTime(2026, 10, 21)), new FixedUser(7), company);
+        await using var db = new MyErpDbContext(new DbContextOptionsBuilder<MyErpDbContext>()
+            .UseMyErpSqlServer(database.ConnectionString)
+            .AddInterceptors(new AuditSaveChangesInterceptor(stamp)).Options,
+            [new RfqDbModel()], company);
+        Rfq NewRfq(string suffix, long owner, long branch, long department, RfqStatus status)
+        {
+            var rfq = new Rfq { CompanyId = companyId, DocumentNo = $"RFQ-Q{suffix}-{companyId}",
+                BusinessDate = new DateOnly(2028, 2, 29), ReplyDeadline = new DateOnly(2028, 3, 1),
+                OwnerId = owner, BranchId = branch, DepartmentId = department, Status = status,
+                SentAt = status == RfqStatus.Draft ? null : new DateTime(2026, 10, 21) };
+            rfq.Lines.Add(new RfqLine { CompanyId = companyId, LineNo = 1, ItemId = 11,
+                RequiredDate = new DateOnly(2028, 3, 2), Quantity = 1m });
+            return rfq;
+        }
+        var self = NewRfq("S", 7, 10, 20, RfqStatus.Draft);
+        var department = NewRfq("D", 8, 10, 20, RfqStatus.Closed);
+        var branch = NewRfq("B", 9, 10, 21, RfqStatus.Sent);
+        var outside = NewRfq("O", 9, 11, 22, RfqStatus.Sent);
+        db.AddRange(self, department, branch, outside);
+        await db.SaveChangesAsync(Ct);
+
+        foreach (var (scope, visible) in new[] {
+            (DataScope.Self, new[] { self }), (DataScope.Department, new[] { self, department }),
+            (DataScope.Branch, new[] { self, department, branch }),
+            (DataScope.Company, new[] { self, department, branch, outside }) })
+        {
+            var query = new RfqQueryService(db, new RequisitionCompanyAccess(company),
+                new FixedAuthorization(new UserCompanyAuthorization(7, companyId, 10, 20, false,
+                    new Dictionary<string, DataScope> { [PurchasingPermissions.QuotationQuote] = scope })));
+            foreach (var rfq in new[] { self, department, branch, outside })
+            {
+                if (visible.Contains(rfq))
+                    Assert.Equal(rfq.Status, (await query.GetForQuoteAsync(rfq.Id, Ct)).Status);
+                else
+                    await Assert.ThrowsAsync<NotFoundException>(() => query.GetForQuoteAsync(rfq.Id, Ct));
+            }
+        }
+        var viewOnly = new RfqQueryService(db, new RequisitionCompanyAccess(company),
+            new FixedAuthorization(new UserCompanyAuthorization(7, companyId, 10, 20, false,
+                new Dictionary<string, DataScope> { [PurchasingPermissions.RfqView] = DataScope.Company })));
+        await Assert.ThrowsAsync<ForbiddenException>(() => viewOnly.GetForQuoteAsync(self.Id, Ct));
+
+        var otherCompanyId = TestCompanies.Next();
+        var otherCompany = new FixedCompany(otherCompanyId);
+        await using var otherDb = new MyErpDbContext(new DbContextOptionsBuilder<MyErpDbContext>()
+            .UseMyErpSqlServer(database.ConnectionString).Options, [new RfqDbModel()], otherCompany);
+        var otherQuery = new RfqQueryService(otherDb, new RequisitionCompanyAccess(otherCompany),
+            new FixedAuthorization(new UserCompanyAuthorization(7, otherCompanyId, 10, 20, true,
+                new Dictionary<string, DataScope> { [PurchasingPermissions.QuotationQuote] = DataScope.Company })));
+        await Assert.ThrowsAsync<NotFoundException>(() => otherQuery.GetForQuoteAsync(self.Id, Ct));
+    }
+
     private sealed class FixedAuthorization(UserCompanyAuthorization? value) : ICurrentAuthorization
     {
         public Task<UserCompanyAuthorization?> GetAsync(CancellationToken cancellationToken) => Task.FromResult(value);

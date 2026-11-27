@@ -152,6 +152,29 @@ test.describe('quotation role without RFQ view', () => {
     await expect(page.getByTestId('pur-quotation-tax-0').getByRole('option',
       { name: 'VAT · Input VAT (5%)' })).toHaveCount(0);
   });
+  test('PUR-QUOTE-CTX-005 keeps empty choices unselectable and sends no save request', async ({ page }) => {
+    const writes: string[] = [];
+    await page.route('**/api/v1/pur/rfqs/17/quotation-context**', route =>
+      route.fulfill({ json: { rfq, currencies: [], taxRates: [] } }));
+    await page.route('**/api/v1/pur/rfqs/17/quotations**', route => {
+      if (route.request().method() !== 'GET') writes.push(route.request().method());
+      return route.fulfill({ json: { items: [], totalCount: 0 } });
+    });
+    await page.goto('/pur/rfqs/17/quotations');
+    await page.getByTestId('pur-quotation-create').click();
+    await page.getByTestId('pur-quotation-edit-supplier').selectOption({ label: 'SUP-7 · Saved supplier' });
+    await page.getByTestId('pur-quotation-edit-date').fill('2028-02-29');
+    await page.getByTestId('pur-quotation-edit-until').fill('2028-03-31');
+    await page.getByTestId('pur-quotation-price-0').fill('1.5');
+    await expect(page.getByTestId('pur-quotation-currency-0').locator('option')).toHaveText(['選擇幣別']);
+    await expect(page.getByTestId('pur-quotation-tax-0').locator('option')).toHaveText(['選擇進項稅率']);
+    await page.getByTestId('pur-quotation-save').click();
+    await expect(page.getByTestId('pur-quotation-error')).toContainText('請修正');
+    await expect(page.getByTestId('pur-quotation-success')).toHaveCount(0);
+    expect(writes).toEqual([]);
+    await capture(page, 'empty-choices-light-zh-Hant');
+    await chooseTheme(page, 'dark'); await capture(page, 'empty-choices-dark-zh-Hant');
+  });
   test('PUR-QUOTE-CTX-004 clears editor access and shows a context failure trace', async ({ page, pageErrors }) => {
     pageErrors.allow(/Failed to load resource: the server responded with a status of 500/);
     pageErrors.allowApi5xx(/\/api\/v1\/pur\/rfqs\/17\/quotation-context/, 500);

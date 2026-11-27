@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005f2a2",
-    "lastCompletedWorkUnit":  "WU-PUR-005f2a2",
-    "nextAction":  "WU-PUR-005f2a2 BLOCKED 重試已 DONE（守衛 17 GiB PASS、後端全量 4170/4170）。週次 1 次序 1：008a51／52 DONE，008b DONE，008a 父項只剩結案核對（POST 已由 008b4 交付），008c2 依賴 006a～c 來源。下一輪繼續週次 1 次序 2 重試受阻項：WU-PUR-005f3e（QUOTE 專屬詢價上下文與幣別／進項稅率選項；先跑一次記憶體守衛，PASS 後按 blocked.md 該列恢復步驟補真實 SQL／受權 HTTP、整合全量及帶 DB DocGen）。005e4／005f3c2 在 deferredVerifications，不要單獨挑；守衛 PASS 時可在 005f3e 之後依次序 3 處理。",
+    "currentWorkUnit":  "WU-PUR-005f3e",
+    "lastCompletedWorkUnit":  "WU-PUR-005f3e",
+    "nextAction":  "WU-PUR-005f3e BLOCKED 重試已 DONE（守衛 16 GiB PASS、報價上下文真實 SQL／HTTP 3/3、後端全量 4172/4172、帶 DB DocGen 0 Error／614 Warning；修正 quoteDate=0001-01-01 未回 400）。下一輪按週次 1 次序 3：先跑一次記憶體守衛，PASS 後依 deferredVerifications 補驗 WU-PUR-005e4 與 WU-PUR-005f3c2（各自 commands／remaining 欄），通過後從清單移除並把 backlog 改為 DONE；DEFER 則保留清單，改做 WU-PUR-005f3e2（報價上下文逾時／換公司 E2E 與 0 筆選項原因提示，P2，純前端＋模擬 E2E）。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -34,7 +34,6 @@
                              "WU-P0-015":  3,
                              "WU-PUR-005e3":  3,
                              "WU-PUR-005e4":  0,
-                             "WU-PUR-005f3e":  3,
                              "WU-PUR-006a":  3,
                              "WU-P0-016":  3,
                              "WU-SD-002a":  3,
@@ -46,7 +45,6 @@
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
-                             "WU-PUR-005f3e",
                              "WU-PUR-006a",
                              "WU-SD-001",
                              "WU-P0-016",
@@ -142,5 +140,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T01:21:28+08:00",
-    "updatedAt":  "2026-11-28T01:20:34+08:00"
+    "updatedAt":  "2026-11-28T01:37:42+08:00"
 }
