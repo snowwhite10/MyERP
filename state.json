@@ -65,6 +65,7 @@
             ],
             "remaining": "FI 模組收尾或人手指定時先跑一次記憶體守衛；PASS 後跑 FinanceOtherCollectionFoundationTests（schema、六個 CHECK 拒絕、參考釋放），驗帶資料 migration Down／Up、全量後端並核對正式 myerp migration。此項不得單獨選為下一輪工作單元。",
             "branch": "main",
+            "commit": "239635b7",
             "deferredAt": "2026-11-27T18:47:42+08:00"
         },
         {
@@ -142,6 +143,6 @@
         "rounds": 0,
         "consecutiveRoundsWithoutIdea": 0
     },
-    "lastSuccessfulPush": "2026-11-27T14:51:57+08:00",
-    "updatedAt": "2026-11-27T18:48:20+08:00"
+    "lastSuccessfulPush": "2026-11-27T18:48:40+08:00",
+    "updatedAt": "2026-11-27T18:48:40+08:00"
 }
