@@ -13,7 +13,7 @@
     "categorySearch": "搜尋費用類別…", "fundSearch": "搜尋資金帳戶…", "chooseCategory": "選擇費用類別", "chooseFund": "選擇資金帳戶",
     "remark": "備註", "save": "儲存付款", "saving": "儲存中…", "working": "正在處理付款…", "cancel": "取消", "edit": "修改", "submit": "送交審批", "withdraw": "撤回", "delete": "刪除",
     "discard": "捨棄尚未儲存的付款變更？", "confirmDelete": "刪除此草稿付款？單號仍保留，提款參考將釋出。", "readOnlyState": "此付款正在審批或已過帳，已儲存欄位不可修改或刪除。", "saved": "付款已儲存，列表已更新。",
-    "submitted": "已送審，請查看下方最新狀態。", "withdrawn": "付款已撤回，列表已更新。",
+    "submitted": "付款 {{no}} 已送審，正在等待審批，尚未過帳。", "submittedPosted": "付款 {{no}} 已核准並過帳，總帳傳票見下方。", "withdrawn": "付款 {{no}} 已撤回，回到草稿。", "deleted": "草稿付款 {{no}} 已刪除，提款參考已釋出。",
     "validation": { "payeeInvalid": "請輸入 1 至 200 字的收款對象。", "categoryRequired": "請選擇費用類別。", "fundRequired": "請選擇資金帳戶。",
       "referenceInvalid": "請輸入 1 至 50 字的提款參考。", "dateInvalid": "請輸入有效的業務日期。",
       "amountInvalid": "請輸入大於零、最多 999,999,999,999,999.9999 且小數不超過 4 位的本位幣金額。", "remarkInvalid": "備註不可超過 500 字。" },

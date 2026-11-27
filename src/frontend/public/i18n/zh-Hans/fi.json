@@ -13,7 +13,7 @@
     "categorySearch": "搜索费用类别…", "fundSearch": "搜索资金账户…", "chooseCategory": "选择费用类别", "chooseFund": "选择资金账户",
     "remark": "备注", "save": "保存付款", "saving": "保存中…", "working": "正在处理付款…", "cancel": "取消", "edit": "修改", "submit": "送交审批", "withdraw": "撤回", "delete": "删除",
     "discard": "放弃尚未保存的付款变更？", "confirmDelete": "删除此草稿付款？单号仍保留，提款参考将释放。", "readOnlyState": "此付款正在审批或已过账，已保存字段不可修改或删除。", "saved": "付款已保存，列表已更新。",
-    "submitted": "已送审，请查看下方最新状态。", "withdrawn": "付款已撤回，列表已更新。",
+    "submitted": "付款 {{no}} 已送审，正在等待审批，尚未过账。", "submittedPosted": "付款 {{no}} 已核准并过账，总账凭证见下方。", "withdrawn": "付款 {{no}} 已撤回，回到草稿。", "deleted": "草稿付款 {{no}} 已删除，提款参考已释放。",
     "validation": { "payeeInvalid": "请输入 1 至 200 字的收款对象。", "categoryRequired": "请选择费用类别。", "fundRequired": "请选择资金账户。",
       "referenceInvalid": "请输入 1 至 50 字的提款参考。", "dateInvalid": "请输入有效的业务日期。",
       "amountInvalid": "请输入大于零、最多 999,999,999,999,999.9999 且小数不超过 4 位的本位币金额。", "remarkInvalid": "备注不可超过 500 字。" },

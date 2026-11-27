@@ -62,3 +62,26 @@ All under `tests/qa/FI/screenshots/`.
 Interface 6.31: inspected 24 screenshots `tests/qa/FI/screenshots/6.31-*` covering normal (three languages, both themes), empty, no results, invalid ID, missing source, 500 with trace ID, network error, timeout, no permission, and real SQL/API invoice/return detail (both themes). Screen messages match the mock API state, and there is no success notice for a read. Dark controls, exact amounts and allocation links are readable. The initial code review found one P1 stale-detail risk on company/filter switch and one P2 numeric-key rounding risk; both fixed and covered in unit behavior. Screenshot set has no remaining P1/P2 finding. Permission/real SQL checks passed in FI-SRC-UI-005/FI-SRC-REAL-001 (2026-11-26T01:50:32+08:00).
 
 P3 follow-up `WU-FI-SRC-URL`: filters, pagination and opened detail are not yet in the URL, so a shared link opens the default list. The current page remains read-only and shows correct committed data; this does not block interface 6.31 acceptance.
+
+## AP: Other Payment 6.10 / 6.11 / 6.12 / 6.32 UX QA (2026-11-28T00:54:18+08:00, WU-FI-008c4)
+
+### Scope
+Four interfaces (list 6.10, create 6.11, edit/detail 6.12, GL expense account map 6.32). States: normal, empty, filtered empty, invalid date range, validation, duplicate reference 409, version 409, mapping 422, submit 500 with traceId, submitted (Pending), approved and posted (zero-step), withdrawn, deleted, map 500 and unchanged; light and dark in zh-Hant, normal/posted in zh-Hans and en. Real API/SQL screens from 008c3 (`real-api-finance-other-payment.spec.ts`, rerun 6/6). Screenshots: `tests/qa/FI/screenshots/6.10-*`, `6.11-*`, `6.12-*`, `6.32-*` (new this round: `6.12-{duplicate-reference,stale-version,submit-server-error,submitted-pending,withdrawn,submitted-posted,deleted}-{light,dark}-zh-Hant.png`, `6.12-submitted-posted-light-{en,zh-Hans}.png`). Every new or re-captured screenshot was opened and reviewed.
+
+### Findings
+| # | Screenshot | Check | Problem | Severity | Handling |
+|---|---|---|---|---|---|
+| 1 | 6.12-submitted-posted-* (real FI-OP-REAL-002) | A5 | Zero-step submit approved and posted in one request, but the notice said only "submitted, check the status below" | P1 | Fixed: notice follows the returned status — "付款 {no} 已核准並過帳，總帳傳票見下方" vs "已送審，正在等待審批，尚未過帳"; FI-OP-UI-018/019, real API REAL-002/003 assert the text |
+| 2 | 6.12-deleted-* | A1/A6 | Deleting a draft closed the editor with no confirmation that anything was deleted | P2 | Fixed: list shows "草稿付款 {no} 已刪除，提款參考已釋出" and the refreshed list no longer has the row (FI-OP-UI-022, 108) |
+| 3 | 6.11-validation-*, 6.12-duplicate-reference-* | B4 | Field errors were separate grid items, so they landed in the neighbouring column (the reference error appeared under 資金帳戶) | P2 | Fixed: each error sits inside its field container; FI-OP-UI-107/108 assert placement |
+| 4 | 6.12-duplicate-reference-* | B4/B5 | Duplicate reference 409 offered "重新載入付款" (would discard the typed values) and did not point at the field | P2 | Fixed: no reload button for input errors; reason under the reference field, field focused and aria-invalid (FI-OP-UI-021) |
+| 5 | 6.12-stale-version-* | E2 | "重新載入付款" stretched the full editor width | P3 | Fixed: normal-width button (FI-OP-UI-021, 108 width check) |
+| 6 | 6.11-create-* | E2 | Single inputs were stretched to the height of the taller category/fund cell | P3 | Fixed: `align-content:start` on field containers |
+| 7 | 6.11-saved-light, 6.12-*-light | E1 | Success alerts in light mode use a muted grey-green background (shared ng-zorro light theme, all modules); text remains readable | P3 | Backlog WU-P0-ALERT-LIGHT |
+| 8 | 6.10 | — | Filters, page and sort not in the URL | P3 | Backlog WU-FI-008c5 (existing) |
+
+### Not reviewed
+Timeout/network loss on 6.11/6.12 only by unit tests of the shared error display (same component as 6.10, whose network state was captured); partial results and files not applicable (single-document writes).
+
+### Conclusion
+P1: 0, P2: 0 open for other payments.

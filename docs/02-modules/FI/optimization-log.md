@@ -1047,3 +1047,10 @@ The interrupted implementation initially reused the general sales-map postabilit
 - **Finding (UX, deferred to 008c4):** when SYS has no applicable step, submit approves and posts in the same request, but the editor notice is the generic「已送審，請查看下方最新狀態。」. The status below is correct (「已過帳」, journal shown), yet the message does not say the payment was posted. 008c4 should choose the notice from `OtherPaymentWorkflowResult.status` (Pending vs Posted), as the sales collection screen does (「已核准並過帳…」).
 - **Finding (UX, 008c4):** after a 409/422 the「重新載入付款」button stretches the full editor width; consider a normal-width button next to the error.
 - **Review:** the spec arranges data only through public APIs (MD fund account/categories, GL map PUT, SYS flow) and reads SQL only to assert; the AP.OTHER_PAYMENT flow is restored in `afterAll`. AP invariance is checked on `ap_posted_payable` count/open base sum, `ap_payment_allocation` and `ap_payment_source` counts before and after each posting.
+
+## WU-FI-008c4 other payment UX QA (2026-11-28T00:54:18+08:00)
+
+- **Problem:** zero-step submit notice did not say the payment was posted; delete gave no confirmation; validation messages sat in the wrong grid column; duplicate-reference 409 offered a reload that would discard input; reload button full width.
+- **Cause:** the editor used one fixed notice key regardless of `OtherPaymentWorkflowResult.status`; the list had no message slot for an editor that closes itself; `<small>` errors were direct children of a two-column grid; reload was rendered for every write error.
+- **Change:** notice key and `{{no}}` parameter from the returned status (Posted/Approved → posted text), `deleted` output to a list-level success alert, errors moved into their field containers, `reloadHelps()` limits reload to version/missing/status/server errors, duplicate reference marks the field and focuses it.
+- **Effect:** unit tests 12/12 for the two components (red first: `deleted` output missing, TS2339), frontend 1326/1326, mocked E2E 4/4, real API 6/6 with the new texts asserted against SQL status.

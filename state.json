@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-008c3",
-    "lastCompletedWorkUnit":  "WU-FI-008c3",
-    "nextAction":  "做 WU-FI-008c4 其他付款三語亮暗截圖與 UX QA（先用 myerp-ux-review 與 web-design-guidelines skill）：修正零步驟送審即過帳時編輯器提示仍為「已送審」——依 OtherPaymentWorkflowResult.status 顯示 Pending 或「已核准並過帳」（三語 i18n、單元測試先紅後綠）；409／422 後「重新載入付款」按鈕改為正常寬度；擴充 real-api-finance-other-payment.spec.ts 或模擬 E2E 截取正常、空、驗證、重複參考 409、刪除、撤回、失敗、成功及深色狀態，三語亮暗截圖逐張檢視；寫 tests/qa/FI 報告。不要單獨挑 deferredVerifications。",
+    "currentWorkUnit":  "WU-FI-008c4",
+    "lastCompletedWorkUnit":  "WU-FI-008c4",
+    "nextAction":  "做 WU-FI-008c5 其他付款列表篩選／頁碼／排序寫入 URL（/ap/other-payments 的 keyword、status、from、to、page、pageSize、sort 以 queryParams 保存，返回或重新整理時還原；無效值回預設且不報錯；先寫單元測試紅燈再實作，模擬 E2E 斷言 URL 與列表請求參數一致，三語亮暗截圖檢視）。FI 其餘 P1（006a2、007a2 等）依賴 deferredVerifications 中的 006a1／007a1 SQL 補驗，不要單獨挑 deferredVerifications。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -144,5 +144,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T00:34:49+08:00",
-    "updatedAt":  "2026-11-28T00:34:28+08:00"
+    "updatedAt":  "2026-11-28T00:54:18+08:00"
 }

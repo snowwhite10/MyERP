@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, effect, inject, signal, untracked, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
+import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
@@ -22,7 +23,7 @@ const TAG: Record<OtherPaymentStatus, DocumentStatus> = {
 /** Company-scoped other-payment list; the editor owns document writes and workflow actions. */
 @Component({
   selector: 'erp-other-payment-page',
-  imports: [FormsModule, TranslatePipe, NzButtonModule, NzInputModule, NzTableModule, ApiErrorDisplay, StatusTag, OtherPaymentEditor, OtherPaymentMapEditor],
+  imports: [FormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule, NzTableModule, ApiErrorDisplay, StatusTag, OtherPaymentEditor, OtherPaymentMapEditor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="payments">
@@ -34,8 +35,10 @@ const TAG: Record<OtherPaymentStatus, DocumentStatus> = {
       <p class="hint">{{ 'fi.otherPayment.nonAp' | translate }}</p>
       @if (showMapEditor() && canViewMaps) { <erp-other-payment-map-editor [rows]="mapRows()" [canEdit]="canEditMaps"
         (changed)="load()" (dismissed)="showMapEditor.set(false)" /> }
+      @if (deletedNo(); as no) { <nz-alert nzType="success" [nzMessage]="'fi.otherPayment.deleted' | translate: { no }" nzShowIcon
+        role="status" aria-live="polite" data-testid="fi-op-deleted" /> }
       @if (editor(); as selection) { <erp-other-payment-editor [paymentId]="selection.id" (changed)="load()"
-        (dismissed)="editor.set(null)" /> }
+        (deleted)="deletedNo.set($event)" (dismissed)="editor.set(null)" /> }
       <form class="filters" (ngSubmit)="search()" data-testid="fi-op-filters">
         <input nz-input type="search" name="keyword" autocomplete="off" spellcheck="false" maxlength="50" [(ngModel)]="keyword"
           [attr.aria-label]="'fi.otherPayment.keyword' | translate" [placeholder]="'fi.otherPayment.keywordHint' | translate" data-testid="fi-op-keyword" />
@@ -95,6 +98,8 @@ export class OtherPaymentPage implements HasUnsavedChanges {
   readonly rows = signal<OtherPaymentSummary[]>([]);
   readonly editor = signal<{ id: number | null } | null>(null);
   readonly showMapEditor = signal(false);
+  /** Document number of the draft just deleted from the editor; cleared when another editor opens. */
+  readonly deletedNo = signal<string | null>(null);
   readonly mapRows = signal<OtherPaymentMapRow[]>([]);
   readonly maps = signal<Map<number, OtherPaymentMapRow>>(new Map());
   readonly mapFailed = signal(false); readonly mapLoading = signal(false);
@@ -122,8 +127,8 @@ export class OtherPaymentPage implements HasUnsavedChanges {
     if (!map.expenseAccount?.isUsable) return 'fi.otherPayment.map.accountInvalid';
     return 'fi.otherPayment.map.ready';
   }
-  openCreate(): void { if (this.canCreate) this.editor.set({ id: null }); }
-  openDetail(id: number): void { this.editor.set({ id }); }
+  openCreate(): void { if (this.canCreate) { this.deletedNo.set(null); this.editor.set({ id: null }); } }
+  openDetail(id: number): void { this.deletedNo.set(null); this.editor.set({ id }); }
   reset(): void { this.keyword = ''; this.status = ''; this.from = ''; this.to = ''; this.search(); }
   search(): void {
     this.rangeInvalid.set(!!this.from && !!this.to && this.from > this.to);

@@ -13,7 +13,7 @@
     "categorySearch": "Search expense categories…", "fundSearch": "Search fund accounts…", "chooseCategory": "Choose an expense category", "chooseFund": "Choose a fund account",
     "remark": "Remark", "save": "Save payment", "saving": "Saving…", "working": "Processing payment…", "cancel": "Cancel", "edit": "Edit", "submit": "Submit for approval", "withdraw": "Withdraw", "delete": "Delete",
     "discard": "Discard unsaved payment changes?", "confirmDelete": "Delete this draft payment? Its document number stays used and its withdrawal reference is released.", "readOnlyState": "This payment is in approval or has posted; its saved fields cannot be edited or deleted.", "saved": "Payment saved; the list has been refreshed.",
-    "submitted": "Submission saved; check the current status below.", "withdrawn": "Payment withdrawn; the list has been refreshed.",
+    "submitted": "Payment {{no}} was submitted and is waiting for approval. Nothing has been posted yet.", "submittedPosted": "Payment {{no}} was approved and posted; the journal is shown below.", "withdrawn": "Payment {{no}} was withdrawn and is a draft again.", "deleted": "Draft payment {{no}} was deleted and its withdrawal reference is free again.",
     "validation": { "payeeInvalid": "Enter a payee of 1–200 characters.", "categoryRequired": "Choose an expense category.", "fundRequired": "Choose a fund account.",
       "referenceInvalid": "Enter a withdrawal reference of 1–50 characters.", "dateInvalid": "Enter a real business date.",
       "amountInvalid": "Enter a positive base amount up to 999,999,999,999,999.9999 with at most 4 decimals.", "remarkInvalid": "Keep the remark within 500 characters." },

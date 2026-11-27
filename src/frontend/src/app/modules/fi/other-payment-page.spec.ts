@@ -99,4 +99,23 @@ describe('FI-OP-UI other payment list', () => {
     expect(element.querySelector('[data-testid="fi-op-editor"]')).not.toBeNull();
     expect(view.hasUnsavedChanges()).toBe(true);
   });
+
+  it('FI-OP-UI-022 a deleted draft is confirmed by number and the refreshed list no longer has it', () => {
+    granted.add('AP.OTHER_PAYMENT.DELETE');
+    const { fixture, http, view, element } = create();
+    view.openDetail(7); fixture.detectChanges();
+    http.expectOne(r => r.url === '/api/v1/md/income-expense-categories').flush({ items: [], totalCount: 0 });
+    http.expectOne(r => r.url === '/api/v1/md/fund-accounts').flush({ items: [], totalCount: 0 });
+    http.expectOne('/api/v1/ap/other-payments/7').flush(list().replace(/^.*?\[(.*)\].*$/, '$1'));
+    fixture.detectChanges();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    element.querySelector<HTMLButtonElement>('[data-testid="fi-op-delete"]')!.click();
+    http.expectOne(r => r.method === 'DELETE').flush(null, { status: 204, statusText: 'No Content' });
+    http.expectOne(isList).flush(list([]));
+    http.expectOne('/api/v1/gl/other-payment-account-map').flush({ items: [] });
+    fixture.detectChanges();
+    expect(element.querySelector('[data-testid="fi-op-editor"]')).toBeNull();
+    expect(element.querySelector('[data-testid="fi-op-deleted"]')?.textContent).toContain('Draft payment OP2026110007 was deleted');
+    expect(element.querySelector('[data-testid="fi-op-row-7"]')).toBeNull();
+  });
 });

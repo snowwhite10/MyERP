@@ -189,7 +189,7 @@ test.describe('真實 API 其他付款（SQL 讀回雙斷言）', () => {
   }
 
   /** Creates a Draft through the API (finance) for tests that start from a saved document. */
-  async function apiDraft(reference: string, amount: number, category = mapped): Promise<{ id: number; version: number }> {
+  async function apiDraft(reference: string, amount: number, category = mapped): Promise<{ id: number; version: number; documentNo: string }> {
     return json(apis.finance!.post(`${root}/ap/other-payments`, { data: { payeeDescription: `E2E 收款人 ${reference}`,
       expenseCategoryId: category.id, bankAccountId: fund.id, bankReference: reference, businessDate: today(),
       amount: String(amount), remark: null } }), 201);
@@ -281,7 +281,9 @@ test.describe('真實 API 其他付款（SQL 讀回雙斷言）', () => {
     await showOnly(page, draft.bankReference);
     await page.getByTestId(`fi-op-open-${draft.id}`).click();
     await page.getByTestId('fi-op-submit').click();
-    await expect(page.getByTestId('fi-op-notice')).toContainText('已送審，請查看下方最新狀態。');
+    await expect(page.getByTestId('fi-op-notice'), 'zero-step submit posts at once, so the notice must not say it waits')
+      .toContainText(`付款 ${draft.documentNo} 已核准並過帳`);
+    await expect(page.getByTestId('fi-op-notice')).not.toContainText('等待審批');
     const editor = page.getByTestId('fi-op-editor');
     await expect(editor).toContainText('已過帳');
     await expect(editor).toContainText('此付款正在審批或已過帳');
@@ -317,7 +319,7 @@ test.describe('真實 API 其他付款（SQL 讀回雙斷言）', () => {
     await showOnly(page, reference);
     await page.getByTestId(`fi-op-open-${draft.id}`).click();
     await page.getByTestId('fi-op-submit').click();
-    await expect(page.getByTestId('fi-op-notice')).toContainText('已送審');
+    await expect(page.getByTestId('fi-op-notice')).toContainText(`付款 ${draft.documentNo} 已送審，正在等待審批，尚未過帳。`);
     await expect(page.getByTestId('fi-op-editor')).toContainText('待審批');
     await expect(page.getByTestId('fi-op-withdraw')).toBeVisible();
     await expect(page.getByTestId('fi-op-edit')).toHaveCount(0);
