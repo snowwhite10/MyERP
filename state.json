@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005e4",
-    "lastCompletedWorkUnit":  "WU-PUR-005e4",
-    "nextAction":  "WU-PUR-005e4 補驗已 DONE（守衛 PASS、RfqConversionTransactionTests 6/6、帶資料 Down／Up、Release 全量 4178/4178、帶 DB DocGen 0 Error／614 Warning）。下一輪按週次 1 次序 3：先跑一次記憶體守衛，PASS 後補驗 WU-PUR-005f3c2（deferredVerifications 的 commands／remaining：補 test-plan 理由 1／500 字、400／逾時／斷線及 Closed 畫面情境，重跑後端全量與 purchasing-comparison 模擬 E2E），通過後移除並把 backlog 改 DONE；DEFER 則改做 WU-PUR-005f3e2（純前端＋模擬 E2E）。注意：不要在後端全量執行時並行跑整合測試，會重置共用 myerp_test。",
+    "currentWorkUnit":  "WU-PUR-005f3c2",
+    "lastCompletedWorkUnit":  "WU-PUR-005f3c2",
+    "nextAction":  "WU-PUR-005f3c2 補驗已 DONE（守衛 PASS、新增 4 個決標模擬 E2E、比價專項 11/11、後端 Debug 全量 4178/4178）。下一輪按週次 1 次序 3 做 WU-PUR-005f3d：決標行轉採購單草稿畫面（比價頁對已決標行提供 CONVERT 操作、確認對話框、成功顯示實際單號與行數並以 API 核對、部分衝突／全部已轉逐行原因、400／409／422／500 traceId／逾時／斷線不顯示成功、三語亮暗 QA；test-plan 對應 PUR-RFQ-067）。先讀 api.md 的 CONVERT 契約與 RfqService，後端已由 005e4 驗收。注意：不要在後端全量執行時並行跑整合測試。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -100,18 +100,6 @@
                                       "branch":  "main",
                                       "commit":  "55b07bf6",
                                       "deferredAt":  "2026-11-27T14:34:48+08:00"
-                                  },
-                                  {
-                                      "workUnit":  "WU-PUR-005f3c2",
-                                      "reason":  "2026-11-27 後端全量執行中可用實體記憶體降至 0.94 GiB、整合測試程序佔 2.39 GiB，長時間無結果；依資源不足規則中止。決標快照定向真實 SQL 1/1、前端 1305/1305、模擬 E2E 7/7 已通過。",
-                                      "commands":  [
-                                                       "dotnet test --solution src/backend/MyERP.sln -c Debug --no-build --max-threads 2",
-                                                       "\u0026 ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npx playwright test specs/purchasing-comparison.spec.ts"
-                                                   ],
-                                      "remaining":  "在 PUR 模組完成或人手指定時先跑一次記憶體守衛；PASS 後補 005f3c2 test-plan 的理由 1／500 字、400／逾時／斷線及 Closed 畫面情境，重跑後端全量與比價專項；本輪不要單獨重試。",
-                                      "branch":  "main",
-                                      "commit":  "7a1d1547",
-                                      "deferredAt":  "2026-11-27T14:14:38+08:00"
                                   }
                               ],
     "openBranches":  [
@@ -126,5 +114,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T02:05:07+08:00",
-    "updatedAt":  "2026-11-28T02:05:07+08:00"
+    "updatedAt":  "2026-11-28T02:14:49+08:00"
 }

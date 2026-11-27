@@ -203,3 +203,93 @@ test.describe('read-only comparison role', () => {
     await chooseTheme(page, 'dark'); await capture(page, 'award-readonly-dark-zh-Hant');
   });
 });
+
+for (const [label, reason] of [['1 character', '價'], ['500 characters', '理'.repeat(500)]] as const) {
+  test(`PUR-AWARD-UI-002 accepts a ${label} reason and saves it unchanged`, async ({ page }) => {
+    let saved: Record<string, unknown> | null = null;
+    const writes: Record<string, unknown>[] = [];
+    await page.route('**/api/v1/pur/rfqs/17/comparison', route => route.fulfill({ json: comparison }));
+    await page.route('**/api/v1/pur/rfqs/17/award-context', route => route.fulfill({ json: {
+      ...awardContext, version: saved ? 4 : 3, awards: saved ? [saved] : [] } }));
+    await page.route('**/api/v1/pur/rfqs/17/awards', async route => {
+      const input = route.request().postDataJSON() as Record<string, unknown>;
+      writes.push(input);
+      saved = { id: 91, rfqLineId: 170, quotationId: 31, supplierId: 7, reason: input['reason'], quantity: 2,
+        unitPrice: 10.123456, currencyCode: 'USD', baseCurrencyCode: 'TWD', taxRatePercent: 5, exchangeRate: 2,
+        exchangeRateId: 42, exchangeRateFrom: '2026-10-01', exchangeRateTo: '2026-10-31',
+        comparisonDate: '2026-10-23', baseNet: 40.49, baseTax: 2.02, baseGross: 42.51 };
+      await route.fulfill({ status: 201, json: saved });
+    });
+    await page.goto('/pur/rfqs/17/comparison');
+    await page.getByTestId('pur-award-select-31').click();
+    // 501 字無法輸入：maxlength 截至 500，送出的正是 500 字。
+    await page.getByTestId('pur-award-reason').fill(reason.length === 500 ? reason + '超' : reason);
+    await expect(page.getByTestId('pur-award-reason')).toHaveValue(reason);
+    await page.getByTestId('pur-award-save').click();
+    await page.getByTestId('erp-message-ok').click();
+    await expect(page.getByTestId('pur-award-notice')).toBeVisible();
+    await expect(page.getByTestId('pur-award-snapshot-1')).toContainText(reason);
+    expect(writes).toEqual([{ version: 3, rfqLineId: 170, quotationId: 31, reason }]);
+    if (reason.length === 500) {
+      await capture(page, 'award-reason500-light-zh-Hant');
+      await chooseTheme(page, 'dark'); await capture(page, 'award-reason500-dark-zh-Hant');
+    }
+  });
+}
+
+test('PUR-AWARD-UI-007 explains field validation, timeout and disconnect without claiming success', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource|net::ERR_/);
+  let failure: 400 | 'timedout' | 'internetdisconnected' = 400;
+  let writes = 0;
+  await page.route('**/api/v1/pur/rfqs/17/comparison', route => route.fulfill({ json: comparison }));
+  await page.route('**/api/v1/pur/rfqs/17/awards', route => {
+    writes++;
+    if (failure === 400) return route.fulfill({ status: 400, json: { errorCode: 'COMMON.REQUEST.VALIDATION_FAILED',
+      errors: { reason: ['理由不得超過 500 字'] } } });
+    return route.abort(failure);
+  });
+  await page.goto('/pur/rfqs/17/comparison');
+  await page.getByTestId('pur-award-select-31').click();
+  await page.getByTestId('pur-award-reason').fill('價格及交期合適');
+  for (const mode of [400, 'timedout', 'internetdisconnected'] as const) {
+    failure = mode;
+    await page.getByTestId('pur-award-save').click();
+    await page.getByTestId('erp-message-ok').click();
+    const error = page.getByTestId('pur-comparison-error');
+    await expect(error).toContainText(mode === 400 ? '輸入資料不正確' : '無法連線到伺服器');
+    if (mode === 400) await expect(error).toContainText('reason: 理由不得超過 500 字');
+    await expect(page.getByTestId('pur-award-notice')).toHaveCount(0);
+    await expect(page.getByTestId('pur-award-snapshot-1')).toHaveCount(0);
+    // 失敗後保留表單與理由，用戶修正或重試時不必重打。
+    await expect(page.getByTestId('pur-award-reason')).toHaveValue('價格及交期合適');
+    await expect(page.getByTestId('pur-award-save')).toBeEnabled();
+    await capture(page, `award-${mode}-light-zh-Hant`);
+    await chooseTheme(page, 'dark'); await capture(page, `award-${mode}-dark-zh-Hant`);
+    await chooseTheme(page, 'light');
+  }
+  await chooseLanguage(page, 'en');
+  await expect(page.getByTestId('pur-comparison-error')).not.toContainText('無法連線');
+  await page.getByTestId('pur-comparison-refresh').click();
+  await expect(page.getByTestId('pur-comparison-error')).toHaveCount(0);
+  await expect(page.getByTestId('pur-award-form')).toHaveCount(0);
+  await expect(page.getByTestId('pur-award-select-31')).toBeVisible();
+  expect(writes).toBe(3);
+});
+
+test('PUR-AWARD-UI-006 closed RFQ shows why no award can be made and never posts', async ({ page }) => {
+  let writes = 0;
+  await page.route('**/api/v1/pur/rfqs/17/comparison', route => route.fulfill({ json: comparison }));
+  await page.route('**/api/v1/pur/rfqs/17/award-context', route => route.fulfill({ json: { ...awardContext, status: 'Closed' } }));
+  await page.route('**/api/v1/pur/rfqs/17/awards', route => { writes++; return route.fulfill({ status: 201, json: {} }); });
+  await page.goto('/pur/rfqs/17/comparison');
+  await expect(page.getByTestId('pur-comparison-offer-31')).toContainText('42.51');
+  await expect(page.getByTestId('pur-award-select-31')).toHaveCount(0);
+  await expect(page.getByTestId('pur-comparison-line-1')).toContainText('詢價已不在可決標狀態。');
+  await capture(page, 'award-closed-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'award-closed-dark-zh-Hant');
+  await chooseLanguage(page, 'en');
+  await expect(page.getByTestId('pur-comparison-line-1')).toContainText('This RFQ is no longer open for award.');
+  await chooseLanguage(page, 'zh-Hans');
+  await expect(page.getByTestId('pur-comparison-line-1')).toContainText('询价已不在可决标状态。');
+  expect(writes).toBe(0);
+});
