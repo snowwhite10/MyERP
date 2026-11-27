@@ -103,11 +103,13 @@ WU-PUR-007a6 的 `PurchaseReceiptReservationAssembly.ForSubmit/ForReject` 只以
 
 `PUR.RFQ.EXPORT` 控制 4.11 的 CSV 按鈕；匯出及列印組合既有 `GET /api/v1/pur/rfqs`、`GET /api/v1/pur/rfqs/{id}`，沒有新寫入 API 或資料表。每個請求仍需 `PUR.RFQ.VIEW` 並套用公司與 SYS VIEW 資料範圍。匯出先核對所有分頁的總筆數、唯一 ID，再逐張核對保存版本與明細，任何 400／403／404／409／422／500、逾時或資料變動整檔取消。列印重新 GET 單張詳情後才呼叫瀏覽器列印；讀取失敗不列印。
 
-### WU-PUR-005e4 轉單草稿契約（待實作）
+### WU-PUR-005e4／005f3d 轉單草稿契約
 
 `POST /api/v1/pur/rfqs/{id}/orders` 使用 `PUR.RFQ.CONVERT`。Body：`version`（目前詢價版本）、`supplierId`、`awardIds`（1～1000 個不同的正數 ID）。不接受公司、單號、價格、數量或審計欄位。成功 201 回 `orderId`、`documentNo`、`status=Draft`、`lineCount`、`awardIds` 與新詢價版本；另以受權的訂單詳情讀取已保存行及決標快照。此端點只接受同一已發送詢價、同一供應商、同一原幣且尚未轉單的決標行。明確選擇行集合，不自行略過已轉行；空集合 400，混入無效 ID／重複 ID 400，來源錯配 404，已轉或詢價非 Sent 422，舊版本 409。
 
-服務以目前公司及 SYS CONVERT 動作資料範圍定位詢價，鎖表頭後驗版本、行集合與來源唯一性；在同一 SQL 交易內用 SYS 公開單號契約 `PUR.ORDER` 發號、建立表頭／行／來源連結並遞增詢價版本。持久化快照取決標保存值，不重新以今日 MD 匯率改價；按 ADR-210，同批各行若保存本位幣或匯率不同回 422 `PUR.RFQ.RATE_MISMATCH`／`PUR.RFQ.CURRENCY_MISMATCH`。轉單不改請購已轉量或 INV 庫存。任何一行衝突或保存故障整批回滾，成功回應只在提交後發出。重送同一版本回 409，使用新版本重送已轉行回 422，兩者都返回可辨識的衝突原因，不再建單。匿名 401、缺權 403、跨公司／資料範圍外 404；所有錯誤用含 `errorCode` 與 `traceId` 的 ProblemDetails。前端訊息與 E2E 由 005f 完成。005e4 目前已交付端點與部分真實 SQL／HTTP，完整交易驗收仍待續。
+服務以目前公司及 SYS CONVERT 動作資料範圍定位詢價，鎖表頭後驗版本、行集合與來源唯一性；在同一 SQL 交易內用 SYS 公開單號契約 `PUR.ORDER` 發號、建立表頭／行／來源連結並遞增詢價版本。持久化快照取決標保存值，不重新以今日 MD 匯率改價；按 ADR-210，同批各行若保存本位幣或匯率不同回 422 `PUR.RFQ.RATE_MISMATCH`／`PUR.RFQ.CURRENCY_MISMATCH`。轉單不改請購已轉量或 INV 庫存。任何一行衝突或保存故障整批回滾，成功回應只在提交後發出。重送同一版本回 409，使用新版本重送已轉行回 422，兩者都返回可辨識的衝突原因，不再建單。匿名 401、缺權 403、跨公司／資料範圍外 404；所有錯誤用含 `errorCode` 與 `traceId` 的 ProblemDetails。005e4 真實 SQL／HTTP 交易驗收已完成；005f3d 前端接入此端點。
+
+`GET /api/v1/pur/rfqs/{id}/award-context` 的每個決標快照包含可空 `purchaseOrderId`、`purchaseOrderNo`。已轉來源即使訂單軟刪仍須顯示原單號；查詢只解除訂單軟刪篩選，不解除公司篩選。前端 POST 201 後以這個 GET 逐行核對回傳單號、訂單 ID 與行集合；核對完成才顯示成功。任何核對失敗應提示用戶重新整理並查看採購單，不宣稱轉單成功。
 
 WU-PUR-005d1 建立報價持久化模型，005d2 提供受權列表與歷史詳情 GET，005d3 提供首版與不可變修訂 POST，005d4 提供撤回 POST 及即時過期旗標。005e2 提供唯讀逐行比價，005e3 提供逐行決標；轉單由 005e4 完成。報價版本、行及決標快照不可修改的 SQL 守衛已落地。
 

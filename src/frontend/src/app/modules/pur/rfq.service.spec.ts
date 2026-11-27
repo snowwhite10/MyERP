@@ -1,7 +1,7 @@
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { QuotationDraft, RfqDraft, RfqService, quotationFieldErrors, rfqFieldErrors } from './rfq.service';
+import { QuotationDraft, RfqAwardSnapshot, RfqDraft, RfqService, conversionGroups, quotationFieldErrors, rfqFieldErrors } from './rfq.service';
 
 describe('PUR-RFQ-076/077 RFQ draft client contract', () => {
   beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] }));
@@ -190,5 +190,43 @@ describe('PUR-QUOTE-UI-001 quotation read contract', () => {
     list.flush({ items: [], totalCount: 0 });
     api.getQuotation(17, 31).subscribe();
     http.expectOne('/api/v1/pur/rfqs/17/quotations/31').flush({ revisions: [] });
+  });
+});
+
+describe('PUR-RFQ-067 award to purchase order conversion client', () => {
+  beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] }));
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  const award = (id: number, supplierId: number, rate: number, extra: Partial<RfqAwardSnapshot> = {}): RfqAwardSnapshot => ({
+    id, rfqLineId: id * 10, quotationId: id + 100, supplierId, reason: 'r', quantity: 1, unitPrice: 1,
+    currencyCode: 'USD', baseCurrencyCode: 'TWD', taxRatePercent: 5, exchangeRate: rate, exchangeRateId: 1,
+    exchangeRateFrom: '2026-10-01', exchangeRateTo: null, comparisonDate: '2026-10-23', baseNet: 1, baseTax: 0.05,
+    baseGross: 1.05, purchaseOrderId: null, purchaseOrderNo: null, ...extra });
+
+  it('groups only unconverted awards that the server accepts in one order', () => {
+    const groups = conversionGroups([award(1, 7, 30), award(2, 8, 30), award(3, 7, 30),
+      award(4, 7, 31), award(5, 7, 30, { purchaseOrderId: 9, purchaseOrderNo: 'PO1' }),
+      award(6, 7, 30, { currencyCode: 'EUR' })]);
+    expect(groups.map(x => [x.supplierId, x.currencyCode, x.exchangeRate, x.awards.map(a => a.id)])).toEqual([
+      [7, 'USD', 30, [1, 3]], [7, 'USD', 31, [4]], [7, 'EUR', 30, [6]], [8, 'USD', 30, [2]]]);
+    expect(groups[0].key).not.toEqual(groups[1].key);
+    expect(conversionGroups([award(5, 7, 30, { purchaseOrderId: 9, purchaseOrderNo: 'PO1' })])).toEqual([]);
+    expect(conversionGroups([])).toEqual([]);
+  });
+
+  it('posts version, supplier and sorted award IDs and maps conversion refusals', () => {
+    const api = TestBed.inject(RfqService); const http = TestBed.inject(HttpTestingController);
+    api.convert(17, { version: 4, supplierId: 7, awardIds: [3, 1] }).subscribe();
+    const request = http.expectOne('/api/v1/pur/rfqs/17/orders');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ version: 4, supplierId: 7, awardIds: [1, 3] });
+    request.flush({ orderId: 5, documentNo: 'PO1', status: 'Draft', lineCount: 2, awardIds: [1, 3], rfqVersion: 5 });
+    const refusal = (errorCode: string) => new HttpErrorResponse({ status: 422, error: { errorCode } });
+    expect(api.errorKey(refusal('PUR.RFQ.AWARD_ALREADY_CONVERTED'))).toBe('pur.comparison.alreadyConverted');
+    expect(api.errorKey(refusal('PUR.RFQ.SUPPLIER_MISMATCH'))).toBe('pur.comparison.convertMismatch');
+    expect(api.errorKey(refusal('PUR.RFQ.CURRENCY_MISMATCH'))).toBe('pur.comparison.convertMismatch');
+    expect(api.errorKey(refusal('PUR.RFQ.RATE_MISMATCH'))).toBe('pur.comparison.convertMismatch');
+    expect(api.errorKey(new HttpErrorResponse({ status: 404, error: { errorCode: 'PUR.RFQ.AWARD_NOT_FOUND' } })))
+      .toBe('pur.comparison.awardMissing');
   });
 });

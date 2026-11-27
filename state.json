@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005f3c2",
-    "lastCompletedWorkUnit":  "WU-PUR-005f3c2",
-    "nextAction":  "WU-PUR-005f3c2 補驗已 DONE（守衛 PASS、新增 4 個決標模擬 E2E、比價專項 11/11、後端 Debug 全量 4178/4178）。下一輪按週次 1 次序 3 做 WU-PUR-005f3d：決標行轉採購單草稿畫面（比價頁對已決標行提供 CONVERT 操作、確認對話框、成功顯示實際單號與行數並以 API 核對、部分衝突／全部已轉逐行原因、400／409／422／500 traceId／逾時／斷線不顯示成功、三語亮暗 QA；test-plan 對應 PUR-RFQ-067）。先讀 api.md 的 CONVERT 契約與 RfqService，後端已由 005e4 驗收。注意：不要在後端全量執行時並行跑整合測試。",
+    "currentWorkUnit":  "WU-PUR-005f3d",
+    "lastCompletedWorkUnit":  "WU-PUR-005f3d",
+    "nextAction":  "WU-PUR-005f3d DONE（CONVERT 畫面、三語亮暗、真實 SQL 1/1、前端 1336/1336、模擬 E2E 17/17、後端 Debug 全量 4179/4179）。下一輪按 backlog 週次 1 次序 4 重試 WU-PUR-006a：原 SQL 服務阻礙已解除、005e4 已驗收；先讀 blocked.md 的 006a 記錄與 PUR-PO-001～024，按 90 分鐘邊界拆人工採購單草稿 migration／建立／編輯／唯讀 API，先測試再實作，必要時先交可編譯切片。不得與後端全量並行跑定向整合測試。 全量模擬 Playwright 711 通過／54 略過／1 失敗是既有 WU-P0-E2E-FLAKE-MENU（FI-COLL-UI-101 主題下拉未關，定向重跑 1/1 通過），已記 blocked.md；勿在 006a 跨單元修改選單。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -114,5 +114,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T02:15:34+08:00",
-    "updatedAt":  "2026-11-28T02:15:34+08:00"
+    "updatedAt":  "2026-11-28T03:06:29+08:00"
 }

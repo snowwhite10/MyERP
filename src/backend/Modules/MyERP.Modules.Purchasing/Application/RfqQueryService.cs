@@ -12,7 +12,7 @@ public sealed record RfqAwardSnapshot(long Id, long RfqLineId, long QuotationId,
     string CurrencyCode, string BaseCurrencyCode, decimal TaxRatePercent,
     decimal ExchangeRate, long? ExchangeRateId, DateOnly ExchangeRateFrom,
     DateOnly? ExchangeRateTo, DateOnly ComparisonDate, decimal BaseNet,
-    decimal BaseTax, decimal BaseGross);
+    decimal BaseTax, decimal BaseGross, long? PurchaseOrderId = null, string? PurchaseOrderNo = null);
 public sealed record RfqAwardContext(long RfqId, string DocumentNo, RfqStatus Status,
     int Version, IReadOnlyList<RfqAwardSnapshot> Awards);
 
@@ -156,7 +156,21 @@ public sealed class RfqQueryService(MyErpDbContext db, RequisitionCompanyAccess 
                 x.SupplierId, x.Reason, x.Quantity, x.UnitPrice, x.CurrencyCode,
                 x.BaseCurrencyCode, x.TaxRatePercent, x.ExchangeRate, x.ExchangeRateId,
                 x.ExchangeRateFrom, x.ExchangeRateTo, x.ComparisonDate,
-                x.BaseNet, x.BaseTax, x.BaseGross)).ToListAsync(token);
+                x.BaseNet, x.BaseTax, x.BaseGross, null, null)).ToListAsync(token);
+        var awardIds = awards.Select(x => x.Id).ToArray();
+        // A converted award stays converted even if its order is later soft-deleted, so only the
+        // soft-delete filter is lifted; the company filter still applies.
+        var orders = await (from link in db.Set<PurchaseOrderAwardSource>().AsNoTracking()
+                            join line in db.Set<PurchaseOrderSourceLine>().AsNoTracking()
+                                on link.PurchaseOrderLineId equals line.Id
+                            join order in db.Set<PurchaseOrderSource>()
+                                .IgnoreQueryFilters([ErpQueryFilters.SoftDelete]).AsNoTracking()
+                                on line.PurchaseOrderId equals order.Id
+                            where awardIds.Contains(link.AwardId)
+                            select new { link.AwardId, order.Id, order.DocumentNo })
+            .ToDictionaryAsync(x => x.AwardId, token);
+        awards = [.. awards.Select(x => orders.TryGetValue(x.Id, out var order)
+            ? x with { PurchaseOrderId = order.Id, PurchaseOrderNo = order.DocumentNo } : x)];
         return new RfqAwardContext(rfq.Id, rfq.DocumentNo, rfq.Status, rfq.Version, awards);
     }
 

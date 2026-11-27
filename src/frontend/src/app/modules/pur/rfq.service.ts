@@ -59,9 +59,30 @@ export interface RfqAwardSnapshot { id: number; rfqLineId: number; quotationId: 
   currencyCode: string; baseCurrencyCode: string; taxRatePercent: number;
   exchangeRate: number; exchangeRateId: number | null; exchangeRateFrom: string;
   exchangeRateTo: string | null; comparisonDate: string; baseNet: number;
-  baseTax: number; baseGross: number }
+  baseTax: number; baseGross: number;
+  /** Set once the award has been converted; a converted award can never be converted again. */
+  purchaseOrderId?: number | null; purchaseOrderNo?: string | null }
 export interface RfqAwardContext { rfqId: number; documentNo: string; status: RfqStatus;
   version: number; awards: RfqAwardSnapshot[] }
+
+export interface RfqConversionResult { orderId: number; documentNo: string; status: string;
+  lineCount: number; awardIds: number[]; rfqVersion: number }
+/** Unconverted awards the server accepts together: one supplier, currency, base currency and saved rate (ADR-210). */
+export interface RfqConversionGroup { key: string; supplierId: number; currencyCode: string;
+  baseCurrencyCode: string; exchangeRate: number; awards: RfqAwardSnapshot[] }
+
+export function conversionGroups(awards: RfqAwardSnapshot[]): RfqConversionGroup[] {
+  const groups = new Map<string, RfqConversionGroup>();
+  for (const award of awards) {
+    if (award.purchaseOrderId) continue;
+    const key = [award.supplierId, award.currencyCode, award.baseCurrencyCode, award.exchangeRate].join('|');
+    const group = groups.get(key) ?? { key, supplierId: award.supplierId, currencyCode: award.currencyCode,
+      baseCurrencyCode: award.baseCurrencyCode, exchangeRate: award.exchangeRate, awards: [] };
+    group.awards.push(award); groups.set(key, group);
+  }
+  return [...groups.values()].sort((a, b) => a.supplierId - b.supplierId ||
+    a.awards[0].id - b.awards[0].id);
+}
 
 export function quotationFieldErrors(draft: QuotationDraft): string[] {
   const errors: string[] = [];
@@ -124,6 +145,10 @@ export class RfqService {
       if (code === 'PUR.QUOTATION.NOT_FOUND') return 'pur.quotation.notFound';
       if (code === 'PUR.RFQ.NOT_SENT') return 'pur.comparison.notSent';
       if (code === 'PUR.RFQ.LINE_ALREADY_AWARDED') return 'pur.comparison.lineAlreadyAwarded';
+      if (code === 'PUR.RFQ.AWARD_ALREADY_CONVERTED') return 'pur.comparison.alreadyConverted';
+      if (code === 'PUR.RFQ.SUPPLIER_MISMATCH' || code === 'PUR.RFQ.CURRENCY_MISMATCH' ||
+        code === 'PUR.RFQ.RATE_MISMATCH') return 'pur.comparison.convertMismatch';
+      if (code === 'PUR.RFQ.AWARD_NOT_FOUND' || code === 'PUR.RFQ.LINE_NOT_FOUND') return 'pur.comparison.awardMissing';
       if (code === 'MD.EXCHANGE_RATE.NO_BASE_CURRENCY') return 'pur.comparison.noBaseCurrency';
       if (code === 'MD.CURRENCY.NOT_FOUND' || code === 'MD.CURRENCY.INACTIVE') return 'pur.quotation.currencyUnavailable';
       if (code === 'MD.TAX_RATE.NOT_FOUND' || code === 'MD.TAX_RATE.INACTIVE' ||
@@ -169,6 +194,10 @@ export class RfqService {
   }
   award(rfqId: number, input: { version: number; rfqLineId: number; quotationId: number; reason: string }): Observable<RfqAwardSnapshot> {
     return this.http.post<RfqAwardSnapshot>(`/api/v1/pur/rfqs/${rfqId}/awards`, input);
+  }
+  convert(rfqId: number, input: { version: number; supplierId: number; awardIds: number[] }): Observable<RfqConversionResult> {
+    return this.http.post<RfqConversionResult>(`/api/v1/pur/rfqs/${rfqId}/orders`,
+      { version: input.version, supplierId: input.supplierId, awardIds: [...input.awardIds].sort((a, b) => a - b) });
   }
   createQuotation(rfqId: number, draft: QuotationDraft): Observable<QuotationDetail> {
     return this.http.post<QuotationDetail>(`/api/v1/pur/rfqs/${rfqId}/quotations`, this.quotationBody(draft));

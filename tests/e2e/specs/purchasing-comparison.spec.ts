@@ -293,3 +293,161 @@ test('PUR-AWARD-UI-006 closed RFQ shows why no award can be made and never posts
   await expect(page.getByTestId('pur-comparison-line-1')).toContainText('询价已不在可决标状态。');
   expect(writes).toBe(0);
 });
+
+const convertibleAward = (id: number, lineId: number, orderId: number | null = null) => ({
+  id, rfqLineId: lineId, quotationId: 31, supplierId: 7, reason: 'Best cost', quantity: 2,
+  unitPrice: 10.123456, currencyCode: 'USD', baseCurrencyCode: 'TWD', taxRatePercent: 5,
+  exchangeRate: 2, exchangeRateId: 42, exchangeRateFrom: '2026-10-01', exchangeRateTo: '2026-10-31',
+  comparisonDate: '2026-10-23', baseNet: 40.49, baseTax: 2.02, baseGross: 42.51,
+  purchaseOrderId: orderId, purchaseOrderNo: orderId ? 'PO20280229001' : null
+});
+
+test('PUR-RFQ-067 converts selected awards and verifies saved order number and line count', async ({ page }) => {
+  const awards = [convertibleAward(90, 170), convertibleAward(91, 171)];
+  const writes: unknown[] = []; let saved = false;
+  await page.route('**/api/v1/pur/rfqs/17/comparison', route => route.fulfill({ json: comparison }));
+  await page.route('**/api/v1/pur/rfqs/17/award-context', route => route.fulfill({ json: {
+    ...awardContext, version: saved ? 4 : 3, awards: saved ? awards.map(a => ({ ...a,
+      purchaseOrderId: 55, purchaseOrderNo: 'PO20280229001' })) : awards } }));
+  await page.route('**/api/v1/pur/rfqs/17/orders', route => {
+    writes.push(route.request().postDataJSON()); saved = true;
+    return route.fulfill({ status: 201, json: { orderId: 55, documentNo: 'PO20280229001',
+      status: 'Draft', lineCount: 2, awardIds: [90, 91], rfqVersion: 4 } });
+  });
+  await page.goto('/pur/rfqs/17/comparison');
+  await expect(page.getByTestId('pur-convert-0')).toContainText('2 行');
+  await page.getByTestId('pur-convert-0').click();
+  await expect(page.getByTestId('erp-message-dialog')).toContainText('2 行');
+  expect(writes).toHaveLength(0);
+  await page.getByTestId('erp-message-ok').click();
+  await expect(page.getByTestId('pur-award-notice')).toContainText('PO20280229001，共 2 行');
+  await expect(page.getByTestId('pur-convert-all-done')).toBeVisible();
+  await expect(page.getByTestId('pur-converted-list')).toContainText('PO20280229001');
+  expect(writes).toEqual([{ version: 3, supplierId: 7, awardIds: [90, 91] }]);
+  await capture(page, 'convert-success-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'convert-success-dark-zh-Hant');
+  await chooseTheme(page, 'light'); await chooseLanguage(page, 'en');
+  await expect(page.getByTestId('pur-convert-all-done')).toContainText('already been converted');
+  await capture(page, 'convert-success-light-en');
+  await chooseLanguage(page, 'zh-Hans');
+  await expect(page.getByTestId('pur-convert-all-done')).toContainText('全部已决标行');
+  await capture(page, 'convert-success-light-zh-Hans');
+});
+
+test('PUR-RFQ-067 reports a changed line and all-converted status without partial success', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: the server responded with a status of 422/);
+  let awards = [convertibleAward(90, 170), convertibleAward(91, 171)]; let writes = 0;
+  await page.route('**/api/v1/pur/rfqs/17/comparison', route => route.fulfill({ json: comparison }));
+  await page.route('**/api/v1/pur/rfqs/17/award-context', route => route.fulfill({ json: {
+    ...awardContext, version: writes ? 4 : 3, awards } }));
+  await page.route('**/api/v1/pur/rfqs/17/orders', route => {
+    writes++; awards = [convertibleAward(90, 170, 55), convertibleAward(91, 171)];
+    return route.fulfill({ status: 422, json: { errorCode: 'PUR.RFQ.AWARD_ALREADY_CONVERTED',
+      detail: 'Award 90 already converted.' } });
+  });
+  await page.goto('/pur/rfqs/17/comparison');
+  await page.getByTestId('pur-convert-0').click(); await page.getByTestId('erp-message-ok').click();
+  await expect(page.getByTestId('pur-comparison-error')).toContainText('選取行已轉單');
+  await expect(page.getByTestId('pur-converted-90')).toContainText('PO20280229001');
+  await expect(page.getByTestId('pur-convert-0')).toContainText('1 行');
+  await expect(page.getByTestId('pur-award-notice')).toHaveCount(0);
+  await capture(page, 'convert-conflict-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'convert-conflict-dark-zh-Hant');
+  awards = awards.map(a => ({ ...a, purchaseOrderId: 55, purchaseOrderNo: 'PO20280229001' }));
+  await page.getByTestId('pur-comparison-refresh').click();
+  await expect(page.getByTestId('pur-convert-all-done')).toBeVisible();
+  await expect(page.getByTestId('pur-convert-0')).toHaveCount(0);
+  expect(writes).toBe(1);
+});
+
+test('PUR-RFQ-067 shows no-awards and closed states without sending a conversion', async ({ page }) => {
+  let writes = 0; let mode: 'empty' | 'closed' = 'empty';
+  await page.route('**/api/v1/pur/rfqs/17/comparison', route => route.fulfill({ json: comparison }));
+  await page.route('**/api/v1/pur/rfqs/17/award-context', route => route.fulfill({ json: {
+    ...awardContext, status: mode === 'closed' ? 'Closed' : 'Sent',
+    awards: mode === 'closed' ? [convertibleAward(90, 170)] : [] } }));
+  await page.route('**/api/v1/pur/rfqs/17/orders', route => { writes++; return route.fulfill({ status: 201, json: {} }); });
+  await page.goto('/pur/rfqs/17/comparison');
+  await expect(page.getByTestId('pur-convert-no-awards')).toContainText('尚無已決標行');
+  await capture(page, 'convert-empty-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'convert-empty-dark-zh-Hant');
+  mode = 'closed'; await page.getByTestId('pur-comparison-refresh').click();
+  await expect(page.getByTestId('pur-convert-not-open')).toContainText('不能再轉單');
+  await expect(page.getByTestId('pur-convert-0')).toHaveCount(0);
+  expect(writes).toBe(0);
+});
+
+test('PUR-RFQ-067 refuses empty selection and 400/409/422/500/timeout/disconnect without success', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource|net::ERR_/);
+  pageErrors.allowApi5xx(/\/api\/v1\/pur\/rfqs\/17\/orders/, 500);
+  const awards = [convertibleAward(90, 170)];
+  let mode: 400 | 409 | 422 | 500 | 'timedout' | 'internetdisconnected' = 400;
+  let writes = 0;
+  await page.route('**/api/v1/pur/rfqs/17/comparison', route => route.fulfill({ json: comparison }));
+  await page.route('**/api/v1/pur/rfqs/17/award-context', route => route.fulfill({ json: {
+    ...awardContext, awards } }));
+  await page.route('**/api/v1/pur/rfqs/17/orders', route => {
+    writes++;
+    if (typeof mode === 'string') return route.abort(mode);
+    return route.fulfill({ status: mode, json: mode === 400
+      ? { errorCode: 'COMMON.REQUEST.VALIDATION_FAILED', errors: { awardIds: ['Choose at least one award'] } }
+      : mode === 422 ? { errorCode: 'PUR.RFQ.AWARD_ALREADY_CONVERTED' }
+        : mode === 500 ? { traceId: 'convert-trace' } : { errorCode: 'COMMON.CONCURRENCY.CONFLICT' } });
+  });
+  await page.goto('/pur/rfqs/17/comparison');
+  await page.getByTestId('pur-convert-check-90').uncheck();
+  await expect(page.getByTestId('pur-convert-0')).toBeDisabled();
+  await expect(page.getByTestId('pur-convert-none-0')).toContainText('請至少選擇一行');
+  expect(writes).toBe(0);
+  await page.getByTestId('pur-convert-check-90').check();
+  for (const [index, failure] of ([400, 409, 422, 500, 'timedout', 'internetdisconnected'] as const).entries()) {
+    mode = failure;
+    await page.getByTestId('pur-convert-0').click(); await page.getByTestId('erp-message-ok').click();
+    await expect.poll(() => writes, { message: `${failure} must reach the conversion API` }).toBe(index + 1);
+    await expect(page.getByTestId('pur-comparison-error')).toBeVisible();
+    if (failure === 400) await expect(page.getByTestId('pur-comparison-error')).toContainText('awardIds');
+    if (failure === 500) await expect(page.getByTestId('pur-comparison-error')).toContainText('convert-trace');
+    await expect(page.getByTestId('pur-award-notice')).toHaveCount(0);
+    await expect(page.getByTestId('pur-converted-list')).toHaveCount(0);
+    if (failure === 500) {
+      await capture(page, 'convert-server-error-light-zh-Hant');
+      await chooseTheme(page, 'dark'); await capture(page, 'convert-server-error-dark-zh-Hant');
+      await chooseTheme(page, 'light');
+    }
+  }
+  expect(writes).toBe(6);
+});
+
+test('PUR-RFQ-067 does not claim success when the saved source disagrees with the 201 response', async ({ page }) => {
+  let writes = 0;
+  await page.route('**/api/v1/pur/rfqs/17/comparison', route => route.fulfill({ json: comparison }));
+  await page.route('**/api/v1/pur/rfqs/17/award-context', route => route.fulfill({ json: {
+    ...awardContext, version: writes ? 4 : 3, awards: [convertibleAward(90, 170)] } }));
+  await page.route('**/api/v1/pur/rfqs/17/orders', route => {
+    writes++; return route.fulfill({ status: 201, json: { orderId: 55, documentNo: 'PO20280229001',
+      status: 'Draft', lineCount: 1, awardIds: [90], rfqVersion: 4 } });
+  });
+  await page.goto('/pur/rfqs/17/comparison');
+  await page.getByTestId('pur-convert-0').click(); await page.getByTestId('erp-message-ok').click();
+  await expect(page.getByTestId('pur-comparison-error')).toContainText('不能確認轉單成功');
+  await expect(page.getByTestId('pur-award-notice')).toHaveCount(0);
+  await expect(page.getByTestId('pur-converted-list')).toHaveCount(0);
+  expect(writes).toBe(1);
+});
+
+test.describe('comparison without conversion permission', () => {
+  test.use({ authorization: { ...E2E_AUTHORIZATION, isFullAccess: false, permissions: [
+    { code: 'PUR.RFQ.COMPARE', dataScope: 'Company' },
+  ] } });
+  test('PUR-RFQ-067 reads awards without exposing a conversion action', async ({ page }) => {
+    let writes = 0;
+    await page.route('**/api/v1/pur/rfqs/17/comparison', route => route.fulfill({ json: comparison }));
+    await page.route('**/api/v1/pur/rfqs/17/award-context', route => route.fulfill({ json: {
+      ...awardContext, awards: [convertibleAward(90, 170)] } }));
+    await page.route('**/api/v1/pur/rfqs/17/orders', route => { writes++; return route.fulfill({ status: 201, json: {} }); });
+    await page.goto('/pur/rfqs/17/comparison');
+    await expect(page.getByTestId('pur-award-snapshot-1')).toContainText('Best cost');
+    await expect(page.getByTestId('pur-convert')).toHaveCount(0);
+    expect(writes).toBe(0);
+  });
+});

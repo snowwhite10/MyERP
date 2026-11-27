@@ -240,6 +240,45 @@ public sealed class RfqConversionTransactionTests(TestDatabase database)
             .CountAsync(x => x.RfqId == draft.RfqId, Ct));
     }
 
+    [Fact]
+    public async Task AwardContextShowsTheOrderEachConvertedAwardBelongsTo()
+    {
+        // WU-PUR-005f3d: the 4.15 screen needs the saved order per award to explain "already converted".
+        var companyId = await NewCompanyAsync();
+        await using var db = NewDb(companyId);
+        var seed = await SeedAsync(db, companyId,
+            new AwardSpec(101, 30m, 1m, 1m, 30m, 1.5m, 31.5m),
+            new AwardSpec(101, 30m, 2m, 1m, 60m, 3m, 63m));
+        var result = await Service(db, companyId).ConvertAsync(seed.RfqId,
+            new RfqConversionInput(seed.Version, 101, [seed.AwardIds[0]]), Ct);
+
+        await using var read = NewDb(companyId);
+        var auth = new FixedAuthorization(new UserCompanyAuthorization(7, companyId, null, null, false,
+            new Dictionary<string, DataScope> { [PurchasingPermissions.RfqCompare] = DataScope.Self }));
+        var context = await new RfqQueryService(read, new RequisitionCompanyAccess(new FixedCompany(companyId)), auth)
+            .GetAwardContextAsync(seed.RfqId, Ct);
+
+        Assert.Equal(result.RfqVersion, context.Version);
+        var converted = context.Awards.Single(x => x.Id == seed.AwardIds[0]);
+        Assert.Equal(result.OrderId, converted.PurchaseOrderId);
+        Assert.Equal("PO20280229001", converted.PurchaseOrderNo);
+        var open = context.Awards.Single(x => x.Id == seed.AwardIds[1]);
+        Assert.Null(open.PurchaseOrderId);
+        Assert.Null(open.PurchaseOrderNo);
+
+        // Permanent conversion evidence must remain visible after the order is soft-deleted.
+        await using var change = NewDb(companyId);
+        var order = await change.Set<PurchaseOrderSource>().SingleAsync(x => x.Id == result.OrderId, Ct);
+        order.IsDeleted = true;
+        order.DeletedAt = Today;
+        await change.SaveChangesAsync(Ct);
+        var afterDelete = await new RfqQueryService(read,
+            new RequisitionCompanyAccess(new FixedCompany(companyId)), auth).GetAwardContextAsync(seed.RfqId, Ct);
+        var retained = afterDelete.Awards.Single(x => x.Id == seed.AwardIds[0]);
+        Assert.Equal(result.OrderId, retained.PurchaseOrderId);
+        Assert.Equal(result.DocumentNo, retained.PurchaseOrderNo);
+    }
+
     private async Task AssertNothingWrittenAsync(long companyId, long rfqId, int version, long? expectedSequence)
     {
         await using var verify = NewDb(companyId);

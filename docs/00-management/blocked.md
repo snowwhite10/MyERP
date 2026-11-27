@@ -1,5 +1,7 @@
 # Blocked 項目
 
+2026-11-28T03:05:49+08:00 WU-PUR-005f3d 全量模擬 Playwright 711 通過／54 略過／1 失敗：`FI-COLL-UI-101` 在共用 `chooseTheme` 點擊 `layout-theme-light` 後選項仍可見，與既有 `WU-P0-E2E-FLAKE-MENU` 症狀相同。該 FI 情境定向重跑 1/1 通過；PUR 比價轉單專項 17/17 通過。選單修復仍保留於既有 feature 分支，依原 BLOCKED 記錄驗收，不在本輪跨單元合併。
+
 2026-11-26T02:14:45+08:00 補記 `WU-P0-E2E-FLAKE-MENU`：WU-FI-002c2 的模擬 E2E 全量 682 通過／41 略過／1 失敗，`FI-COLL-MAP-UI-001` 在共用 `chooseLanguage` 的 `layout-language-en` 項目點擊後仍可見（`toBeHidden` 10 秒逾時）；與原 BLOCKED 選單漏點擊症狀相同。失敗 trace 在未提交的 `tests/e2e/test-results/`，不含於產品提交；該規格與本輪 FI 6.31 規格定向重跑 12/12 通過。分支修復 `feature/p0-e2e-menu-click` 尚未合併，維持 BLOCKED；本輪不跨單元修改選單。
 
 > 同一工作單元連續失敗 3 次即記錄於此。每完成一個模組後回頭重試一次。

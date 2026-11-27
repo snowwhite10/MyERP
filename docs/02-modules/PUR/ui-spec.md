@@ -97,13 +97,15 @@ WU-PUR-005f3c1 交付 4.15 唯讀切片：以 `PUR.RFQ.COMPARE` 守衛由詢價�
 
 WU-PUR-005f3c2 在同一 4.15 頁加入受權決標：COMPARE 可讀當前詢價版本與永久快照；AWARD 且 Sent 的可比行可選報價，填 1～500 字理由並確認後 POST，成功重讀快照；無 AWARD 權唯讀，已決標行不再給選擇按鈕。409／422／404 重讀最新狀態並顯示拒絕原因。轉單按鈕仍待 005f3d。
 
+WU-PUR-005f3d 在 4.15 加入 CONVERT 操作：依同供應商、原幣、本位幣與保存匯率分組已決標未轉行；每組可取消勾選，0 行停用並說明。確認對話框列明供應商、幣別、行數及來源不可重用。成功須先核對 POST 回傳行數與 ID，再重讀保存決標來源確認單號／訂單 ID，才顯示綠色成功提示。409／422／404 重讀並逐行顯示已轉採購單號；Closed、0 決標、全部已轉各有獨立說明；400／500／逾時／斷線均不顯示成功。三語亮暗畫面沿用 4.15，無 CONVERT 權不提供寫入操作。
+
 | Interface No. | Interface | Route | Related REQ_F | Access |
 |---|---|---|---|---|
 | 4.11 | Request for Quotation View Interface | `/pur/rfqs` | REQ_F4114.4.1, REQ_F4114.4.4, REQ_F4114.4.5 | `PUR.RFQ.VIEW` |
 | 4.12 | Request for Quotation Create Interface | `/pur/rfqs/new` | REQ_F4114.4.2 | `PUR.RFQ.CREATE` |
 | 4.13 | Request for Quotation Edit Interface | `/pur/rfqs/:id/edit` | REQ_F4114.4.3, REQ_F4114.4.6 | `PUR.RFQ.EDIT` |
 | 4.14 | Supplier Quotation Edit Interface | `/pur/rfqs/:id/quotations` | REQ_F4114.5.1, REQ_F4114.5.2, REQ_F4114.5.3, REQ_F4114.5.4 | `PUR.QUOTATION.VIEW/QUOTE` |
-| 4.15 | Quotation Comparison Interface | `/pur/rfqs/:id/comparison` | REQ_F4114.6.1, REQ_F4114.6.2, REQ_F4114.6.3 | `PUR.RFQ.COMPARE`；AWARD／CONVERT 待後續單元 |
+| 4.15 | Quotation Comparison Interface | `/pur/rfqs/:id/comparison` | REQ_F4114.6.1, REQ_F4114.6.2, REQ_F4114.6.3 | `PUR.RFQ.COMPARE` 進頁；`PUR.RFQ.AWARD` 決標；`PUR.RFQ.CONVERT` 轉單 |
 
 | Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
 |---|---|---|---|---|---|---|---|---|
