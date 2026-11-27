@@ -16,6 +16,11 @@ const comparison = { rfqId: 17, comparisonDate: '2026-10-23', baseCurrencyCode: 
   ] },
   { rfqLineId: 171, lineNo: 2, quantity: 1, offers: [] },
 ] };
+const awardContext = { rfqId: 17, documentNo: 'RFQ-0017', status: 'Sent', version: 3, awards: [] as unknown[] };
+
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/v1/pur/rfqs/17/award-context', route => route.fulfill({ json: awardContext }));
+});
 
 async function capture(page: import('@playwright/test').Page, name: string): Promise<void> {
   const directory = '../../tests/qa/PUR/screenshots';
@@ -111,5 +116,90 @@ test.describe('comparison permission boundary', () => {
     await page.goto('/pur/rfqs/17/comparison');
     await expect(page).toHaveURL(/\/forbidden/);
     expect(calls).toBe(0);
+  });
+});
+
+test('PUR-AWARD-UI-001 saves one reasoned award, then reads the permanent snapshot after refresh', async ({ page }) => {
+  let saved: Record<string, unknown> | null = null;
+  const writes: Record<string, unknown>[] = [];
+  await page.route('**/api/v1/pur/rfqs/17/comparison', route => route.fulfill({ json: comparison }));
+  await page.route('**/api/v1/pur/rfqs/17/award-context', route => route.fulfill({ json: {
+    ...awardContext, version: saved ? 4 : 3, awards: saved ? [saved] : [] } }));
+  await page.route('**/api/v1/pur/rfqs/17/awards', async route => {
+    const input = route.request().postDataJSON() as Record<string, unknown>;
+    writes.push(input); saved = { id: 90, rfqLineId: input['rfqLineId'], quotationId: input['quotationId'],
+      supplierId: 7, reason: input['reason'], quantity: 2, unitPrice: 10.123456, currencyCode: 'USD',
+      baseCurrencyCode: 'TWD', taxRatePercent: 5, exchangeRate: 2, exchangeRateId: 42,
+      exchangeRateFrom: '2026-10-01', exchangeRateTo: '2026-10-31', comparisonDate: '2026-10-23',
+      baseNet: 40.49, baseTax: 2.02, baseGross: 42.51 };
+    await route.fulfill({ status: 201, json: saved });
+  });
+  await page.goto('/pur/rfqs/17/comparison');
+  await page.getByTestId('pur-award-select-31').click();
+  await page.getByTestId('pur-award-save').click();
+  await expect(page.getByText('請填寫 1 至 500 字決標理由。')).toBeVisible();
+  expect(writes).toHaveLength(0);
+  await page.getByTestId('pur-award-reason').fill('交期與含稅成本較佳');
+  await page.getByTestId('pur-award-save').click();
+  await expect(page.getByTestId('erp-message-dialog')).toContainText('決標後不可覆寫');
+  await page.getByTestId('erp-message-ok').click();
+  await expect(page.getByTestId('pur-award-snapshot-1')).toContainText('交期與含稅成本較佳');
+  await expect(page.getByTestId('pur-award-snapshot-1')).toContainText('42.51 TWD');
+  expect(writes).toEqual([{ version: 3, rfqLineId: 170, quotationId: 31, reason: '交期與含稅成本較佳' }]);
+  await capture(page, 'award-success-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'award-success-dark-zh-Hant');
+  await page.reload();
+  await expect(page.getByTestId('pur-award-snapshot-1')).toContainText('交期與含稅成本較佳');
+  await expect(page.getByTestId('pur-award-select-31')).toHaveCount(0);
+  expect(writes).toHaveLength(1);
+});
+
+test('PUR-AWARD-UI-003/004/007 explains conflicts and server failures without claiming success', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: the server responded with a status of 409/);
+  pageErrors.allow(/Failed to load resource: the server responded with a status of 422/);
+  pageErrors.allow(/Failed to load resource: the server responded with a status of 500/);
+  pageErrors.allowApi5xx(/\/api\/v1\/pur\/rfqs\/17\/awards/, 500);
+  let status = 409;
+  let version = 3;
+  let writes = 0;
+  await page.route('**/api/v1/pur/rfqs/17/comparison', route => route.fulfill({ json: comparison }));
+  await page.route('**/api/v1/pur/rfqs/17/award-context', route => route.fulfill({ json: { ...awardContext, version } }));
+  await page.route('**/api/v1/pur/rfqs/17/awards', route => {
+    writes++; version++;
+    return route.fulfill({ status, json: { errorCode: status === 422 ? 'PUR.RFQ.LINE_ALREADY_AWARDED' :
+      status === 409 ? 'COMMON.CONCURRENCY.CONFLICT' : undefined,
+      traceId: status === 500 ? 'award-trace' : undefined } });
+  });
+  await page.goto('/pur/rfqs/17/comparison');
+  for (const code of [409, 422, 500]) {
+    status = code;
+    await page.getByTestId('pur-award-select-31').click();
+    await page.getByTestId('pur-award-reason').fill('價格及交期合適');
+    await page.getByTestId('pur-award-save').click();
+    await page.getByTestId('erp-message-ok').click();
+    await expect(page.getByTestId('pur-comparison-error')).toBeVisible();
+    await expect(page.getByTestId('pur-award-notice')).toHaveCount(0);
+    await expect(page.getByTestId('pur-award-snapshot-1')).toHaveCount(0);
+    if (code === 422) await expect(page.getByTestId('pur-comparison-error')).toContainText('已決標');
+    if (code === 500) await expect(page.getByTestId('pur-comparison-error')).toContainText('award-trace');
+    await capture(page, `award-${code}-light-zh-Hant`);
+    await chooseTheme(page, 'dark'); await capture(page, `award-${code}-dark-zh-Hant`);
+    await chooseTheme(page, 'light');
+    if (code === 500) await page.getByTestId('pur-comparison-refresh').click();
+  }
+  expect(writes).toBe(3);
+});
+
+test.describe('read-only comparison role', () => {
+  test.use({ authorization: { ...E2E_AUTHORIZATION, isFullAccess: false, permissions: [
+    { code: 'PUR.RFQ.COMPARE', dataScope: 'Company' },
+  ] } });
+  test('PUR-AWARD-UI-005 reads saved evidence but never offers an award action', async ({ page }) => {
+    await page.route('**/api/v1/pur/rfqs/17/comparison', route => route.fulfill({ json: comparison }));
+    await page.goto('/pur/rfqs/17/comparison');
+    await expect(page.getByTestId('pur-comparison-offer-31')).toBeVisible();
+    await expect(page.getByTestId('pur-award-select-31')).toHaveCount(0);
+    await capture(page, 'award-readonly-light-zh-Hant');
+    await chooseTheme(page, 'dark'); await capture(page, 'award-readonly-dark-zh-Hant');
   });
 });

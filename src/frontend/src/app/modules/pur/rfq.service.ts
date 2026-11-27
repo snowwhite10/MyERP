@@ -54,6 +54,14 @@ export interface ComparisonOffer { quotationId: number; supplierId: number; quot
 export interface ComparisonLine { rfqLineId: number; lineNo: number; quantity: number; offers: ComparisonOffer[] }
 export interface QuotationComparison { rfqId: number; comparisonDate: string;
   baseCurrencyCode: string; lines: ComparisonLine[] }
+export interface RfqAwardSnapshot { id: number; rfqLineId: number; quotationId: number;
+  supplierId: number; reason: string; quantity: number; unitPrice: number;
+  currencyCode: string; baseCurrencyCode: string; taxRatePercent: number;
+  exchangeRate: number; exchangeRateId: number | null; exchangeRateFrom: string;
+  exchangeRateTo: string | null; comparisonDate: string; baseNet: number;
+  baseTax: number; baseGross: number }
+export interface RfqAwardContext { rfqId: number; documentNo: string; status: RfqStatus;
+  version: number; awards: RfqAwardSnapshot[] }
 
 export function quotationFieldErrors(draft: QuotationDraft): string[] {
   const errors: string[] = [];
@@ -115,6 +123,7 @@ export class RfqService {
       if (code === 'PUR.REQUISITION.LINE_NOT_FOUND') return 'pur.rfq.sourceUnavailable';
       if (code === 'PUR.QUOTATION.NOT_FOUND') return 'pur.quotation.notFound';
       if (code === 'PUR.RFQ.NOT_SENT') return 'pur.comparison.notSent';
+      if (code === 'PUR.RFQ.LINE_ALREADY_AWARDED') return 'pur.comparison.lineAlreadyAwarded';
       if (code === 'MD.EXCHANGE_RATE.NO_BASE_CURRENCY') return 'pur.comparison.noBaseCurrency';
       if (code === 'MD.CURRENCY.NOT_FOUND' || code === 'MD.CURRENCY.INACTIVE') return 'pur.quotation.currencyUnavailable';
       if (code === 'MD.TAX_RATE.NOT_FOUND' || code === 'MD.TAX_RATE.INACTIVE' ||
@@ -154,6 +163,12 @@ export class RfqService {
   }
   compare(rfqId: number): Observable<QuotationComparison> {
     return this.http.get<QuotationComparison>(`/api/v1/pur/rfqs/${rfqId}/comparison`);
+  }
+  awardContext(rfqId: number): Observable<RfqAwardContext> {
+    return this.http.get<RfqAwardContext>(`/api/v1/pur/rfqs/${rfqId}/award-context`);
+  }
+  award(rfqId: number, input: { version: number; rfqLineId: number; quotationId: number; reason: string }): Observable<RfqAwardSnapshot> {
+    return this.http.post<RfqAwardSnapshot>(`/api/v1/pur/rfqs/${rfqId}/awards`, input);
   }
   createQuotation(rfqId: number, draft: QuotationDraft): Observable<QuotationDetail> {
     return this.http.post<QuotationDetail>(`/api/v1/pur/rfqs/${rfqId}/quotations`, this.quotationBody(draft));

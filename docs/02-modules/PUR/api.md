@@ -156,6 +156,7 @@ WU-PUR-005b 已落地詢價三表及同公司約束。005c1 已提供 `GET /api/
 | POST | `/{id}/quotations/{quotationId}/withdraw` | 撤回未決標報價 | `PUR.QUOTATION.QUOTE` |
 | GET | `/{id}/comparison` | 逐行原幣及本位幣含稅比較，標示全部不可比原因（已實作） | `PUR.RFQ.COMPARE` |
 | POST | `/{id}/awards` | 逐行決標並保存理由與價格快照 | `PUR.RFQ.AWARD` |
+| GET | `/{id}/award-context` | 依 COMPARE 資料範圍讀目前詢價單號、狀態、版本及不可變逐行決標快照；他公司或範圍外 404 | `PUR.RFQ.COMPARE` |
 | POST | `/{id}/orders` | 將同一供應商已決標且未轉行建立採購單草稿 | `PUR.RFQ.CONVERT` |
 
 建立／修訂 body 只接受業務欄位與行號，不接受公司、單號、擁有人或審計欄位；歸屬從 SYS 取得。送審、決標、轉單均帶版本；重試相同轉單請求須回已建立單的可辨識結果或明確衝突，不能重複建立。MD 物料、供應商、幣別、稅率及匯率經公開 Contracts 驗證。詢價發送目前不發外部 email；介面只回報系統內的發送狀態。

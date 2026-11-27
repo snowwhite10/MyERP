@@ -20,6 +20,58 @@ public sealed class RfqAwardTests(TestDatabase database)
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact]
+    public async Task AwardContextReadsImmutableSnapshotWithinCompareScope()
+    {
+        var companyId = TestCompanies.Next();
+        var company = new FixedCompany(companyId);
+        var stamp = new AuditStamper(new FixedClock(new DateTime(2026, 10, 21)), new FixedUser(7), company);
+        await using var db = NewDb(company, stamp);
+        var rfq = new Rfq { CompanyId = companyId, DocumentNo = $"Q-CONTEXT-{companyId}",
+            BusinessDate = new DateOnly(2026, 10, 20), ReplyDeadline = new DateOnly(2026, 10, 22),
+            OwnerId = 7, Status = RfqStatus.Sent, SentAt = new DateTime(2026, 10, 21) };
+        rfq.Lines.Add(new RfqLine { CompanyId = companyId, LineNo = 1, ItemId = 11,
+            RequiredDate = new DateOnly(2026, 11, 1), Quantity = 2m });
+        rfq.Invitations.Add(new RfqInvitation { CompanyId = companyId, SupplierId = 101 });
+        db.Add(rfq);
+        await db.SaveChangesAsync(Ct);
+        var quote = new SupplierQuotation { CompanyId = companyId, RfqId = rfq.Id,
+            SupplierId = 101, CurrentRevisionNo = 1 };
+        quote.Revisions.Add(new QuotationRevision { CompanyId = companyId, RevisionNo = 1,
+            QuoteDate = new DateOnly(2026, 10, 20), ValidUntil = new DateOnly(2026, 10, 22),
+            Lines = { new QuotationLine { CompanyId = companyId, RfqLineId = rfq.Lines.Single().Id,
+                UnitPrice = 1.235m, CurrencyCode = "USD", TaxRateId = 31 } } });
+        db.Add(quote);
+        await db.SaveChangesAsync(Ct);
+        var award = new RfqAward { CompanyId = companyId, RfqId = rfq.Id,
+            RfqLineId = rfq.Lines.Single().Id, QuotationId = quote.Id,
+            QuotationLineId = quote.Revisions.Single().Lines.Single().Id,
+            SupplierId = 101, Reason = "Saved reason", Quantity = 2m, UnitPrice = 1.235m,
+            CurrencyCode = "USD", BaseCurrencyCode = "TWD", TaxRateId = 31,
+            TaxRatePercent = 5m, TaxRateFrom = new DateOnly(2026, 10, 1),
+            ExchangeRate = 30m, ExchangeRateId = 9,
+            ExchangeRateFrom = new DateOnly(2026, 10, 1),
+            ComparisonDate = new DateOnly(2026, 10, 21), BaseNet = 74.10m,
+            BaseTax = 3.71m, BaseGross = 77.81m };
+        db.Add(award);
+        await db.SaveChangesAsync(Ct);
+        var access = new RequisitionCompanyAccess(company);
+        var auth = new FixedAuthorization(new UserCompanyAuthorization(7, companyId, null, null, false,
+            new Dictionary<string, DataScope> { [PurchasingPermissions.RfqCompare] = DataScope.Self }));
+        var context = await new RfqQueryService(db, access, auth).GetAwardContextAsync(rfq.Id, Ct);
+        Assert.Equal(rfq.Version, context.Version);
+        Assert.Equal(rfq.DocumentNo, context.DocumentNo);
+        var saved = Assert.Single(context.Awards);
+        Assert.Equal(award.Id, saved.Id);
+        Assert.Equal("Saved reason", saved.Reason);
+        Assert.Equal(77.81m, saved.BaseGross);
+        Assert.Equal(30m, saved.ExchangeRate);
+        var outsider = new FixedAuthorization(new UserCompanyAuthorization(8, companyId, null, null, false,
+            new Dictionary<string, DataScope> { [PurchasingPermissions.RfqCompare] = DataScope.Self }));
+        await Assert.ThrowsAsync<NotFoundException>(() => new RfqQueryService(db, access, outsider)
+            .GetAwardContextAsync(rfq.Id, Ct));
+    }
+
+    [Fact]
     public async Task AwardSavesSnapshotAndNeverReplacesTheSelectedLine()
     {
         var companyId = TestCompanies.Next();

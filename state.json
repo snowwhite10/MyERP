@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "PUR",
-    "currentWorkUnit": "WU-PUR-005e4",
+    "currentWorkUnit": "WU-PUR-005f3c2",
     "lastCompletedWorkUnit": "WU-PUR-005e3",
-    "nextAction": "先做獨立的 WU-PUR-005f3c2：接已驗收 AWARD GET，完成決標快照三語亮暗畫面、權限／狀態／錯誤提示、測試與 QA；不使用或驗證已延後的 005e4 CONVERT。005e4 真實 SQL／HTTP／Release 補驗僅在 MASTER_PROMPT 第 1 節規定時機重試，具體指令與剩餘情境見 deferredVerifications。",
+    "nextAction": "005f3c2 決標頁與定向 SQL 已提交，但後端全量因記憶體不足延後；按 MASTER_PROMPT 第 1 節不得單獨重挑 005e4／005f3c2 補驗。第一週 PUR-005f3d 依賴 005e4、006a 受阻，改選第一期下一個不依賴它們的 WU-FI-006a（採購付款來源／migration／原子服務）；先核對 003a、004a1～a3、006d 已完成及當輪資源守衛，再依測試先行落地。005f3c2 邊界／錯誤未完項目見 test-plan，於模組收尾補驗時處理。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -56,6 +56,17 @@
     ],
     "deferredVerifications": [
         {
+            "workUnit": "WU-PUR-005f3c2",
+            "reason": "2026-11-27 後端全量執行中可用實體記憶體降至 0.94 GiB、整合測試程序佔 2.39 GiB，長時間無結果；依資源不足規則中止。決標快照定向真實 SQL 1/1、前端 1305/1305、模擬 E2E 7/7 已通過。",
+            "commands": [
+                "dotnet test --solution src/backend/MyERP.sln -c Debug --no-build --max-threads 2",
+                "& ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npx playwright test specs/purchasing-comparison.spec.ts"
+            ],
+            "remaining": "在 PUR 模組完成或人手指定時先跑一次記憶體守衛；PASS 後補 005f3c2 test-plan 的理由 1／500 字、400／逾時／斷線及 Closed 畫面情境，重跑後端全量與比價專項；本輪不要單獨重試。",
+            "branch": "main",
+            "deferredAt": "2026-11-27T14:14:38+08:00"
+        },
+        {
             "workUnit": "WU-PUR-005e4",
             "reason": "2026-11-27 記憶體守衛 DEFER：1.238／1.169／1.174 GiB，低於 2.5 GiB；CONVERT 服務與初步測試可編譯，真實 SQL 未在本輪執行。",
             "commands": [
@@ -82,5 +93,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-27T13:53:50+08:00",
-    "updatedAt": "2026-11-27T13:53:50+08:00"
+    "updatedAt": "2026-11-27T14:14:38+08:00"
 }

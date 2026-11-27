@@ -7,6 +7,15 @@ using MyERP.Shared.Security;
 
 namespace MyERP.Modules.Purchasing.Application;
 
+public sealed record RfqAwardSnapshot(long Id, long RfqLineId, long QuotationId,
+    long SupplierId, string Reason, decimal Quantity, decimal UnitPrice,
+    string CurrencyCode, string BaseCurrencyCode, decimal TaxRatePercent,
+    decimal ExchangeRate, long? ExchangeRateId, DateOnly ExchangeRateFrom,
+    DateOnly? ExchangeRateTo, DateOnly ComparisonDate, decimal BaseNet,
+    decimal BaseTax, decimal BaseGross);
+public sealed record RfqAwardContext(long RfqId, string DocumentNo, RfqStatus Status,
+    int Version, IReadOnlyList<RfqAwardSnapshot> Awards);
+
 public sealed record RfqQuery : PagedRequest
 {
     public DateOnly? From { get; init; }
@@ -137,6 +146,19 @@ public sealed class RfqQueryService(MyErpDbContext db, RequisitionCompanyAccess 
 
     public Task<RfqDetail> GetForQuoteAsync(long id, CancellationToken token = default) =>
         GetScopedAsync(id, PurchasingPermissions.QuotationQuote, token);
+
+    public async Task<RfqAwardContext> GetAwardContextAsync(long id, CancellationToken token = default)
+    {
+        var rfq = await GetScopedAsync(id, PurchasingPermissions.RfqCompare, token);
+        var awards = await db.Set<RfqAward>().AsNoTracking().Where(x => x.RfqId == id)
+            .OrderBy(x => x.RfqLineId)
+            .Select(x => new RfqAwardSnapshot(x.Id, x.RfqLineId, x.QuotationId,
+                x.SupplierId, x.Reason, x.Quantity, x.UnitPrice, x.CurrencyCode,
+                x.BaseCurrencyCode, x.TaxRatePercent, x.ExchangeRate, x.ExchangeRateId,
+                x.ExchangeRateFrom, x.ExchangeRateTo, x.ComparisonDate,
+                x.BaseNet, x.BaseTax, x.BaseGross)).ToListAsync(token);
+        return new RfqAwardContext(rfq.Id, rfq.DocumentNo, rfq.Status, rfq.Version, awards);
+    }
 
     private async Task<RfqDetail> GetScopedAsync(long id, string permission, CancellationToken token)
     {

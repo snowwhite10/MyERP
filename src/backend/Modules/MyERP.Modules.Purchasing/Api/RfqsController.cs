@@ -90,6 +90,15 @@ public sealed class RfqsController(RfqQueryService queries, RfqDraftService draf
     [ProducesResponseType<RfqDetail>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public Task<RfqDetail> GetForEdit(long id, CancellationToken token) => queries.GetForEditAsync(id, token);
+    /// <summary>REQ_F4114.6.2：讀取目前詢價版本及不可變決標快照，限比價可見範圍。</summary>
+    [HttpGet("{id:long}/award-context")]
+    [RequirePermission(PurchasingPermissions.RfqCompare)]
+    [ProducesResponseType<RfqAwardContext>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public Task<RfqAwardContext> GetAwardContext(long id, CancellationToken token) =>
+        queries.GetAwardContextAsync(id, token);
     /// <summary>REQ_F4114.6.2：按詢價版本逐行決標，保存當日價格、稅率、匯率及理由快照。</summary>
     [HttpPost("{id:long}/awards")]
     [RequirePermission(PurchasingPermissions.RfqAward)]

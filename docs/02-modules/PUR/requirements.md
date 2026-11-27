@@ -177,7 +177,7 @@ WU-PUR-005f2a2 來源選擇器按目前公司、物料及單號分頁，變更�
 | REQ_F4114.5.3 | 1.0 | System should enable user to revise supplier quotations. | Developer | QUOTE 按版本修訂未決標、未過期報價；保留舊版不可覆寫，已決標或已轉單報價不可修訂；舊版本 409。 |
 | REQ_F4114.5.4 | 1.1 | System should enable user to withdraw supplier quotations. | Developer | QUOTE 按目前版本撤回未決標、未過期報價；舊版本 409，重複撤回或已決標／過期 422。撤回後不得參與比價，歷史仍可查閱，不影響其他供應商報價。 |
 | REQ_F4114.6.1 | 1.1 | System should enable user to compare supplier quotations. | Developer | COMPARE 對已發送或已關閉詢價逐行顯示所有目前報價，包含撤回、過期及未生效項；逐行展示原幣單價、進項稅率、有效匯率及來源期間、本位幣未稅／稅額／含稅成本；不可比項明示原因且不顯示比較金額，不把不同幣別原價直接排序。畫面只以已驗收 GET 取得即時資料，錯誤或換公司清除舊成本。WU-PUR-005f3c1 只交付唯讀畫面。 |
-| REQ_F4114.6.2 | 1.0 | System should enable user to select supplier quotations. | Developer | AWARD 可逐行選擇一個合格供應商報價，保存選擇理由與價格／匯率／稅額快照；重複決標或詢價關閉回 422，版本衝突 409。 |
+| REQ_F4114.6.2 | 1.1 | System should enable user to select supplier quotations. | Developer | AWARD 可逐行選擇一個合格供應商報價，必填 1～500 字理由；確認後按目前詢價版本原子保存價格／匯率／稅額快照。COMPARE 權限可讀目前版本與不可變決標快照，重整後仍顯示理由與原幣、本位幣證據；無 AWARD 權只讀。重複決標或詢價關閉回 422，版本衝突 409，失敗不顯示成功。 |
 | REQ_F4114.6.3 | 1.2 | System should enable user to convert selected quotations into a purchase order. | Developer | CONVERT 只接受同一已發送詢價、同一供應商、同一原幣／本位幣及相同已保存匯率的 1～1000 個不同已決標未轉行；按目前詢價版本原子建立一張採購單草稿、永久單號及不可重用來源連結，保留決標商務快照。匯率不一致、空集合／重複 ID 拒絕，任何行衝突整批回滾。請購已轉量由 WU-PUR-006 的訂單提交流程消耗；轉單不改庫存。成功提示顯示已保存單號及行數。 |
 
 詢價三表已於 WU-PUR-005b 落地並分配 REQ_DS43.163～165；報價三表於 005d 分配 166～168，決標快照於 005e3 分配 169。採購單草稿的完整編輯、送審及取消在 WU-PUR-006；本需求群只規定最小可保存轉單草稿與來源唯一性。變更時遞增需求版本並記錄原因。
@@ -185,6 +185,8 @@ WU-PUR-005f2a2 來源選擇器按目前公司、物料及單號分頁，變更�
 變更記錄：WU-PUR-005e4 將 REQ_F4114.6.3 從 1.0 更新至 1.1，固定明確行集合、單幣別、版本及來源永久唯一的驗收條件；資料表及端點待實作驗收。WU-PUR-005f2c 將 REQ_F4114.4.1 從 1.0 更新至 1.1，加入已套用篩選的安全 CSV 與保存詳情列印；對應 BR-PUR-021、REQ_IO_A4.11.4～5、PUR-RFQ-092～098。WU-PUR-005f3c1 將 REQ_F4114.6.1 從 1.0 更新至 1.1，對齊已驗收 GET 的歷史不可比項、稅率／匯率來源及唯讀畫面錯誤清除條件。
 
 WU-PUR-005e4 依 ADR-210 將 REQ_F4114.6.3 從 1.1 提至 1.2：多個決標行須使用相同保存匯率與本位幣，否則表頭匯率不能代表全部行。CONVERT 真實 SQL／HTTP 與升降級完整驗收仍待續。
+
+WU-PUR-005f3c2 將 REQ_F4114.6.2 提至 1.1：加入受權讀取永久快照、理由表單及保存後重讀的畫面驗收；轉採購單仍屬 005f3d。
 
 ## WU-PUR-000 請購設計基線
 

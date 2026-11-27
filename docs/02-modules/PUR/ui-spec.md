@@ -95,6 +95,8 @@ WU-PUR-005f3e 修訂 4.14 上段權限缺口：表單上下文改由 `PUR.QUOTAT
 
 WU-PUR-005f3c1 交付 4.15 唯讀切片：以 `PUR.RFQ.COMPARE` 守衛由詢價詳情進入；顯示即時比價日、本位幣、每行數量、所有報價的原幣單價、匯率來源／有效期間、進項稅率有效期間、本位幣未稅／稅額／含稅及不可比原因。無行、無報價、422、500／traceId、斷線均有獨立提示；重新整理和換公司先清舊成本，且本頁沒有決標／轉單寫入按鈕。
 
+WU-PUR-005f3c2 在同一 4.15 頁加入受權決標：COMPARE 可讀當前詢價版本與永久快照；AWARD 且 Sent 的可比行可選報價，填 1～500 字理由並確認後 POST，成功重讀快照；無 AWARD 權唯讀，已決標行不再給選擇按鈕。409／422／404 重讀最新狀態並顯示拒絕原因。轉單按鈕仍待 005f3d。
+
 | Interface No. | Interface | Route | Related REQ_F | Access |
 |---|---|---|---|---|
 | 4.11 | Request for Quotation View Interface | `/pur/rfqs` | REQ_F4114.4.1, REQ_F4114.4.4, REQ_F4114.4.5 | `PUR.RFQ.VIEW` |
