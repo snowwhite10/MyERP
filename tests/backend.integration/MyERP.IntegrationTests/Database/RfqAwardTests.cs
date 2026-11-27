@@ -10,6 +10,7 @@ using MyERP.Modules.Purchasing.Infrastructure;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Monetary;
+using MyERP.Shared.Numbering;
 using MyERP.Shared.Security;
 
 namespace MyERP.IntegrationTests.Database;
@@ -184,6 +185,56 @@ public sealed class RfqAwardTests(TestDatabase database)
         Assert.Single(simultaneous.OfType<ConflictException>());
         Assert.Equal(2, await db.Set<RfqAward>().CountAsync(x => x.RfqId == rfq.Id, Ct));
 
+        var secondAward = await db.Set<RfqAward>().AsNoTracking()
+            .SingleAsync(x => x.RfqLineId == secondLineId, Ct);
+        var numbers = new Mock<INumberGenerator>();
+        numbers.Setup(x => x.NextAsync("PUR.ORDER", It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync($"PO-CONVERT-{companyId}");
+        var converter = new RfqConversionService(db, new RequisitionCompanyAccess(company),
+            new FixedAuthorization(new UserCompanyAuthorization(7, companyId, null, null, false,
+                new Dictionary<string, DataScope> { [PurchasingPermissions.RfqConvert] = DataScope.Self })),
+            numbers.Object, clock);
+        var currentVersion = (await db.Set<Rfq>().AsNoTracking().SingleAsync(x => x.Id == rfq.Id, Ct)).Version;
+        await Assert.ThrowsAsync<RequestValidationException>(() => converter.ConvertAsync(rfq.Id,
+            new RfqConversionInput(currentVersion, 101, []), Ct));
+        await Assert.ThrowsAsync<ForbiddenException>(() => new RfqConversionService(db,
+            new RequisitionCompanyAccess(company),
+            new FixedAuthorization(new UserCompanyAuthorization(7, companyId, null, null, false,
+                new Dictionary<string, DataScope>())), numbers.Object, clock).ConvertAsync(rfq.Id,
+            new RfqConversionInput(currentVersion, 101, [secondAward.Id]), Ct));
+        await Assert.ThrowsAsync<NotFoundException>(() => new RfqConversionService(db,
+            new RequisitionCompanyAccess(company),
+            new FixedAuthorization(new UserCompanyAuthorization(8, companyId, null, null, false,
+                new Dictionary<string, DataScope> { [PurchasingPermissions.RfqConvert] = DataScope.Self })),
+            numbers.Object, clock).ConvertAsync(rfq.Id,
+            new RfqConversionInput(currentVersion, 101, [secondAward.Id]), Ct));
+        await Assert.ThrowsAsync<NotFoundException>(() => converter.ConvertAsync(rfq.Id,
+            new RfqConversionInput(currentVersion, 101, [long.MaxValue]), Ct));
+        var wrongSupplier = await Assert.ThrowsAsync<BusinessRuleException>(() => converter.ConvertAsync(rfq.Id,
+            new RfqConversionInput(currentVersion, 102, [secondAward.Id]), Ct));
+        Assert.Equal("PUR.RFQ.SUPPLIER_MISMATCH", wrongSupplier.ErrorCode);
+        var converted = await converter.ConvertAsync(rfq.Id,
+            new RfqConversionInput(currentVersion, 101, [secondAward.Id]), Ct);
+        Assert.Equal("Draft", converted.Status);
+        Assert.Equal($"PO-CONVERT-{companyId}", converted.DocumentNo);
+        Assert.Equal(1, converted.LineCount);
+        Assert.Equal(secondAward.Id, Assert.Single(converted.AwardIds));
+        var convertedLine = await db.Set<PurchaseOrderSourceLine>().AsNoTracking()
+            .SingleAsync(x => x.PurchaseOrderId == converted.OrderId, Ct);
+        Assert.Equal(secondAward.Quantity, convertedLine.Quantity);
+        Assert.Equal(secondAward.UnitPrice, convertedLine.UnitPrice);
+        Assert.Equal(secondAward.BaseGross, convertedLine.BaseGross);
+        Assert.Equal(secondAward.Id, (await db.Set<PurchaseOrderAwardSource>().AsNoTracking()
+            .SingleAsync(x => x.PurchaseOrderLineId == convertedLine.Id, Ct)).AwardId);
+        var stale = await Assert.ThrowsAsync<ConflictException>(() => converter.ConvertAsync(rfq.Id,
+            new RfqConversionInput(currentVersion, 101, [secondAward.Id]), Ct));
+        Assert.NotNull(stale);
+        var reused = await Assert.ThrowsAsync<BusinessRuleException>(() => converter.ConvertAsync(rfq.Id,
+            new RfqConversionInput(converted.RfqVersion, 101, [secondAward.Id]), Ct));
+        Assert.Equal("PUR.RFQ.AWARD_ALREADY_CONVERTED", reused.ErrorCode);
+        numbers.Verify(x => x.NextAsync("PUR.ORDER", It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+
         await Assert.ThrowsAsync<Microsoft.Data.SqlClient.SqlException>(() => db.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE dbo.pur_rfq_award SET reason = N'Overwritten' WHERE id = {result.Id}", Ct));
         var saved = await db.Set<RfqAward>().AsNoTracking().SingleAsync(x => x.Id == result.Id, Ct);
@@ -192,6 +243,42 @@ public sealed class RfqAwardTests(TestDatabase database)
             $"DELETE FROM dbo.pur_rfq_award WHERE id = {result.Id}", Ct));
         Assert.Equal("Lowest evaluated cost", (await db.Set<RfqAward>()
             .AsNoTracking().SingleAsync(x => x.Id == result.Id, Ct)).Reason);
+
+        // A conversion source is permanent evidence even if the order is later cancelled.
+        var order = new PurchaseOrderSource { CompanyId = companyId, SupplierId = 101,
+            Currency = "USD", Status = "Draft", DocumentNo = $"PO-SOURCE-{companyId}" };
+        db.Add(order);
+        await db.SaveChangesAsync(Ct);
+        var orderLine = new PurchaseOrderSourceLine { CompanyId = companyId,
+            PurchaseOrderId = order.Id, LineNo = 1, MaterialId = 11,
+            Quantity = result.Quantity, UnitPrice = result.UnitPrice,
+            TaxRatePercent = result.TaxRatePercent };
+        db.Add(orderLine);
+        await db.SaveChangesAsync(Ct);
+        var source = new PurchaseOrderAwardSource { CompanyId = companyId,
+            PurchaseOrderLineId = orderLine.Id, AwardId = result.Id };
+        db.Add(source);
+        await db.SaveChangesAsync(Ct);
+        var sourceId = source.Id;
+        Assert.True(sourceId > 0);
+        await Assert.ThrowsAsync<Microsoft.Data.SqlClient.SqlException>(() =>
+            db.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT dbo.pur_order_source(company_id,purchase_order_line_id,award_id,created_at,created_by,version)
+                VALUES ({companyId},{orderLine.Id},{result.Id},'2026-10-21',7,1)
+                """, Ct));
+        await Assert.ThrowsAsync<Microsoft.Data.SqlClient.SqlException>(() =>
+            db.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT dbo.pur_order_source(company_id,purchase_order_line_id,award_id,created_at,created_by,version)
+                VALUES ({companyId + 1},{orderLine.Id},{result.Id},'2026-10-21',7,1)
+                """, Ct));
+        await Assert.ThrowsAsync<Microsoft.Data.SqlClient.SqlException>(() =>
+            db.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE dbo.pur_order_source SET award_id = {result.Id} WHERE id = {sourceId}", Ct));
+        await Assert.ThrowsAsync<Microsoft.Data.SqlClient.SqlException>(() =>
+            db.Database.ExecuteSqlInterpolatedAsync(
+                $"DELETE FROM dbo.pur_order_source WHERE id = {sourceId}", Ct));
+        Assert.Equal(1, await db.Set<PurchaseOrderAwardSource>().AsNoTracking()
+            .CountAsync(x => x.AwardId == result.Id, Ct));
 
         var draft = new Rfq { CompanyId = companyId, DocumentNo = $"Q-DRAFT-{companyId}",
             BusinessDate = new DateOnly(2026, 10, 20), ReplyDeadline = new DateOnly(2026, 10, 22),
@@ -219,7 +306,8 @@ public sealed class RfqAwardTests(TestDatabase database)
             .AddInterceptors(fault is null
                 ? [new AuditSaveChangesInterceptor(stamp)]
                 : [new AuditSaveChangesInterceptor(stamp), fault]).Options,
-            [new RfqDbModel(), new QuotationDbModel(), new RfqAwardDbModel()], company);
+            [new RfqDbModel(), new QuotationDbModel(), new RfqAwardDbModel(),
+                new PurchaseInvoiceSourceDbModel()], company);
 
     private sealed class FailAwardInsert : DbCommandInterceptor
     {

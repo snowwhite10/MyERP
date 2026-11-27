@@ -24,6 +24,7 @@ public sealed class PurchasingModule : IErpModule
         services.AddScoped<QuotationQueryService>();
         services.AddScoped<QuotationComparisonService>();
         services.AddScoped<RfqAwardService>();
+        services.AddScoped<RfqConversionService>();
         services.AddScoped<QuotationMutationService>();
         services.AddScoped<RfqDraftService>();
         services.AddScoped<RequisitionCreateService>();
@@ -71,6 +72,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
     public const string QuotationQuote = "PUR.QUOTATION.QUOTE";
     public const string RfqCompare = "PUR.RFQ.COMPARE";
     public const string RfqAward = "PUR.RFQ.AWARD";
+    public const string RfqConvert = "PUR.RFQ.CONVERT";
     public const string InvoiceCreate = "PUR.INVOICE.CREATE";
     public const string InvoiceEdit = "PUR.INVOICE.EDIT";
     public const string InvoiceMatch = "PUR.INVOICE.MATCH";
@@ -98,6 +100,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
         new(QuotationQuote, PurchasingModuleContracts.ModuleCode),
         new(RfqCompare, PurchasingModuleContracts.ModuleCode),
         new(RfqAward, PurchasingModuleContracts.ModuleCode),
+        new(RfqConvert, PurchasingModuleContracts.ModuleCode),
         new(InvoiceCreate, PurchasingModuleContracts.ModuleCode),
         new(InvoiceEdit, PurchasingModuleContracts.ModuleCode),
         new(InvoiceMatch, PurchasingModuleContracts.ModuleCode),

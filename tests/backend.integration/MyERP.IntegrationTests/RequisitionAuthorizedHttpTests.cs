@@ -311,6 +311,30 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         Assert.Equal(HttpStatusCode.BadRequest,
             (await MutationAsync(http, HttpMethod.Post, path,
                 new { version = 1, rfqLineId = lineId, quotationId = 1, reason = " " }, token, company)).StatusCode);
+
+        var convertPath = $"/api/v1/pur/rfqs/{rfqId}/orders";
+        var convertBody = new { version = 1, supplierId = 101, awardIds = new[] { 1L } };
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await http.PostAsJsonAsync(convertPath, convertBody, Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await MutationAsync(http, HttpMethod.Post, convertPath, convertBody, token, company)).StatusCode);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
+            var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                "Convert user", null, DataScope.Self, false, [PurchasingPermissions.RfqConvert]), Ct)).Id;
+            await roles.AssignAsync(userId, company,
+                new UserCompanyAssignment(null, null, false, true, [role]), Ct);
+        }
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await MutationAsync(http, HttpMethod.Post, $"/api/v1/pur/rfqs/{outsiderId}/orders",
+                convertBody, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity,
+            (await MutationAsync(http, HttpMethod.Post, convertPath, convertBody, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await MutationAsync(http, HttpMethod.Post, convertPath,
+                new { version = 1, supplierId = 101, awardIds = Array.Empty<long>() },
+                token, company)).StatusCode);
     }
 
     [Fact]

@@ -6,7 +6,7 @@
     "currentModule": "PUR",
     "currentWorkUnit": "WU-PUR-005e4",
     "lastCompletedWorkUnit": "WU-PUR-005e3",
-    "nextAction": "續做 WU-PUR-005e4：資料結構切片已提交（既有訂單兩表擴充＋pur_order_source、REQ_DS43.213、Debug 後端 4073/4073）。先以 myerp_test 既有訂單／發票夾具驗 migration Down→Up 保留原值、來源連結跨公司／重複／UPDATE／DELETE 拒絕；再按 PUR-RFQ-060～066 寫真實 SQL 與受權 HTTP 紅燈，實作 SYS 同交易單號和 CONVERT 原子端點，驗競態、回滾、Release 全量及帶 DB DocGen。005e4 完成後依序重試 005f2a2／005f3e。外部 Runner 兩檔未提交變更禁止代理修改或納入提交。",
+    "nextAction": "先做獨立的 WU-PUR-005f3c2：接已驗收 AWARD GET，完成決標快照三語亮暗畫面、權限／狀態／錯誤提示、測試與 QA；不使用或驗證已延後的 005e4 CONVERT。005e4 真實 SQL／HTTP／Release 補驗僅在 MASTER_PROMPT 第 1 節規定時機重試，具體指令與剩餘情境見 deferredVerifications。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -54,6 +54,21 @@
         "WU-P0-016",
         "WU-P0-E2E-FLAKE-MENU"
     ],
+    "deferredVerifications": [
+        {
+            "workUnit": "WU-PUR-005e4",
+            "reason": "2026-11-27 記憶體守衛 DEFER：1.238／1.169／1.174 GiB，低於 2.5 GiB；CONVERT 服務與初步測試可編譯，真實 SQL 未在本輪執行。",
+            "commands": [
+                "dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --filter-method '*RfqAwardTests*' --max-threads 2",
+                "dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --filter-method '*RequisitionAuthorizedHttpTests*' --max-threads 2",
+                "dotnet test --solution src/backend/MyERP.sln -c Release --max-threads 2",
+                "dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root . --output .tools/docgen-isolated --connection 'Server=localhost\\MSSQLSERVER2022;Database=myerp_test;Integrated Security=true;Encrypt=true;TrustServerCertificate=true;'"
+            ],
+            "remaining": "先補 PUR-RFQ-069 帶資料 Down／Up；再完成 PUR-RFQ-060～066 的真實 SYS 發號、兩行／千行精度、跨公司／資料範圍、雙連線與故障注入回滾；最後 Release 全量及帶 DB DocGen。以 tools/docgen/README.md 核對實際帶 DB 指令。",
+            "branch": "main",
+            "deferredAt": "2026-11-27T13:52:44+08:00"
+        }
+    ],
     "openBranches": [
         {
             "name": "feature/p0-e2e-menu-click",
@@ -66,5 +81,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-27T09:58:29+08:00",
-    "updatedAt": "2026-11-27T09:58:29+08:00"
+    "updatedAt": "2026-11-27T13:52:44+08:00"
 }

@@ -23,6 +23,8 @@
 
 ## 進行中
 
+- 2026-11-27T13:52:03+08:00 WU-PUR-005e4 未結案 CONVERT 切片：接續上一輪 10 項未提交變更，加入受權轉單端點、交易服務與初步真實 SQL／HTTP 測試；ADR-210 固定同批匯率／本位幣一致性。PUR 模組與整合測試專案 Debug 建置 0 警告／錯誤，PurchasingModuleTests 5/5。記憶體守衛三樣本 1.238／1.169／1.174 GiB，結果 DEFER，真實 SQL、Release 全量與帶 DB DocGen 延後；005e4 完成數不變，下輪改做不依賴它的 005f3c2。
+
 - 2026-11-27T09:56:33+08:00 WU-PUR-005e4 資料結構切片：擴充既有採購單／行及 EF 映射，新增永久決標來源連結 `pur_order_source`（REQ_DS43.213），不重建發票使用的兩表。先寫模型紅燈，再實作 migration；Debug 全方案 0 警告／錯誤、資料結構真實 SQL 1/1、後端全量 4073/4073。初版整合測試誤用無模組 RawContext，改以參數化 SQL 驗既有來源行後通過。CONVERT API、帶資料 Down／Up 往返、跨公司／重複／不可變拒絕及 Release 全量待下一輪；005e4 未結案。外部 Runner 兩檔原樣保留且未納入提交。
 
 - 2026-11-27T09:38:13+08:00 WU-PUR-005e4 重新開啟並完成設計修訂：守衛三樣本 5.650／5.643／5.648 GiB PASS。最初按舊設計建立新模型時編譯揭示 `PurchaseOrderSource` 已存在；調查確認 `pur_purchase_order`／`pur_purchase_order_line` 已由發票來源建表（REQ_DS43.186／187），且有既有三單比對／過帳依賴。撤回重複模型，改為擴充兩張既有表＋新增不可重用來源連結，補 PUR-RFQ-069 升降級保存發票來源的真實 SQL 情境。Debug 全解決方案 0 警告／錯誤，DocGen 測試 22/22，`git diff --check` 通過。CONVERT 端點與 migration 尚未交付，下一輪續做同一工作單元。

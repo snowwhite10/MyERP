@@ -23,6 +23,7 @@ public sealed record QuotationContext(QuotationRfqContext Rfq,
 public sealed class RfqsController(RfqQueryService queries, RfqDraftService drafts,
     QuotationQueryService quotations, QuotationMutationService quotationMutations,
     QuotationComparisonService comparisons, RfqAwardService awards,
+    RfqConversionService conversions,
     IInventorySelectionOptions itemOptions, ISupplierSelectionOptions supplierOptions,
     IQuotationSelectionOptions quotationOptions, IClock clock) : ControllerBase
 {
@@ -102,6 +103,20 @@ public sealed class RfqsController(RfqQueryService queries, RfqDraftService draf
     public async Task<ActionResult<RfqAwardResult>> Award(long id, [FromBody] RfqAwardInput input,
         CancellationToken token) => StatusCode(StatusCodes.Status201Created,
             await awards.AwardAsync(id, input, token));
+
+    /// <summary>REQ_F4114.6.3：將指定決標行原子轉為一張採購單草稿。</summary>
+    [HttpPost("{id:long}/orders")]
+    [RequirePermission(PurchasingPermissions.RfqConvert)]
+    [ProducesResponseType<RfqConversionResult>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<RfqConversionResult>> Convert(long id,
+        [FromBody] RfqConversionInput input, CancellationToken token) =>
+        StatusCode(StatusCodes.Status201Created, await conversions.ConvertAsync(id, input, token));
 
     /// <summary>逐行按本位幣含稅成本排序；缺率、撤回及過期保留明確不可比原因。</summary>
     [HttpGet("{id:long}/comparison")]
