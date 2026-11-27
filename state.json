@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-007a1",
-    "lastCompletedWorkUnit": "WU-PUR-005e3",
-    "nextAction": "改做不依賴延後 SQL 驗證的 WU-DOC-P1-MAP（純文件）：讀 reference-notes.md 第 5 節 BlueWhale 功能對照表，按實際 Controller／前端頁面逐項核對並更新狀態與 MyERP 需求 ID，未做項目對應到 backlog 工作單元。不得單獨補驗 FI-007a1／006a1／006a／005c3b2 或 PUR 延後項，也不要挑依賴 007a1 SQL 驗證的 007a2；FI 收尾或人手指定才跑守衛補驗。",
+    "currentWorkUnit": "WU-FI-008a1",
+    "lastCompletedWorkUnit": "WU-DOC-P1-MAP",
+    "nextAction": "做衝刺次序 10 的 WU-FI-008a（其他付款），它不依賴任何延後驗證：先在 backlog 仿 007a 拆為 008a1～008a4（a1＝其他付款 Draft 表頭／行 schema，含 MASTER_PROMPT 6.4 的 custom_fields＋ISJSON、公司範圍單號、MD 費用類別與資金帳戶參考、CHECK、migration、架構測試及真實 SQL 測試），本輪只做 008a1。按 008d 設計與 REQ_F4116.4.1–6；REQ_DS43 從 219 起分配。只跑一次記憶體守衛，DEFER 就提交可編譯部分並加入 deferredVerifications。不得單獨補驗 FI-007a1／006a1／006a／005c3b2 或 PUR 延後項，也不要挑依賴 007a1／006a1 SQL 驗證的 007a2／006a2；FI 收尾或人手指定才跑守衛補驗。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -144,5 +144,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-27T18:48:40+08:00",
-    "updatedAt": "2026-11-27T18:48:40+08:00"
+    "updatedAt": "2026-11-27T18:52:50+08:00"
 }

@@ -88,7 +88,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 - **資料表**：第 7 節只填**預計** MyERP 表名（依 MASTER_PROMPT 6.1 前綴）；`REQ_DS43` 編號在表真正建立時按 `state.json.idCounters.REQ_DS43` 連續分配，故標「待分配」。多張 BlueWhale 表可合併為一張 MyERP 表（例：Area + City → `md_region`）。
 - **WONT_DO**：CartList（微信商城購物車）、DataBacklist（資料庫備份記錄，屬 DBA 維運，不在應用層）、Months（報表輔助月份表，改用 SQL 日期函數）；功能 REQ_F411.16.2「刪除操作日誌」（稽核記錄只增不改，MASTER_PROMPT 6.7／8.2，資料庫 trigger 禁止刪改，ADR-019）。
 - **SYS 用戶刪除**（REQ_F411.8.4）以停用取代（REQ_F4118.23.7）：用戶被稽核與單據引用，依 MASTER_PROMPT 6.5 只能停用。2026-10-11 WU-SYS-016d 把 SYS 列改為實際需求／介面編號（原預留的 REQ_F4118.6.x、16.x 與 4.4.1.8.23–26、54 沒有被使用）。SYS 資料表：Logs → `sys_audit_log`；PageList／UsersPageList（選單頁面權限）→ 程式定義的權限目錄 + `sys_role_permission`／`sys_user_role`（ADR-014）；NoticeInfo → `sys_notification`；NewsList 為 WONT_DO（BlueWhale 4.1.1／4.4 沒有任何新聞功能或介面，只有資料表；公司內廣播由站內通知 REQ_F4118.33.1 涵蓋）。
-- **狀態**：`未開始` / `進行中` / `完成` / `WONT_DO`。
+- **狀態**：`未開始` / `進行中` / `完成` / `WONT_DO`。括號內註明交付的工作單元或仍待完成的工作單元。`完成`＝已有後端 API 與前端畫面（核准／駁回經 SYS 審批中心）；`進行中`＝已有部分資料結構、純規則或來源，但未有可用畫面；`未開始`＝只有設計（`…d` 工作單元）或尚無設計。2026-11-27T18:52:50+08:00 WU-DOC-P1-MAP 已按實際 Controller、`*.routes.ts` 與 backlog 狀態逐項核對第 5 節（完成 134、進行中 31、未開始 56、WONT_DO 1）。
 
 ## 5. 功能對照表（REQ_F）
 
@@ -97,151 +97,151 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.1 User | REQ_F411.1.1 | System should allow user to login into the website | SYS | REQ_F4118.24.1 | 完成 |
 | 4.1.1.1 User | REQ_F411.1.2 | System should allow user to change password | SYS | REQ_F4111.1.2 | 完成 |
 | 4.1.1.1 User | REQ_F411.1.3 | System should allow user to logout | SYS | REQ_F4118.24.3 | 完成 |
-| 4.1.1.2.1 Sales Order | REQ_F4112.1.1 | System should enable user to view sales order | SD | REQ_F4112.2.1 | 未開始 |
-| 4.1.1.2.1 Sales Order | REQ_F4112.1.2 | System should enable user to create sales order | SD | REQ_F4112.2.2 | 未開始 |
-| 4.1.1.2.1 Sales Order | REQ_F4112.1.3 | System should enable user to edit sales order | SD | REQ_F4112.2.3 | 未開始 |
-| 4.1.1.2.1 Sales Order | REQ_F4112.1.4 | System should enable user to approve sales order | SD | REQ_F4112.2.4 | 未開始 |
-| 4.1.1.2.1 Sales Order | REQ_F4112.1.5 | System should enable user to reject sales order | SD | REQ_F4112.2.5 | 未開始 |
-| 4.1.1.2.1 Sales Order | REQ_F4112.1.6 | System should enable user to delete sales order | SD | REQ_F4112.2.6 | 未開始 |
-| 4.1.1.2.2 Sales Outbound | REQ_F4112.2.1 | System should enable user to view sales outbounds | SD | REQ_F4112.3.1 | 未開始 |
-| 4.1.1.2.2 Sales Outbound | REQ_F4112.2.2 | System should enable user to create sales outbounds | SD | REQ_F4112.3.2 | 未開始 |
-| 4.1.1.2.2 Sales Outbound | REQ_F4112.2.3 | System should enable user to edit sales outbounds | SD | REQ_F4112.3.3 | 未開始 |
-| 4.1.1.2.2 Sales Outbound | REQ_F4112.2.4 | System should enable user to approve sales outbounds | SD | REQ_F4112.3.4 | 未開始 |
-| 4.1.1.2.2 Sales Outbound | REQ_F4112.2.5 | System should enable user to reject sales outbounds | SD | REQ_F4112.3.5 | 未開始 |
-| 4.1.1.2.2 Sales Outbound | REQ_F4112.2.6 | System should enable user to delete sales outbounds | SD | REQ_F4112.3.6 | 未開始 |
-| 4.1.1.3.1 Bill Of Material (BOM) | REQ_F4113.1.1 | System should enable user to view BOM | PP | REQ_F4113.1.1 | 未開始 |
-| 4.1.1.3.1 Bill Of Material (BOM) | REQ_F4113.1.2 | System should enable user to create BOM | PP | REQ_F4113.1.2 | 未開始 |
-| 4.1.1.3.1 Bill Of Material (BOM) | REQ_F4113.1.3 | System should enable user to edit BOM | PP | REQ_F4113.1.3 | 未開始 |
-| 4.1.1.3.1 Bill Of Material (BOM) | REQ_F4113.1.4 | System should enable user to approve BOM | PP | REQ_F4113.1.4 | 未開始 |
-| 4.1.1.3.1 Bill Of Material (BOM) | REQ_F4113.1.5 | System should enable user to reject BOM | PP | REQ_F4113.1.5 | 未開始 |
-| 4.1.1.3.1 Bill Of Material (BOM) | REQ_F4113.1.6 | System should enable user to delete BOM | PP | REQ_F4113.1.6 | 未開始 |
-| 4.1.1.3.1 Bill Of Material (BOM) | REQ_F4113.1.7 | System should enable user to view BOM Grouping | PP | REQ_F4113.1.7 | 未開始 |
-| 4.1.1.3.1 Bill Of Material (BOM) | REQ_F4113.1.8 | System should enable user to create BOM Grouping | PP | REQ_F4113.1.8 | 未開始 |
-| 4.1.1.3.1 Bill Of Material (BOM) | REQ_F4113.1.9 | System should enable user to edit BOM Grouping | PP | REQ_F4113.1.9 | 未開始 |
-| 4.1.1.3.1 Bill Of Material (BOM) | REQ_F4113.1.10 | System should enable user to delete BOM Grouping | PP | REQ_F4113.1.10 | 未開始 |
-| 4.1.1.3.2 Production Planning | REQ_F4113.2.1 | System should enable user to view production planning | PP | REQ_F4113.2.1 | 未開始 |
-| 4.1.1.3.2 Production Planning | REQ_F4113.2.2 | System should enable user to create production planning | PP | REQ_F4113.2.2 | 未開始 |
-| 4.1.1.3.2 Production Planning | REQ_F4113.2.3 | System should enable user to edit production planning | PP | REQ_F4113.2.3 | 未開始 |
-| 4.1.1.3.2 Production Planning | REQ_F4113.2.4 | System should enable user to approve production planning | PP | REQ_F4113.2.4 | 未開始 |
-| 4.1.1.3.2 Production Planning | REQ_F4113.2.5 | System should enable user to reject production planning | PP | REQ_F4113.2.5 | 未開始 |
-| 4.1.1.3.2 Production Planning | REQ_F4113.2.6 | System should enable user to delete production planning | PP | REQ_F4113.2.6 | 未開始 |
-| 4.1.1.3.3 Material Requisition | REQ_F4113.3.1 | System should enable user to view material requisition | PP | REQ_F4113.3.1 | 未開始 |
-| 4.1.1.3.3 Material Requisition | REQ_F4113.3.2 | System should enable user to create material requisition | PP | REQ_F4113.3.2 | 未開始 |
-| 4.1.1.3.3 Material Requisition | REQ_F4113.3.3 | System should enable user to edit material requisition | PP | REQ_F4113.3.3 | 未開始 |
-| 4.1.1.3.3 Material Requisition | REQ_F4113.3.4 | System should enable user to approve material requisition | PP | REQ_F4113.3.4 | 未開始 |
-| 4.1.1.3.3 Material Requisition | REQ_F4113.3.5 | System should enable user to reject material requisition | PP | REQ_F4113.3.5 | 未開始 |
-| 4.1.1.3.3 Material Requisition | REQ_F4113.3.6 | System should enable user to delete material requisition | PP | REQ_F4113.3.6 | 未開始 |
-| 4.1.1.3.4 Production Inbound | REQ_F4113.4.1 | System should enable user to view production inbound | PP | REQ_F4113.4.1 | 未開始 |
-| 4.1.1.3.4 Production Inbound | REQ_F4113.4.2 | System should enable user to create production inbound | PP | REQ_F4113.4.2 | 未開始 |
-| 4.1.1.3.4 Production Inbound | REQ_F4113.4.3 | System should enable user to edit production inbound | PP | REQ_F4113.4.3 | 未開始 |
-| 4.1.1.3.4 Production Inbound | REQ_F4113.4.4 | System should enable user to approve production inbound | PP | REQ_F4113.4.4 | 未開始 |
-| 4.1.1.3.4 Production Inbound | REQ_F4113.4.5 | System should enable user to reject production inbound | PP | REQ_F4113.4.5 | 未開始 |
-| 4.1.1.3.4 Production Inbound | REQ_F4113.4.6 | System should enable user to delete production inbound | PP | REQ_F4113.4.6 | 未開始 |
-| 4.1.1.4.1 Purchase Order | REQ_F4114.1.1 | System should enable user to view purchase order | PUR | REQ_F4114.1.1 | 未開始 |
-| 4.1.1.4.1 Purchase Order | REQ_F4114.1.2 | System should enable user to create purchase order | PUR | REQ_F4114.1.2 | 未開始 |
-| 4.1.1.4.1 Purchase Order | REQ_F4114.1.3 | System should enable user to edit purchase order | PUR | REQ_F4114.1.3 | 未開始 |
-| 4.1.1.4.1 Purchase Order | REQ_F4114.1.4 | System should enable user to approve purchase order | PUR | REQ_F4114.1.4 | 未開始 |
-| 4.1.1.4.1 Purchase Order | REQ_F4114.1.5 | System should enable user to reject purchase order | PUR | REQ_F4114.1.5 | 未開始 |
-| 4.1.1.4.1 Purchase Order | REQ_F4114.1.6 | System should enable user to delete purchase order | PUR | REQ_F4114.1.6 | 未開始 |
-| 4.1.1.4.2 Purchase Inbound | REQ_F4114.2.1 | System should enable user to view purchase inbound | PUR | REQ_F4114.2.1 | 未開始 |
-| 4.1.1.4.2 Purchase Inbound | REQ_F4114.2.2 | System should enable user to create purchase inbound | PUR | REQ_F4114.2.2 | 未開始 |
-| 4.1.1.4.2 Purchase Inbound | REQ_F4114.2.3 | System should enable user to edit purchase inbound | PUR | REQ_F4114.2.3 | 未開始 |
-| 4.1.1.4.2 Purchase Inbound | REQ_F4114.2.4 | System should enable user to approve purchase inbound | PUR | REQ_F4114.2.4 | 未開始 |
-| 4.1.1.4.2 Purchase Inbound | REQ_F4114.2.5 | System should enable user to reject purchase inbound | PUR | REQ_F4114.2.5 | 未開始 |
-| 4.1.1.4.2 Purchase Inbound | REQ_F4114.2.6 | System should enable user to delete purchase inbound | PUR | REQ_F4114.2.6 | 未開始 |
-| 4.1.1.5.1 Inventory | REQ_F4115.1.1 | System should enable user to view records of inventory | INV | REQ_F4115.1.1 | 未開始 |
-| 4.1.1.5.1 Inventory | REQ_F4115.1.2 | System should enable user to export inventory records as excel spreadsheet | INV | REQ_F4115.1.2 | 未開始 |
-| 4.1.1.5.2 Other Inbound | REQ_F4115.2.1 | System should enable user to view records of other inbound | INV | REQ_F4115.2.1 | 未開始 |
-| 4.1.1.5.2 Other Inbound | REQ_F4115.2.2 | System should enable user to create records of other inbound | INV | REQ_F4115.2.2 | 未開始 |
-| 4.1.1.5.2 Other Inbound | REQ_F4115.2.3 | System should enable user to edit records of other inbound | INV | REQ_F4115.2.3 | 未開始 |
-| 4.1.1.5.2 Other Inbound | REQ_F4115.2.4 | System should enable user to approve requests of other inbound | INV | REQ_F4115.2.4 | 未開始 |
-| 4.1.1.5.2 Other Inbound | REQ_F4115.2.5 | System should enable user to reject requests of other inbound | INV | REQ_F4115.2.5 | 未開始 |
-| 4.1.1.5.2 Other Inbound | REQ_F4115.2.6 | System should enable user to delete records of other inbound | INV | REQ_F4115.2.6 | 未開始 |
-| 4.1.1.5.3 Other Outbound | REQ_F4115.3.1 | System should enable user to view records of other outbound | INV | REQ_F4115.3.1 | 未開始 |
-| 4.1.1.5.3 Other Outbound | REQ_F4115.3.2 | System should enable user to create records of other outbound | INV | REQ_F4115.3.2 | 未開始 |
-| 4.1.1.5.3 Other Outbound | REQ_F4115.3.3 | System should enable user to edit records of other outbound | INV | REQ_F4115.3.3 | 未開始 |
-| 4.1.1.5.3 Other Outbound | REQ_F4115.3.4 | System should enable user to approve requests of other outbound | INV | REQ_F4115.3.4 | 未開始 |
-| 4.1.1.5.3 Other Outbound | REQ_F4115.3.5 | System should enable user to reject requests of other outbound | INV | REQ_F4115.3.5 | 未開始 |
-| 4.1.1.5.3 Other Outbound | REQ_F4115.3.6 | System should enable user to delete records of other outbound | INV | REQ_F4115.3.6 | 未開始 |
-| 4.1.1.5.4 Product Assembly | REQ_F4115.4.1 | System should enable user to view records of product assembly | INV | REQ_F4115.4.1 | 未開始 |
-| 4.1.1.5.4 Product Assembly | REQ_F4115.4.2 | System should enable user to create records of product assembly | INV | REQ_F4115.4.2 | 未開始 |
-| 4.1.1.5.4 Product Assembly | REQ_F4115.4.3 | System should enable user to edit records of product assembly | INV | REQ_F4115.4.3 | 未開始 |
-| 4.1.1.5.4 Product Assembly | REQ_F4115.4.4 | System should enable user to approve requests of product assembly | INV | REQ_F4115.4.4 | 未開始 |
-| 4.1.1.5.4 Product Assembly | REQ_F4115.4.5 | System should enable user to reject requests of product assembly | INV | REQ_F4115.4.5 | 未開始 |
-| 4.1.1.5.4 Product Assembly | REQ_F4115.4.6 | System should enable user to delete records of product assembly | INV | REQ_F4115.4.6 | 未開始 |
-| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.1 | System should enable user to view records of product disassembly | INV | REQ_F4115.5.1 | 設計完成；待實作 |
-| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.2 | System should enable user to create records of product disassembly | INV | REQ_F4115.5.2 | 設計完成；待實作 |
-| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.3 | System should enable user to edit records of product disassembly | INV | REQ_F4115.5.3 | 設計完成；待實作 |
-| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.4 | System should enable user to approve requests of product disassembly | INV | REQ_F4115.5.4 | 設計完成；待實作 |
-| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.5 | System should enable user to reject requests of product disassembly | INV | REQ_F4115.5.5 | 設計完成；待實作 |
-| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.6 | System should enable user to delete records of product disassembly | INV | REQ_F4115.5.6 | 設計完成；待實作 |
-| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.1 | System should enable user to view records of inventory transfer | INV | REQ_F4115.6.1 | 設計完成，待 009a／009b 實作 |
-| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.2 | System should enable user to create records of inventory transfer | INV | REQ_F4115.6.2 | 設計完成，待 009a／009b 實作 |
-| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.3 | System should enable user to edit records of inventory transfer | INV | REQ_F4115.6.3 | 設計完成，待 009a／009b 實作 |
-| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.4 | System should enable user to approve requests of inventory transfer | INV | REQ_F4115.6.4 | 設計完成，待 009a／009b 實作 |
-| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.5 | System should enable user to reject requests of inventory transfer | INV | REQ_F4115.6.5 | 設計完成，待 009a／009b 實作 |
-| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.6 | System should enable user to delete records of inventory transfer | INV | REQ_F4115.6.6 | 設計完成，待 009a／009b 實作 |
-| 4.1.1.5.7 Stocktake | REQ_F4115.7.1 | System should enable user to create records of inventory transfer | INV | REQ_F4115.7.1 | 設計完成（改為 create stocktake），待 010a／010b 實作 |
-| 4.1.1.5.7 Stocktake | REQ_F4115.7.2 | System should enable user to generate inventory profit/loss reports | INV | REQ_F4115.7.2 | 設計完成，待 010a／010b 實作 |
-| 4.1.1.6.1 Sales Collection | REQ_F4116.1.1 | System should enable user to view sales collection details | FI | REQ_F4116.1.1 | 未開始 |
-| 4.1.1.6.1 Sales Collection | REQ_F4116.1.2 | System should enable user to create new sales collection | FI | REQ_F4116.1.2 | 未開始 |
-| 4.1.1.6.1 Sales Collection | REQ_F4116.1.3 | System should enable user to edit sales collection details | FI | REQ_F4116.1.3 | 未開始 |
-| 4.1.1.6.1 Sales Collection | REQ_F4116.1.4 | System should enable user to approve sales collections | FI | REQ_F4116.1.4 | 未開始 |
-| 4.1.1.6.1 Sales Collection | REQ_F4116.1.5 | System should enable user to reject sales collections | FI | REQ_F4116.1.5 | 未開始 |
-| 4.1.1.6.1 Sales Collection | REQ_F4116.1.6 | System should enable users to delete sales collection records. | FI | REQ_F4116.1.6 | 未開始 |
-| 4.1.1.6.2 Other Collection | REQ_F4116.2.1 | System should enable user to view other collection details | FI | REQ_F4116.2.1 | 未開始 |
-| 4.1.1.6.2 Other Collection | REQ_F4116.2.2 | System should enable user to create new other collection | FI | REQ_F4116.2.2 | 未開始 |
-| 4.1.1.6.2 Other Collection | REQ_F4116.2.3 | System should enable user to edit other collection details | FI | REQ_F4116.2.3 | 未開始 |
-| 4.1.1.6.2 Other Collection | REQ_F4116.2.4 | System should enable user to approve other collections | FI | REQ_F4116.2.4 | 未開始 |
-| 4.1.1.6.2 Other Collection | REQ_F4116.2.5 | System should enable user to reject other collections | FI | REQ_F4116.2.5 | 未開始 |
-| 4.1.1.6.2 Other Collection | REQ_F4116.2.6 | System should enable users to delete other collection records. | FI | REQ_F4116.2.6 | 未開始 |
-| 4.1.1.6.3 Purchase Payment | REQ_F4116.3.1 | System should enable user to view purchase payment details | FI | REQ_F4116.3.1 | 未開始 |
-| 4.1.1.6.3 Purchase Payment | REQ_F4116.3.2 | System should enable user to create purchase payments | FI | REQ_F4116.3.2 | 未開始 |
-| 4.1.1.6.3 Purchase Payment | REQ_F4116.3.3 | System should enable user to edit purchase payment details | FI | REQ_F4116.3.3 | 未開始 |
-| 4.1.1.6.3 Purchase Payment | REQ_F4116.3.4 | System should enable user to approve purchase payments | FI | REQ_F4116.3.4 | 未開始 |
-| 4.1.1.6.3 Purchase Payment | REQ_F4116.3.5 | System should enable user to reject purchase payments | FI | REQ_F4116.3.5 | 未開始 |
-| 4.1.1.6.3 Purchase Payment | REQ_F4116.3.6 | System should enable users to delete purchase payments | FI | REQ_F4116.3.6 | 未開始 |
-| 4.1.1.6.4 Other Payment | REQ_F4116.4.1 | System should enable user to view other payment details | FI | REQ_F4116.4.1 | 設計完成，待 FI-008a／b／c 實作 |
-| 4.1.1.6.4 Other Payment | REQ_F4116.4.2 | System should enable user to create other payments | FI | REQ_F4116.4.2 | 設計完成，待 FI-008a／b／c 實作 |
-| 4.1.1.6.4 Other Payment | REQ_F4116.4.3 | System should enable user to edit other payment details | FI | REQ_F4116.4.3 | 設計完成，待 FI-008a／b／c 實作 |
-| 4.1.1.6.4 Other Payment | REQ_F4116.4.4 | System should enable user to approve other payments | FI | REQ_F4116.4.4 | 設計完成，待 FI-008a／b／c 實作 |
-| 4.1.1.6.4 Other Payment | REQ_F4116.4.5 | System should enable user to reject other payments | FI | REQ_F4116.4.5 | 設計完成，待 FI-008a／b／c 實作 |
-| 4.1.1.6.4 Other Payment | REQ_F4116.4.6 | System should enable users to delete other payments | FI | REQ_F4116.4.6 | 設計完成，待 FI-008a／b／c 實作 |
-| 4.1.1.6.5 Collection Write-off | REQ_F4116.5.1 | System should enable user to view collection write-off details | FI | REQ_F4116.5.1 | 未開始 |
-| 4.1.1.6.5 Collection Write-off | REQ_F4116.5.2 | System should enable user to create collection write-offs | FI | REQ_F4116.5.2 | 未開始 |
-| 4.1.1.6.5 Collection Write-off | REQ_F4116.5.3 | System should enable user to edit collection write-off details | FI | REQ_F4116.5.3 | 未開始 |
-| 4.1.1.6.5 Collection Write-off | REQ_F4116.5.4 | System should enable user to approve collection write-offs | FI | REQ_F4116.5.4 | 未開始 |
-| 4.1.1.6.5 Collection Write-off | REQ_F4116.5.5 | System should enable user to reject collection write-offs | FI | REQ_F4116.5.5 | 未開始 |
-| 4.1.1.6.5 Collection Write-off | REQ_F4116.5.6 | System should enable users to delete collection write-offs | FI | REQ_F4116.5.6 | 未開始 |
-| 4.1.1.6.6 Payment Write-off | REQ_F4116.6.1 | System should enable user to view payment write-off details | FI | REQ_F4116.6.1 | 未開始 |
-| 4.1.1.6.6 Payment Write-off | REQ_F4116.6.2 | System should enable user to create payment write-offs | FI | REQ_F4116.6.2 | 未開始 |
-| 4.1.1.6.6 Payment Write-off | REQ_F4116.6.3 | System should enable user to edit payment write-off details | FI | REQ_F4116.6.3 | 未開始 |
-| 4.1.1.6.6 Payment Write-off | REQ_F4116.6.4 | System should enable user to approve payment write-offs | FI | REQ_F4116.6.4 | 未開始 |
-| 4.1.1.6.6 Payment Write-off | REQ_F4116.6.5 | System should enable user to reject payment write-offs | FI | REQ_F4116.6.5 | 未開始 |
-| 4.1.1.6.6 Payment Write-off | REQ_F4116.6.6 | System should enable users to delete payment write-offs | FI | REQ_F4116.6.6 | 未開始 |
-| 4.1.1.7.1 Purchase | REQ_F4117.1.1 | System should enable user to view Purchase Order Tracking Report | BI | REQ_F4117.1.1 | 未開始 |
-| 4.1.1.7.1 Purchase | REQ_F4117.1.2 | System should enable user to view Purchase Detail Report | BI | REQ_F4117.1.2 | 未開始 |
-| 4.1.1.7.1 Purchase | REQ_F4117.1.3 | System should enable user to view Purchase Summary Report (By Product) | BI | REQ_F4117.1.3 | 未開始 |
-| 4.1.1.7.1 Purchase | REQ_F4117.1.4 | System should enable user to view Purchase Summary Report (By Supplier) | BI | REQ_F4117.1.4 | 未開始 |
-| 4.1.1.7.2 Sales | REQ_F4117.2.1 | System should enable user to view Sales Order Tracking Report | BI | REQ_F4117.2.1 | 未開始 |
-| 4.1.1.7.2 Sales | REQ_F4117.2.2 | System should enable user to view Sales Detail Report | BI | REQ_F4117.2.2 | 未開始 |
-| 4.1.1.7.2 Sales | REQ_F4117.2.3 | System should enable user to view Sales Summary Report (By Product) | BI | REQ_F4117.2.3 | 未開始 |
-| 4.1.1.7.2 Sales | REQ_F4117.2.4 | System should enable user to view Sales Summary Report (By Client) | BI | REQ_F4117.2.4 | 未開始 |
-| 4.1.1.7.3 Production | REQ_F4117.3.1 | System should enable user to view Production Planning Tracking Report | BI | REQ_F4117.3.1 | 未開始 |
-| 4.1.1.7.3 Production | REQ_F4117.3.2 | System should enable user to view Material Requisition Detail Report | BI | REQ_F4117.3.2 | 未開始 |
-| 4.1.1.7.3 Production | REQ_F4117.3.3 | System should enable user to view Material Requisition Summary Report | BI | REQ_F4117.3.3 | 未開始 |
-| 4.1.1.7.3 Production | REQ_F4117.3.4 | System should enable user to view Production Inbound Detail Report | BI | REQ_F4117.3.4 | 未開始 |
-| 4.1.1.7.3 Production | REQ_F4117.3.5 | System should enable user to view Production Inbound Summary Report | BI | REQ_F4117.3.5 | 未開始 |
-| 4.1.1.7.4 Warehouse | REQ_F4117.4.1 | System should enable user to view Product Inventory Balance Report | BI | REQ_F4117.4.1 | 未開始 |
-| 4.1.1.7.4 Warehouse | REQ_F4117.4.2 | System should enable user to view Product Inbound & Outbound Detail Report | BI | REQ_F4117.4.2 | 未開始 |
-| 4.1.1.7.4 Warehouse | REQ_F4117.4.3 | System should enable user to view Product Inbound & Outbound Summary Report | BI | REQ_F4117.4.3 | 未開始 |
-| 4.1.1.7.5 Financial | REQ_F4117.5.1 | System should enable user to view Cash & Bank Report | BI | REQ_F4117.5.1 | 未開始 |
-| 4.1.1.7.5 Financial | REQ_F4117.5.2 | System should enable user to view Accounts Payable Details Report | BI | REQ_F4117.5.2 | 未開始 |
-| 4.1.1.7.5 Financial | REQ_F4117.5.3 | System should enable user to view Accounts Receivable Details Report | BI | REQ_F4117.5.3 | 未開始 |
-| 4.1.1.7.5 Financial | REQ_F4117.5.4 | System should enable user to view Client Statement | BI | REQ_F4117.5.4 | 未開始 |
-| 4.1.1.7.5 Financial | REQ_F4117.5.5 | System should enable user to view Supplier Statement | BI | REQ_F4117.5.5 | 未開始 |
-| 4.1.1.7.5 Financial | REQ_F4117.5.6 | System should enable user to view Other Income & Expenses Detail Report | BI | REQ_F4117.5.6 | 未開始 |
-| 4.1.1.7.5 Financial | REQ_F4117.5.7 | System should enable user to export Other Income & Expenses Detail Report as Excel | BI | REQ_F4117.5.7 | 未開始 |
+| 4.1.1.2.1 Sales Order | REQ_F4112.1.1 | System should enable user to view sales order | SD | REQ_F4112.2.1 | 完成（WU-SD-003；核准／駁回經 SYS 審批） |
+| 4.1.1.2.1 Sales Order | REQ_F4112.1.2 | System should enable user to create sales order | SD | REQ_F4112.2.2 | 完成（WU-SD-003；核准／駁回經 SYS 審批） |
+| 4.1.1.2.1 Sales Order | REQ_F4112.1.3 | System should enable user to edit sales order | SD | REQ_F4112.2.3 | 完成（WU-SD-003；核准／駁回經 SYS 審批） |
+| 4.1.1.2.1 Sales Order | REQ_F4112.1.4 | System should enable user to approve sales order | SD | REQ_F4112.2.4 | 完成（WU-SD-003；核准／駁回經 SYS 審批） |
+| 4.1.1.2.1 Sales Order | REQ_F4112.1.5 | System should enable user to reject sales order | SD | REQ_F4112.2.5 | 完成（WU-SD-003；核准／駁回經 SYS 審批） |
+| 4.1.1.2.1 Sales Order | REQ_F4112.1.6 | System should enable user to delete sales order | SD | REQ_F4112.2.6 | 完成（WU-SD-003；核准／駁回經 SYS 審批） |
+| 4.1.1.2.2 Sales Outbound | REQ_F4112.2.1 | System should enable user to view sales outbounds | SD | REQ_F4112.3.1 | 完成（WU-SD-004；核准／駁回經 SYS 審批，同交易 INV 出庫） |
+| 4.1.1.2.2 Sales Outbound | REQ_F4112.2.2 | System should enable user to create sales outbounds | SD | REQ_F4112.3.2 | 完成（WU-SD-004；核准／駁回經 SYS 審批，同交易 INV 出庫） |
+| 4.1.1.2.2 Sales Outbound | REQ_F4112.2.3 | System should enable user to edit sales outbounds | SD | REQ_F4112.3.3 | 完成（WU-SD-004；核准／駁回經 SYS 審批，同交易 INV 出庫） |
+| 4.1.1.2.2 Sales Outbound | REQ_F4112.2.4 | System should enable user to approve sales outbounds | SD | REQ_F4112.3.4 | 完成（WU-SD-004；核准／駁回經 SYS 審批，同交易 INV 出庫） |
+| 4.1.1.2.2 Sales Outbound | REQ_F4112.2.5 | System should enable user to reject sales outbounds | SD | REQ_F4112.3.5 | 完成（WU-SD-004；核准／駁回經 SYS 審批，同交易 INV 出庫） |
+| 4.1.1.2.2 Sales Outbound | REQ_F4112.2.6 | System should enable user to delete sales outbounds | SD | REQ_F4112.3.6 | 完成（WU-SD-004；核准／駁回經 SYS 審批，同交易 INV 出庫） |
+| 4.1.1.3.1 Bill Of Material (BOM) | REQ_F4113.1.1 | System should enable user to view BOM | PP | REQ_F4113.1.1 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-001a／001b，P2） |
+| 4.1.1.3.1 Bill Of Material (BOM) | REQ_F4113.1.2 | System should enable user to create BOM | PP | REQ_F4113.1.2 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-001a／001b，P2） |
+| 4.1.1.3.1 Bill Of Material (BOM) | REQ_F4113.1.3 | System should enable user to edit BOM | PP | REQ_F4113.1.3 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-001a／001b，P2） |
+| 4.1.1.3.1 Bill Of Material (BOM) | REQ_F4113.1.4 | System should enable user to approve BOM | PP | REQ_F4113.1.4 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-001a／001b，P2） |
+| 4.1.1.3.1 Bill Of Material (BOM) | REQ_F4113.1.5 | System should enable user to reject BOM | PP | REQ_F4113.1.5 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-001a／001b，P2） |
+| 4.1.1.3.1 Bill Of Material (BOM) | REQ_F4113.1.6 | System should enable user to delete BOM | PP | REQ_F4113.1.6 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-001a／001b，P2） |
+| 4.1.1.3.1 Bill Of Material (BOM) | REQ_F4113.1.7 | System should enable user to view BOM Grouping | PP | REQ_F4113.1.7 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-001a／001b，P2） |
+| 4.1.1.3.1 Bill Of Material (BOM) | REQ_F4113.1.8 | System should enable user to create BOM Grouping | PP | REQ_F4113.1.8 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-001a／001b，P2） |
+| 4.1.1.3.1 Bill Of Material (BOM) | REQ_F4113.1.9 | System should enable user to edit BOM Grouping | PP | REQ_F4113.1.9 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-001a／001b，P2） |
+| 4.1.1.3.1 Bill Of Material (BOM) | REQ_F4113.1.10 | System should enable user to delete BOM Grouping | PP | REQ_F4113.1.10 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-001a／001b，P2） |
+| 4.1.1.3.2 Production Planning | REQ_F4113.2.1 | System should enable user to view production planning | PP | REQ_F4113.2.1 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-002a／003a，P2） |
+| 4.1.1.3.2 Production Planning | REQ_F4113.2.2 | System should enable user to create production planning | PP | REQ_F4113.2.2 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-002a／003a，P2） |
+| 4.1.1.3.2 Production Planning | REQ_F4113.2.3 | System should enable user to edit production planning | PP | REQ_F4113.2.3 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-002a／003a，P2） |
+| 4.1.1.3.2 Production Planning | REQ_F4113.2.4 | System should enable user to approve production planning | PP | REQ_F4113.2.4 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-002a／003a，P2） |
+| 4.1.1.3.2 Production Planning | REQ_F4113.2.5 | System should enable user to reject production planning | PP | REQ_F4113.2.5 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-002a／003a，P2） |
+| 4.1.1.3.2 Production Planning | REQ_F4113.2.6 | System should enable user to delete production planning | PP | REQ_F4113.2.6 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-002a／003a，P2） |
+| 4.1.1.3.3 Material Requisition | REQ_F4113.3.1 | System should enable user to view material requisition | PP | REQ_F4113.3.1 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-004a，P2） |
+| 4.1.1.3.3 Material Requisition | REQ_F4113.3.2 | System should enable user to create material requisition | PP | REQ_F4113.3.2 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-004a，P2） |
+| 4.1.1.3.3 Material Requisition | REQ_F4113.3.3 | System should enable user to edit material requisition | PP | REQ_F4113.3.3 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-004a，P2） |
+| 4.1.1.3.3 Material Requisition | REQ_F4113.3.4 | System should enable user to approve material requisition | PP | REQ_F4113.3.4 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-004a，P2） |
+| 4.1.1.3.3 Material Requisition | REQ_F4113.3.5 | System should enable user to reject material requisition | PP | REQ_F4113.3.5 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-004a，P2） |
+| 4.1.1.3.3 Material Requisition | REQ_F4113.3.6 | System should enable user to delete material requisition | PP | REQ_F4113.3.6 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-004a，P2） |
+| 4.1.1.3.4 Production Inbound | REQ_F4113.4.1 | System should enable user to view production inbound | PP | REQ_F4113.4.1 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-004a，P2） |
+| 4.1.1.3.4 Production Inbound | REQ_F4113.4.2 | System should enable user to create production inbound | PP | REQ_F4113.4.2 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-004a，P2） |
+| 4.1.1.3.4 Production Inbound | REQ_F4113.4.3 | System should enable user to edit production inbound | PP | REQ_F4113.4.3 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-004a，P2） |
+| 4.1.1.3.4 Production Inbound | REQ_F4113.4.4 | System should enable user to approve production inbound | PP | REQ_F4113.4.4 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-004a，P2） |
+| 4.1.1.3.4 Production Inbound | REQ_F4113.4.5 | System should enable user to reject production inbound | PP | REQ_F4113.4.5 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-004a，P2） |
+| 4.1.1.3.4 Production Inbound | REQ_F4113.4.6 | System should enable user to delete production inbound | PP | REQ_F4113.4.6 | 未開始（設計 WU-PP-001d 完成；待 WU-PP-004a，P2） |
+| 4.1.1.4.1 Purchase Order | REQ_F4114.1.1 | System should enable user to view purchase order | PUR | REQ_F4114.1.1 | 未開始（設計 WU-PUR-006d 完成；待 WU-PUR-006a〔BLOCKED〕／006b／006c／006e／006f） |
+| 4.1.1.4.1 Purchase Order | REQ_F4114.1.2 | System should enable user to create purchase order | PUR | REQ_F4114.1.2 | 未開始（設計 WU-PUR-006d 完成；待 WU-PUR-006a〔BLOCKED〕／006b／006c／006e／006f） |
+| 4.1.1.4.1 Purchase Order | REQ_F4114.1.3 | System should enable user to edit purchase order | PUR | REQ_F4114.1.3 | 未開始（設計 WU-PUR-006d 完成；待 WU-PUR-006a〔BLOCKED〕／006b／006c／006e／006f） |
+| 4.1.1.4.1 Purchase Order | REQ_F4114.1.4 | System should enable user to approve purchase order | PUR | REQ_F4114.1.4 | 未開始（設計 WU-PUR-006d 完成；待 WU-PUR-006a〔BLOCKED〕／006b／006c／006e／006f） |
+| 4.1.1.4.1 Purchase Order | REQ_F4114.1.5 | System should enable user to reject purchase order | PUR | REQ_F4114.1.5 | 未開始（設計 WU-PUR-006d 完成；待 WU-PUR-006a〔BLOCKED〕／006b／006c／006e／006f） |
+| 4.1.1.4.1 Purchase Order | REQ_F4114.1.6 | System should enable user to delete purchase order | PUR | REQ_F4114.1.6 | 未開始（設計 WU-PUR-006d 完成；待 WU-PUR-006a〔BLOCKED〕／006b／006c／006e／006f） |
+| 4.1.1.4.2 Purchase Inbound | REQ_F4114.2.1 | System should enable user to view purchase inbound | PUR | REQ_F4114.2.1 | 進行中（設計 WU-PUR-007d、離線規則 007a1～007a6 完成；待 WU-PUR-007a／007b／007c／007e、WU-INV-015b） |
+| 4.1.1.4.2 Purchase Inbound | REQ_F4114.2.2 | System should enable user to create purchase inbound | PUR | REQ_F4114.2.2 | 進行中（設計 WU-PUR-007d、離線規則 007a1～007a6 完成；待 WU-PUR-007a／007b／007c／007e、WU-INV-015b） |
+| 4.1.1.4.2 Purchase Inbound | REQ_F4114.2.3 | System should enable user to edit purchase inbound | PUR | REQ_F4114.2.3 | 進行中（設計 WU-PUR-007d、離線規則 007a1～007a6 完成；待 WU-PUR-007a／007b／007c／007e、WU-INV-015b） |
+| 4.1.1.4.2 Purchase Inbound | REQ_F4114.2.4 | System should enable user to approve purchase inbound | PUR | REQ_F4114.2.4 | 進行中（設計 WU-PUR-007d、離線規則 007a1～007a6 完成；待 WU-PUR-007a／007b／007c／007e、WU-INV-015b） |
+| 4.1.1.4.2 Purchase Inbound | REQ_F4114.2.5 | System should enable user to reject purchase inbound | PUR | REQ_F4114.2.5 | 進行中（設計 WU-PUR-007d、離線規則 007a1～007a6 完成；待 WU-PUR-007a／007b／007c／007e、WU-INV-015b） |
+| 4.1.1.4.2 Purchase Inbound | REQ_F4114.2.6 | System should enable user to delete purchase inbound | PUR | REQ_F4114.2.6 | 進行中（設計 WU-PUR-007d、離線規則 007a1～007a6 完成；待 WU-PUR-007a／007b／007c／007e、WU-INV-015b） |
+| 4.1.1.5.1 Inventory | REQ_F4115.1.1 | System should enable user to view records of inventory | INV | REQ_F4115.1.1、REQ_F4115.1.2 | 完成（WU-INV-006） |
+| 4.1.1.5.1 Inventory | REQ_F4115.1.2 | System should enable user to export inventory records as excel spreadsheet | INV | REQ_F4115.1.1、REQ_F4115.1.2、REQ_F4115.27.2 | 完成（WU-INV-006b 篩選 CSV 匯出；WU-INV-017 庫存流水報表完整匯出；MyERP 以 UTF-8 CSV 取代 Excel） |
+| 4.1.1.5.2 Other Inbound | REQ_F4115.2.1 | System should enable user to view records of other inbound | INV | REQ_F4115.2.1 | 完成（WU-INV-004；核准／駁回經 SYS 審批） |
+| 4.1.1.5.2 Other Inbound | REQ_F4115.2.2 | System should enable user to create records of other inbound | INV | REQ_F4115.2.2 | 完成（WU-INV-004；核准／駁回經 SYS 審批） |
+| 4.1.1.5.2 Other Inbound | REQ_F4115.2.3 | System should enable user to edit records of other inbound | INV | REQ_F4115.2.3 | 完成（WU-INV-004；核准／駁回經 SYS 審批） |
+| 4.1.1.5.2 Other Inbound | REQ_F4115.2.4 | System should enable user to approve requests of other inbound | INV | REQ_F4115.2.4 | 完成（WU-INV-004；核准／駁回經 SYS 審批） |
+| 4.1.1.5.2 Other Inbound | REQ_F4115.2.5 | System should enable user to reject requests of other inbound | INV | REQ_F4115.2.5 | 完成（WU-INV-004；核准／駁回經 SYS 審批） |
+| 4.1.1.5.2 Other Inbound | REQ_F4115.2.6 | System should enable user to delete records of other inbound | INV | REQ_F4115.2.6 | 完成（WU-INV-004；核准／駁回經 SYS 審批） |
+| 4.1.1.5.3 Other Outbound | REQ_F4115.3.1 | System should enable user to view records of other outbound | INV | REQ_F4115.3.1 | 完成（WU-INV-005；核准／駁回經 SYS 審批） |
+| 4.1.1.5.3 Other Outbound | REQ_F4115.3.2 | System should enable user to create records of other outbound | INV | REQ_F4115.3.2 | 完成（WU-INV-005；核准／駁回經 SYS 審批） |
+| 4.1.1.5.3 Other Outbound | REQ_F4115.3.3 | System should enable user to edit records of other outbound | INV | REQ_F4115.3.3 | 完成（WU-INV-005；核准／駁回經 SYS 審批） |
+| 4.1.1.5.3 Other Outbound | REQ_F4115.3.4 | System should enable user to approve requests of other outbound | INV | REQ_F4115.3.4 | 完成（WU-INV-005；核准／駁回經 SYS 審批） |
+| 4.1.1.5.3 Other Outbound | REQ_F4115.3.5 | System should enable user to reject requests of other outbound | INV | REQ_F4115.3.5 | 完成（WU-INV-005；核准／駁回經 SYS 審批） |
+| 4.1.1.5.3 Other Outbound | REQ_F4115.3.6 | System should enable user to delete records of other outbound | INV | REQ_F4115.3.6 | 完成（WU-INV-005；核准／駁回經 SYS 審批） |
+| 4.1.1.5.4 Product Assembly | REQ_F4115.4.1 | System should enable user to view records of product assembly | INV | REQ_F4115.4.1 | 完成（WU-INV-011a／011b；011c 真實瀏覽器與 SQL 聯查待 WU-P0-015／016） |
+| 4.1.1.5.4 Product Assembly | REQ_F4115.4.2 | System should enable user to create records of product assembly | INV | REQ_F4115.4.2 | 完成（WU-INV-011a／011b；011c 真實瀏覽器與 SQL 聯查待 WU-P0-015／016） |
+| 4.1.1.5.4 Product Assembly | REQ_F4115.4.3 | System should enable user to edit records of product assembly | INV | REQ_F4115.4.3 | 完成（WU-INV-011a／011b；011c 真實瀏覽器與 SQL 聯查待 WU-P0-015／016） |
+| 4.1.1.5.4 Product Assembly | REQ_F4115.4.4 | System should enable user to approve requests of product assembly | INV | REQ_F4115.4.4 | 完成（WU-INV-011a／011b；011c 真實瀏覽器與 SQL 聯查待 WU-P0-015／016） |
+| 4.1.1.5.4 Product Assembly | REQ_F4115.4.5 | System should enable user to reject requests of product assembly | INV | REQ_F4115.4.5 | 完成（WU-INV-011a／011b；011c 真實瀏覽器與 SQL 聯查待 WU-P0-015／016） |
+| 4.1.1.5.4 Product Assembly | REQ_F4115.4.6 | System should enable user to delete records of product assembly | INV | REQ_F4115.4.6 | 完成（WU-INV-011a／011b；011c 真實瀏覽器與 SQL 聯查待 WU-P0-015／016） |
+| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.1 | System should enable user to view records of product disassembly | INV | REQ_F4115.5.1 | 完成（WU-INV-012） |
+| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.2 | System should enable user to create records of product disassembly | INV | REQ_F4115.5.2 | 完成（WU-INV-012） |
+| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.3 | System should enable user to edit records of product disassembly | INV | REQ_F4115.5.3 | 完成（WU-INV-012） |
+| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.4 | System should enable user to approve requests of product disassembly | INV | REQ_F4115.5.4 | 完成（WU-INV-012） |
+| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.5 | System should enable user to reject requests of product disassembly | INV | REQ_F4115.5.5 | 完成（WU-INV-012） |
+| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.6 | System should enable user to delete records of product disassembly | INV | REQ_F4115.5.6 | 完成（WU-INV-012） |
+| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.1 | System should enable user to view records of inventory transfer | INV | REQ_F4115.6.1 | 完成（WU-INV-009） |
+| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.2 | System should enable user to create records of inventory transfer | INV | REQ_F4115.6.2 | 完成（WU-INV-009） |
+| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.3 | System should enable user to edit records of inventory transfer | INV | REQ_F4115.6.3 | 完成（WU-INV-009） |
+| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.4 | System should enable user to approve requests of inventory transfer | INV | REQ_F4115.6.4 | 完成（WU-INV-009） |
+| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.5 | System should enable user to reject requests of inventory transfer | INV | REQ_F4115.6.5 | 完成（WU-INV-009） |
+| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.6 | System should enable user to delete records of inventory transfer | INV | REQ_F4115.6.6 | 完成（WU-INV-009） |
+| 4.1.1.5.7 Stocktake | REQ_F4115.7.1 | System should enable user to create records of inventory transfer | INV | REQ_F4115.7.1、REQ_F4115.7.3、REQ_F4115.7.4、REQ_F4115.7.5、REQ_F4115.7.6、REQ_F4115.7.7 | 完成（WU-INV-010；BlueWhale 原文誤寫 inventory transfer，MyERP 為盤點單建立，另補查看／編輯／核准／駁回／刪除） |
+| 4.1.1.5.7 Stocktake | REQ_F4115.7.2 | System should enable user to generate inventory profit/loss reports | INV | REQ_F4115.7.2 | 完成（WU-INV-010） |
+| 4.1.1.6.1 Sales Collection | REQ_F4116.1.1 | System should enable user to view sales collection details | FI | REQ_F4116.1.1 | 完成（WU-FI-005a／005b／005c1；核准／駁回經 SYS 審批） |
+| 4.1.1.6.1 Sales Collection | REQ_F4116.1.2 | System should enable user to create new sales collection | FI | REQ_F4116.1.2 | 完成（WU-FI-005a／005b／005c1；核准／駁回經 SYS 審批） |
+| 4.1.1.6.1 Sales Collection | REQ_F4116.1.3 | System should enable user to edit sales collection details | FI | REQ_F4116.1.3 | 完成（WU-FI-005a／005b／005c1；核准／駁回經 SYS 審批） |
+| 4.1.1.6.1 Sales Collection | REQ_F4116.1.4 | System should enable user to approve sales collections | FI | REQ_F4116.1.4 | 完成（WU-FI-005a／005b／005c1；核准／駁回經 SYS 審批） |
+| 4.1.1.6.1 Sales Collection | REQ_F4116.1.5 | System should enable user to reject sales collections | FI | REQ_F4116.1.5 | 完成（WU-FI-005a／005b／005c1；核准／駁回經 SYS 審批） |
+| 4.1.1.6.1 Sales Collection | REQ_F4116.1.6 | System should enable users to delete sales collection records. | FI | REQ_F4116.1.6 | 完成（WU-FI-005a／005b／005c1；核准／駁回經 SYS 審批） |
+| 4.1.1.6.2 Other Collection | REQ_F4116.2.1 | System should enable user to view other collection details | FI | REQ_F4116.2.1 | 進行中（設計 WU-FI-007d 完成；Draft schema 007a1 真實 SQL 驗證延後；待 WU-FI-007a2～007a4／007b／007c） |
+| 4.1.1.6.2 Other Collection | REQ_F4116.2.2 | System should enable user to create new other collection | FI | REQ_F4116.2.2 | 進行中（設計 WU-FI-007d 完成；Draft schema 007a1 真實 SQL 驗證延後；待 WU-FI-007a2～007a4／007b／007c） |
+| 4.1.1.6.2 Other Collection | REQ_F4116.2.3 | System should enable user to edit other collection details | FI | REQ_F4116.2.3 | 進行中（設計 WU-FI-007d 完成；Draft schema 007a1 真實 SQL 驗證延後；待 WU-FI-007a2～007a4／007b／007c） |
+| 4.1.1.6.2 Other Collection | REQ_F4116.2.4 | System should enable user to approve other collections | FI | REQ_F4116.2.4 | 進行中（設計 WU-FI-007d 完成；Draft schema 007a1 真實 SQL 驗證延後；待 WU-FI-007a2～007a4／007b／007c） |
+| 4.1.1.6.2 Other Collection | REQ_F4116.2.5 | System should enable user to reject other collections | FI | REQ_F4116.2.5 | 進行中（設計 WU-FI-007d 完成；Draft schema 007a1 真實 SQL 驗證延後；待 WU-FI-007a2～007a4／007b／007c） |
+| 4.1.1.6.2 Other Collection | REQ_F4116.2.6 | System should enable users to delete other collection records. | FI | REQ_F4116.2.6 | 進行中（設計 WU-FI-007d 完成；Draft schema 007a1 真實 SQL 驗證延後；待 WU-FI-007a2～007a4／007b／007c） |
+| 4.1.1.6.3 Purchase Payment | REQ_F4116.3.1 | System should enable user to view purchase payment details | FI | REQ_F4116.3.1 | 進行中（設計 WU-FI-006d 完成；資料結構 006a／006a1 真實 SQL 驗證延後；待 WU-FI-006a2／006a4／006b／006c） |
+| 4.1.1.6.3 Purchase Payment | REQ_F4116.3.2 | System should enable user to create purchase payments | FI | REQ_F4116.3.2 | 進行中（設計 WU-FI-006d 完成；資料結構 006a／006a1 真實 SQL 驗證延後；待 WU-FI-006a2／006a4／006b／006c） |
+| 4.1.1.6.3 Purchase Payment | REQ_F4116.3.3 | System should enable user to edit purchase payment details | FI | REQ_F4116.3.3 | 進行中（設計 WU-FI-006d 完成；資料結構 006a／006a1 真實 SQL 驗證延後；待 WU-FI-006a2／006a4／006b／006c） |
+| 4.1.1.6.3 Purchase Payment | REQ_F4116.3.4 | System should enable user to approve purchase payments | FI | REQ_F4116.3.4 | 進行中（設計 WU-FI-006d 完成；資料結構 006a／006a1 真實 SQL 驗證延後；待 WU-FI-006a2／006a4／006b／006c） |
+| 4.1.1.6.3 Purchase Payment | REQ_F4116.3.5 | System should enable user to reject purchase payments | FI | REQ_F4116.3.5 | 進行中（設計 WU-FI-006d 完成；資料結構 006a／006a1 真實 SQL 驗證延後；待 WU-FI-006a2／006a4／006b／006c） |
+| 4.1.1.6.3 Purchase Payment | REQ_F4116.3.6 | System should enable users to delete purchase payments | FI | REQ_F4116.3.6 | 進行中（設計 WU-FI-006d 完成；資料結構 006a／006a1 真實 SQL 驗證延後；待 WU-FI-006a2／006a4／006b／006c） |
+| 4.1.1.6.4 Other Payment | REQ_F4116.4.1 | System should enable user to view other payment details | FI | REQ_F4116.4.1 | 未開始（設計 WU-FI-008d 完成；待 WU-FI-008a／008b／008c） |
+| 4.1.1.6.4 Other Payment | REQ_F4116.4.2 | System should enable user to create other payments | FI | REQ_F4116.4.2 | 未開始（設計 WU-FI-008d 完成；待 WU-FI-008a／008b／008c） |
+| 4.1.1.6.4 Other Payment | REQ_F4116.4.3 | System should enable user to edit other payment details | FI | REQ_F4116.4.3 | 未開始（設計 WU-FI-008d 完成；待 WU-FI-008a／008b／008c） |
+| 4.1.1.6.4 Other Payment | REQ_F4116.4.4 | System should enable user to approve other payments | FI | REQ_F4116.4.4 | 未開始（設計 WU-FI-008d 完成；待 WU-FI-008a／008b／008c） |
+| 4.1.1.6.4 Other Payment | REQ_F4116.4.5 | System should enable user to reject other payments | FI | REQ_F4116.4.5 | 未開始（設計 WU-FI-008d 完成；待 WU-FI-008a／008b／008c） |
+| 4.1.1.6.4 Other Payment | REQ_F4116.4.6 | System should enable users to delete other payments | FI | REQ_F4116.4.6 | 未開始（設計 WU-FI-008d 完成；待 WU-FI-008a／008b／008c） |
+| 4.1.1.6.5 Collection Write-off | REQ_F4116.5.1 | System should enable user to view collection write-off details | FI | REQ_F4116.5.1 | 完成（WU-FI-005b／005c2；核銷真實已過帳應收的真實 API／畫面驗收延後 WU-FI-005c3b2） |
+| 4.1.1.6.5 Collection Write-off | REQ_F4116.5.2 | System should enable user to create collection write-offs | FI | REQ_F4116.5.2 | 完成（WU-FI-005b／005c2；核銷真實已過帳應收的真實 API／畫面驗收延後 WU-FI-005c3b2） |
+| 4.1.1.6.5 Collection Write-off | REQ_F4116.5.3 | System should enable user to edit collection write-off details | FI | REQ_F4116.5.3 | 完成（WU-FI-005b／005c2；核銷真實已過帳應收的真實 API／畫面驗收延後 WU-FI-005c3b2） |
+| 4.1.1.6.5 Collection Write-off | REQ_F4116.5.4 | System should enable user to approve collection write-offs | FI | REQ_F4116.5.4 | 完成（WU-FI-005b／005c2；核銷真實已過帳應收的真實 API／畫面驗收延後 WU-FI-005c3b2） |
+| 4.1.1.6.5 Collection Write-off | REQ_F4116.5.5 | System should enable user to reject collection write-offs | FI | REQ_F4116.5.5 | 完成（WU-FI-005b／005c2；核銷真實已過帳應收的真實 API／畫面驗收延後 WU-FI-005c3b2） |
+| 4.1.1.6.5 Collection Write-off | REQ_F4116.5.6 | System should enable users to delete collection write-offs | FI | REQ_F4116.5.6 | 完成（WU-FI-005b／005c2；核銷真實已過帳應收的真實 API／畫面驗收延後 WU-FI-005c3b2） |
+| 4.1.1.6.6 Payment Write-off | REQ_F4116.6.1 | System should enable user to view payment write-off details | FI | REQ_F4116.6.1 | 進行中（設計 WU-FI-006d 完成；待 WU-FI-006a3／006a4／006b／006c） |
+| 4.1.1.6.6 Payment Write-off | REQ_F4116.6.2 | System should enable user to create payment write-offs | FI | REQ_F4116.6.2 | 進行中（設計 WU-FI-006d 完成；待 WU-FI-006a3／006a4／006b／006c） |
+| 4.1.1.6.6 Payment Write-off | REQ_F4116.6.3 | System should enable user to edit payment write-off details | FI | REQ_F4116.6.3 | 進行中（設計 WU-FI-006d 完成；待 WU-FI-006a3／006a4／006b／006c） |
+| 4.1.1.6.6 Payment Write-off | REQ_F4116.6.4 | System should enable user to approve payment write-offs | FI | REQ_F4116.6.4 | 進行中（設計 WU-FI-006d 完成；待 WU-FI-006a3／006a4／006b／006c） |
+| 4.1.1.6.6 Payment Write-off | REQ_F4116.6.5 | System should enable user to reject payment write-offs | FI | REQ_F4116.6.5 | 進行中（設計 WU-FI-006d 完成；待 WU-FI-006a3／006a4／006b／006c） |
+| 4.1.1.6.6 Payment Write-off | REQ_F4116.6.6 | System should enable users to delete payment write-offs | FI | REQ_F4116.6.6 | 進行中（設計 WU-FI-006d 完成；待 WU-FI-006a3／006a4／006b／006c） |
+| 4.1.1.7.1 Purchase | REQ_F4117.1.1 | System should enable user to view Purchase Order Tracking Report | BI | REQ_F4117.1.1 | 未開始（設計 WU-BI-002d 完成；待 WU-BI-002a／002c） |
+| 4.1.1.7.1 Purchase | REQ_F4117.1.2 | System should enable user to view Purchase Detail Report | BI | REQ_F4117.1.2 | 未開始（設計 WU-BI-002d 完成；待 WU-BI-002a／002c） |
+| 4.1.1.7.1 Purchase | REQ_F4117.1.3 | System should enable user to view Purchase Summary Report (By Product) | BI | REQ_F4117.1.3 | 未開始（設計 WU-BI-002d 完成；待 WU-BI-002a／002c） |
+| 4.1.1.7.1 Purchase | REQ_F4117.1.4 | System should enable user to view Purchase Summary Report (By Supplier) | BI | REQ_F4117.1.4 | 未開始（設計 WU-BI-002d 完成；待 WU-BI-002a／002c） |
+| 4.1.1.7.2 Sales | REQ_F4117.2.1 | System should enable user to view Sales Order Tracking Report | BI | REQ_F4117.2.1 | 未開始（設計 WU-BI-002d 完成；待 WU-BI-002a／002c） |
+| 4.1.1.7.2 Sales | REQ_F4117.2.2 | System should enable user to view Sales Detail Report | BI | REQ_F4117.2.2 | 未開始（設計 WU-BI-002d 完成；待 WU-BI-002a／002c） |
+| 4.1.1.7.2 Sales | REQ_F4117.2.3 | System should enable user to view Sales Summary Report (By Product) | BI | REQ_F4117.2.3 | 未開始（設計 WU-BI-002d 完成；待 WU-BI-002a／002c） |
+| 4.1.1.7.2 Sales | REQ_F4117.2.4 | System should enable user to view Sales Summary Report (By Client) | BI | REQ_F4117.2.4 | 未開始（設計 WU-BI-002d 完成；待 WU-BI-002a／002c） |
+| 4.1.1.7.3 Production | REQ_F4117.3.1 | System should enable user to view Production Planning Tracking Report | BI | REQ_F4117.3.1 | 未開始（設計 WU-BI-002d 完成；待 WU-PP-005a 生產報表來源，P2） |
+| 4.1.1.7.3 Production | REQ_F4117.3.2 | System should enable user to view Material Requisition Detail Report | BI | REQ_F4117.3.2 | 未開始（設計 WU-BI-002d 完成；待 WU-PP-005a 生產報表來源，P2） |
+| 4.1.1.7.3 Production | REQ_F4117.3.3 | System should enable user to view Material Requisition Summary Report | BI | REQ_F4117.3.3 | 未開始（設計 WU-BI-002d 完成；待 WU-PP-005a 生產報表來源，P2） |
+| 4.1.1.7.3 Production | REQ_F4117.3.4 | System should enable user to view Production Inbound Detail Report | BI | REQ_F4117.3.4 | 未開始（設計 WU-BI-002d 完成；待 WU-PP-005a 生產報表來源，P2） |
+| 4.1.1.7.3 Production | REQ_F4117.3.5 | System should enable user to view Production Inbound Summary Report | BI | REQ_F4117.3.5 | 未開始（設計 WU-BI-002d 完成；待 WU-PP-005a 生產報表來源，P2） |
+| 4.1.1.7.4 Warehouse | REQ_F4117.4.1 | System should enable user to view Product Inventory Balance Report | BI | REQ_F4117.4.1 | 進行中（INV 來源 REQ_F4115.27.1 已完成；待 WU-BI-002b／002c） |
+| 4.1.1.7.4 Warehouse | REQ_F4117.4.2 | System should enable user to view Product Inbound & Outbound Detail Report | BI | REQ_F4117.4.2 | 進行中（INV 來源 REQ_F4115.27.1 已完成；待 WU-BI-002b／002c） |
+| 4.1.1.7.4 Warehouse | REQ_F4117.4.3 | System should enable user to view Product Inbound & Outbound Summary Report | BI | REQ_F4117.4.3 | 進行中（INV 來源 REQ_F4115.27.1 已完成；待 WU-BI-002b／002c） |
+| 4.1.1.7.5 Financial | REQ_F4117.5.1 | System should enable user to view Cash & Bank Report | BI | REQ_F4117.5.1 | 未開始（設計 WU-FI-010d 完成；待 WU-FI-010a／010b） |
+| 4.1.1.7.5 Financial | REQ_F4117.5.2 | System should enable user to view Accounts Payable Details Report | BI | REQ_F4117.5.2 | 進行中（純規則 WU-BI-001a0～001a12 完成；待 WU-BI-001a／001b／001c） |
+| 4.1.1.7.5 Financial | REQ_F4117.5.3 | System should enable user to view Accounts Receivable Details Report | BI | REQ_F4117.5.3 | 進行中（純規則 WU-BI-001a0～001a12 完成；待 WU-BI-001a／001b／001c） |
+| 4.1.1.7.5 Financial | REQ_F4117.5.4 | System should enable user to view Client Statement | BI | REQ_F4117.5.4 | 未開始（設計 WU-FI-009d 完成；待 WU-FI-009a／009b） |
+| 4.1.1.7.5 Financial | REQ_F4117.5.5 | System should enable user to view Supplier Statement | BI | REQ_F4117.5.5 | 未開始（設計 WU-FI-009d 完成；待 WU-FI-009a／009b） |
+| 4.1.1.7.5 Financial | REQ_F4117.5.6 | System should enable user to view Other Income & Expenses Detail Report | BI | REQ_F4117.5.6 | 進行中（純規則 WU-BI-001a0～001a12 完成；待 FI 其他收付款 WU-FI-007／008 及 WU-BI-001a／001b／001c） |
+| 4.1.1.7.5 Financial | REQ_F4117.5.7 | System should enable user to export Other Income & Expenses Detail Report as Excel | BI | REQ_F4117.5.7 | 進行中（純規則 WU-BI-001a0～001a12 完成；待 FI 其他收付款 WU-FI-007／008 及 WU-BI-001a／001b／001c） |
 | 4.1.1.8.1 Client Management | REQ_F4118.1.1 | System should enable user to view records of clients | MD | REQ_F4118.1.1 | 完成 |
 | 4.1.1.8.1 Client Management | REQ_F4118.1.2 | System should enable user to create records of clients | MD | REQ_F4118.1.2 | 完成 |
 | 4.1.1.8.1 Client Management | REQ_F4118.1.3 | System should enable user to edit records of clients | MD | REQ_F4118.1.3 | 完成 |

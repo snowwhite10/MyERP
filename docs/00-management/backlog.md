@@ -38,7 +38,7 @@
 
 | ID | 模組 | 工作單元 | 優先級 | 狀態 | 依賴 | 備註 |
 |---|---|---|---|---|---|---|
-| WU-DOC-P1-MAP | - | 逐項核對 `reference-notes.md` 第 5 節 BlueWhale 功能對照表，按實際代碼（Controller／前端頁面）更新狀態與 MyERP 需求 ID；未做的列出對應工作單元 | P1 | TODO | 第一期衝刺次序 1–18 | 人手 2026-11-26 發現對照表狀態過時 |
+| WU-DOC-P1-MAP | - | 逐項核對 `reference-notes.md` 第 5 節 BlueWhale 功能對照表，按實際代碼（Controller／前端頁面）更新狀態與 MyERP 需求 ID；未做的列出對應工作單元 | P1 | DONE | 第一期衝刺次序 1–18 | 人手 2026-11-26 發現對照表狀態過時。2026-11-27T18:52:50+08:00 完成核對：完成 134、進行中 31、未開始 56、WONT_DO 1；每列括號註明交付或待做工作單元。PUR／FI 收付款／BI 仍在開發，WU-DOC-P1-SRS 開始前須按同一規則再刷新一次 |
 | WU-DOC-P1-SRS | - | 第一期模組（SYS、MD、INV、PUR、SD、FI、BI 報表）SRS／SDS／需求總表重新產生，DocGen 0 Error | P1 | TODO | WU-DOC-P1-MAP、各模組收尾 | 第一期交付文件 |
 
 ## Phase 0 — 基礎
