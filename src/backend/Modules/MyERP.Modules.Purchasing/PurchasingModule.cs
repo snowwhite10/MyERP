@@ -28,6 +28,7 @@ public sealed class PurchasingModule : IErpModule
         services.AddScoped<PurchaseOrderDraftService>();
         services.AddScoped<PurchaseOrderQueryService>();
         services.AddScoped<PurchaseOrderSubmissionService>();
+        services.AddScoped<PurchaseOrderLifecycleService>();
         services.AddScoped<QuotationMutationService>();
         services.AddScoped<RfqDraftService>();
         services.AddScoped<RequisitionCreateService>();
@@ -81,6 +82,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
     public const string OrderView = "PUR.ORDER.VIEW";
     public const string OrderEdit = "PUR.ORDER.EDIT";
     public const string OrderSubmit = "PUR.ORDER.SUBMIT";
+    public const string OrderDelete = "PUR.ORDER.DELETE";
     public const string InvoiceCreate = "PUR.INVOICE.CREATE";
     public const string InvoiceEdit = "PUR.INVOICE.EDIT";
     public const string InvoiceMatch = "PUR.INVOICE.MATCH";
@@ -113,6 +115,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
         new(OrderView, PurchasingModuleContracts.ModuleCode),
         new(OrderEdit, PurchasingModuleContracts.ModuleCode),
         new(OrderSubmit, PurchasingModuleContracts.ModuleCode),
+        new(OrderDelete, PurchasingModuleContracts.ModuleCode),
         new(InvoiceCreate, PurchasingModuleContracts.ModuleCode),
         new(InvoiceEdit, PurchasingModuleContracts.ModuleCode),
         new(InvoiceMatch, PurchasingModuleContracts.ModuleCode),

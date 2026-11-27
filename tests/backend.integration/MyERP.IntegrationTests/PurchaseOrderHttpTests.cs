@@ -110,6 +110,54 @@ public sealed class PurchaseOrderHttpTests(TestDatabase database) : IAsyncLifeti
         await AssertUnchangedAsync(company, pendingId, pendingVersion);
     }
 
+    /// <summary>WU-PUR-006c1（REQ_F4114.1.6，PUR-PO-008／012／014）：DELETE 受權、公司隔離、版本與狀態守衛。</summary>
+    [Fact]
+    public async Task DeleteRequiresOwnPermissionAndSoftDeletesOnlyCurrentDraft()
+    {
+        var company = await NewCompanyAsync("PO delete");
+        var other = await NewCompanyAsync("PO delete other");
+        using var http = factory.CreateClient();
+        var (userId, token) = await CreateUserAsync(http);
+        var (draftId, draftVersion) = await SeedOrderAsync(company, userId, "Draft");
+        var (approvedId, approvedVersion) = await SeedOrderAsync(company, userId, "Approved");
+
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await http.DeleteAsync($"{Route}/{draftId}?version={draftVersion}", Ct)).StatusCode);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Delete, $"{Route}/{draftId}?version={draftVersion}",
+            null, token, company), HttpStatusCode.Forbidden, "COMMON.COMPANY.ACCESS_DENIED");
+        // EDIT does not imply DELETE.
+        string[] edit = [PurchasingPermissions.OrderView, PurchasingPermissions.OrderEdit];
+        await GrantAsync(userId, company, DataScope.Company, edit);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Delete, $"{Route}/{draftId}?version={draftVersion}",
+            null, token, company), HttpStatusCode.Forbidden, "COMMON.PERMISSION.DENIED");
+
+        await GrantAsync(userId, company, DataScope.Company, [.. edit, PurchasingPermissions.OrderDelete]);
+        await GrantAsync(userId, other, DataScope.Company, PurchasingPermissions.OrderDelete);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Delete, $"{Route}/{draftId}?version={draftVersion}",
+            null, token, other), HttpStatusCode.NotFound, "PUR.ORDER.NOT_FOUND");
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Delete, $"{Route}/{draftId}?version={draftVersion + 1}",
+            null, token, company), HttpStatusCode.Conflict, "COMMON.CONCURRENCY.CONFLICT");
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Delete,
+            $"{Route}/{approvedId}?version={approvedVersion}", null, token, company),
+            HttpStatusCode.UnprocessableEntity, "PUR.ORDER.NOT_DELETABLE");
+        await AssertUnchangedAsync(company, draftId, draftVersion);
+        await AssertUnchangedAsync(company, approvedId, approvedVersion);
+
+        var deleted = await SendAsync(http, HttpMethod.Delete, $"{Route}/{draftId}?version={draftVersion}",
+            null, token, company);
+        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, $"{Route}/{draftId}", null, token, company),
+            HttpStatusCode.NotFound, "PUR.ORDER.NOT_FOUND");
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Delete, $"{Route}/{draftId}?version={draftVersion}",
+            null, token, company), HttpStatusCode.NotFound, "PUR.ORDER.NOT_FOUND");
+        await using var db = Context(company, 7);
+        var saved = await db.Set<PurchaseOrderSource>().IgnoreQueryFilters().AsNoTracking()
+            .SingleAsync(x => x.Id == draftId, Ct);
+        Assert.True(saved.IsDeleted);
+        Assert.NotNull(saved.DeletedAt);
+        Assert.Equal(1, await db.Set<PurchaseOrderSourceLine>().CountAsync(x => x.PurchaseOrderId == draftId, Ct));
+    }
+
     private static async Task AssertProblemAsync(HttpResponseMessage response, HttpStatusCode status, string errorCode)
     {
         Assert.Equal(status, response.StatusCode);

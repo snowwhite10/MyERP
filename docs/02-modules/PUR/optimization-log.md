@@ -1,5 +1,12 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-28T07:08:03+08:00 — WU-PUR-006c1 採購單 DELETE 軟刪切片
+
+- 新增 `PurchaseOrderLifecycleService.DeleteAsync`（CANCEL 於 006c2 加入同一服務）：READ COMMITTED 先 UPDLOCK／HOLDLOCK 訂單（與 SUBMIT、SYS 決策處理器同一首鎖），再按 DELETE 動作範圍載入；版本 409、Draft／Rejected 且無消耗才可刪，否則 422 `PUR.ORDER.NOT_DELETABLE`。
+- **問題**：測試首跑 2 紅。**原因**：(1) 測試以 SQL 把已有行的訂單改到他公司，觸發同公司複合 FK `fk_pur_order_line_order`；(2) 注入故障由 EF 包成 `DbUpdateException`。**修改**：他公司訂單改以 `s with { CompanyId = OtherCompanyId }` 正常播種；故障斷言改為接受包裝並驗內層 `InvalidOperationException`。**效果**：產品代碼不變，定向 9/9。兩者皆屬測試夾具問題，未削弱斷言。
+- 審查：服務重用與 Submission／Draft 相同的動作範圍查詢樣式（第四份重複）；CANCEL 加入後若仍重複，於 006c2 抽共用 `PurchaseOrderScopeQuery`，本輪不提前抽象。無 N+1（單筆 2 次查詢＋1 UPDATE）；稽核欄位與版本由 AuditSaveChangesInterceptor 寫入；不直接改其他模組表。變異（移除狀態守衛）使 5 個案例轉紅。
+
+
 ## 2026-11-28T06:37:51+08:00 — WU-PUR-006b2 SYS 最終決定處理器切片
 
 1. 問題：SYS `DecideAsync` 預設 READ COMMITTED，未鎖訂單時兩個並行決定（如不同實例版本競態）只靠 SYS 實例版本保護。修改：處理器先以 UPDLOCK／HOLDLOCK 鎖訂單，再按請購行 ID 升冪逐行鎖定，與 SUBMIT 同鎖序，避免 SUBMIT 與駁回互鎖。

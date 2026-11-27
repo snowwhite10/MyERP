@@ -11,7 +11,8 @@ namespace MyERP.Modules.Purchasing.Api;
 [Produces("application/json")]
 [Tags("PUR - Purchase Orders")]
 public sealed class PurchaseOrdersController(PurchaseOrderDraftService drafts,
-    PurchaseOrderQueryService queries, PurchaseOrderSubmissionService submissions) : ControllerBase
+    PurchaseOrderQueryService queries, PurchaseOrderSubmissionService submissions,
+    PurchaseOrderLifecycleService lifecycle) : ControllerBase
 {
     /// <summary>讀取目前公司與 VIEW 資料範圍內的已保存詳情，包括決標來源 ID。</summary>
     [HttpGet("{id:long}")]
@@ -81,6 +82,25 @@ public sealed class PurchaseOrdersController(PurchaseOrderDraftService drafts,
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public Task<PurchaseOrderSubmissionResult> Submit(long id, [FromBody] PurchaseOrderSubmitInput input,
         CancellationToken token) => submissions.SubmitAsync(id, input.Version, token);
+
+    /// <summary>
+    /// 以 <paramref name="version"/> 軟刪 DELETE 範圍內未提交的 Draft 或已駁回訂單；請購已轉量不變，單號、保存行與決標
+    /// 來源永久保留且不重用。版本不符 409；待審、已核准或已取消 422（核准單改用 CANCEL）；範圍外、他公司或已刪 404。
+    /// </summary>
+    [HttpDelete("{id:long}")]
+    [RequirePermission(PurchasingPermissions.OrderDelete)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Delete(long id, [FromQuery] int version, CancellationToken token)
+    {
+        await lifecycle.DeleteAsync(id, version, token);
+        return NoContent();
+    }
 }
 
 /// <summary>SUBMIT 請求：目前保存版本。</summary>
