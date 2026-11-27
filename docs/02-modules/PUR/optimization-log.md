@@ -1,5 +1,13 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-28T06:02:50+08:00 — WU-PUR-006a4 受權 HTTP、交易回滾、競態與溢位切片
+
+1. 問題：EDIT 表頭合計直接累加決標行保存值與人工行重算值，`PurchaseOrderAmounts.Calculate` 只看輸入單價重算（決標行數量 × 單價很小），保存值極大時未檢查上限；邊界測試先紅（`DbUpdateException`：參數 1110000000000000.0000 超出範圍，會成 500）。
+2. 修改：新增 `PurchaseOrderAmounts.SumStorable` 以 checked 累加並套用與 Calculate 相同的 DECIMAL(19,4) 上限，UpdateAsync 改用之；溢位在 SaveChanges 前拋 422，交易回滾並清 ChangeTracker。效果：真實 SQL 1/1、單元 1/1 轉綠。
+3. 審查：403 分兩層——未指派公司由公司閘道回 `COMMON.COMPANY.ACCESS_DENIED`，已指派但缺動作權限回 `COMMON.PERMISSION.DENIED`；HTTP 測試分別斷言，避免把公司閘道誤當權限檢查。
+4. 驗證：真實 SYS 發號下兩種 INSERT 故障整單與流水號回滾；雙連線同時建立單號唯一且連號（MERGE HOLDLOCK 序列化）；帶資料 Down／Up 可逆。006a 父項結清。
+5. 剩餘：SUBMIT／審批／取消（請購消耗與釋回）屬 006b；列表與表單畫面屬 006e／006f。
+
 ## 2026-11-28T05:37:56+08:00 — WU-PUR-006a3 EDIT 整組修訂切片
 
 1. 設計：requirements.md REQ_F4114.1.3 允許 Rejected 修訂回 Draft，BR-PUR-022 要求決標快照（稅率、匯率、金額）不因 MD 重估；nextAction 只寫「非 Draft 422」與「物料／數量／單價不可改」，以需求與業務規則為準實作，Approved／PendingApproval／Cancelled 仍 422。

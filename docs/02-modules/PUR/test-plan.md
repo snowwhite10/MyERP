@@ -1,5 +1,18 @@
 # PUR 測試計劃
 
+## WU-PUR-006a4 受權 HTTP、交易回滾、競態與溢位切片（2026-11-28T06:02:50+08:00）
+
+依 `myerp-test-scenarios` 逐類核對：單張整單保存，無批次部分成功或檔案；前端錯誤顯示與畫面留 006e／006f。
+
+| ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-PO-HTTP-001 | 權限 | 匿名 POST、GET `/edit` 401；未指派公司 POST 403 `COMMON.COMPANY.ACCESS_DENIED`；只有無關 PUR 權限時 POST／PUT／GET `/edit`／GET 各 403 `COMMON.PERMISSION.DENIED`（含 traceId）；VIEW＋CREATE 可 GET 詳情，但 GET `/edit` 與 PUT 仍 403；保存版本、備註、行量零變更。 | I | REQ_F4114.1.2, REQ_F4114.1.3 | PASS 1/1 |
+| PUR-PO-HTTP-002 | 權限／衝突／狀態 | 他公司（同使用者全權）GET、GET `/edit`、PUT 皆 404 `PUR.ORDER.NOT_FOUND`；PUT 舊版本 409 `COMMON.CONCURRENCY.CONFLICT`；PendingApproval PUT 422 `PUR.ORDER.NOT_EDITABLE`；均含 traceId，兩張訂單零變更；EDIT 可讀 `/edit`。 | I | REQ_F4114.1.3 | PASS 1/1 |
+| PUR-PO-TXN-001 | 錯誤／交易 | 真實 SYS 發號後注入 `pur_purchase_order_line`／`pur_purchase_order` INSERT 故障：表頭、行與 `sys_number_sequence` 全回滾；修復後重試得 `PO20280229001`。 | I | REQ_F4114.1.2 | PASS 1/1（PUR-PO-018 CREATE 部分） |
+| PUR-PO-TXN-002 | 重複／衝突 | 雙連線同時 CREATE：成功者單號互異且連號（001、002…），失敗只可為 409，保存行數 = 成功數 × 2，流水號 = 成功數。 | I | REQ_F4114.1.2 | PASS 1/1（PUR-PO-008 建立部分） |
+| PUR-PO-EDIT-008 | 邊界 | 決標行保存本位幣 9×10^14 加人工行 2×10^14：表頭超 DECIMAL(19,4) 整單 422 `PUR.ORDER.AMOUNT_OVERFLOW`（修正前為 SQL 參數越界 500 類 DbUpdateException），版本、備註、行數不變；單元 `SumStorable` 剛好上限內成功、達上限與 decimal 溢位均 422。 | U,I | REQ_F4114.1.3、BR-PUR-022 | 先紅後綠：I 1/1、U 1/1 |
+| PUR-PO-MIG-001 | 資料移轉 | `myerp_test` 帶 15 張訂單／21 行（含請購連結 2 行）執行 `Purchasing_OrderDraftFoundation` Down→Up：列數不變，CHECK 9→7→9、FK 2→1→2，消耗旗標全為 0。 | I | REQ_F4114.1.1 | PASS（Down 會刪除 006a1 新欄位資料，屬預期） |
+
 ## WU-PUR-006a3 EDIT 整組修訂切片（2026-11-28T05:37:56+08:00）
 
 依 `myerp-test-scenarios` 逐類核對：單張整單修訂，無批次部分成功或檔案。受權 HTTP 缺 EDIT 403／跨公司、雙連線競態與 Down／Up 留 006a4；前端修訂頁留 006e。
@@ -852,17 +865,17 @@ U=單元、I=真實 SQL／HTTP 整合、E=Playwright 畫面與保存資料雙斷
 | PUR-PO-005 | 邊界 | 0／1001 行、零／負 ID、重複行號、零／負／超六位數量、負／超六位單價、無幣別、超長備註逐欄 400；1／1000 行及零單價合法。 | U,I,E | REQ_F4114.1.2, REQ_F4114.1.3 | U 輸入驗證 17/17（006a 切片）；I／E 與來源引用待驗 |
 | PUR-PO-006 | 邊界 | 月底、跨年及閏日業務日與進項稅率有效期端點準確；行金額逐行 `Money.Round` 後加總，溢位整單拒絕，不由 SQL 默默取整。 | U,I | REQ_F4114.1.2, REQ_F4114.1.3 | U 輸入閏日／六位精度及行級原幣／本位幣、進項稅、行與表頭 `DECIMAL(19,4)` 溢位 4/4 通過；MD 有效期及 I 待 SQL 驗 |
 | PUR-PO-007 | 邊界 | 同一訂單多行引用同一請購行須先聚合；剛好等於餘量成功，超過最小精度一單位整單 422。 | U,I | REQ_F4114.1.4 | TODO（006） |
-| PUR-PO-008 | 重複／衝突 | 雙連線建立單號唯一；已軟刪／已取消號碼及決標來源不重用；舊版 EDIT／DELETE／SUBMIT／CANCEL 回 409，保存資料不變。 | I | REQ_F4114.1.2, REQ_F4114.1.3, REQ_F4114.1.4, REQ_F4114.1.6 | TODO（006） |
+| PUR-PO-008 | 重複／衝突 | 雙連線建立單號唯一；已軟刪／已取消號碼及決標來源不重用；舊版 EDIT／DELETE／SUBMIT／CANCEL 回 409，保存資料不變。 | I | REQ_F4114.1.2, REQ_F4114.1.3, REQ_F4114.1.4, REQ_F4114.1.6 | 建立雙連線單號唯一 PASS（006a4 PUR-PO-TXN-002）；舊版 EDIT 409 PASS（006a3／006a4 HTTP）；DELETE／SUBMIT／CANCEL 待 006b／006c |
 | PUR-PO-009 | 重複／衝突 | 兩個連線同時提交對同一請購剩餘量的競爭訂單，最多一個成功；量不超核准量，失敗訂單仍為草稿且無 SYS 實例。 | I | REQ_F4114.1.4 | TODO（006） |
 | PUR-PO-010 | 部分結果 | 任一行來源不足、MD 失效或 SYS 建流程故障，整單零消耗、零審批、零狀態變化；無逐行成功、靜默略過或部分成功。 | I,E | REQ_F4114.1.4 | TODO（006） |
 | PUR-PO-011 | 部分結果 | 0 行提交為 400；全部來源不足回 422 並列每個衝突行與可用量；成功才顯示實際變更筆數，全部失敗顯示警告及原因。 | I,E | REQ_F4114.1.4 | TODO（006） |
-| PUR-PO-012 | 權限 | 匿名 401，缺各動作權限 403；只有 CREATE／EDIT 無 VIEW／MD.VIEW 仍可取得專用選項／詳情；跨公司與本人／部門／分店範圍外 404。 | I,E | REQ_F4114.1.1, REQ_F4114.1.2, REQ_F4114.1.3 | TODO（006） |
+| PUR-PO-012 | 權限 | 匿名 401，缺各動作權限 403；只有 CREATE／EDIT 無 VIEW／MD.VIEW 仍可取得專用選項／詳情；跨公司與本人／部門／分店範圍外 404。 | I,E | REQ_F4114.1.1, REQ_F4114.1.2, REQ_F4114.1.3 | CREATE／EDIT／VIEW 匿名 401、缺權 403、跨公司及範圍外 404 PASS（006a2～006a4）；選項端點待 006e |
 | PUR-PO-013 | 權限 | 偽造公司、擁有人、單號、金額及決標來源欄位不得改變持久資料；來源選項與已保存引用不能洩漏其他公司資料。 | I | REQ_F4114.1.2, REQ_F4114.1.3 | TODO（006） |
 | PUR-PO-014 | 狀態 | Draft 可編輯／刪除／提交；PendingApproval 只能 SYS 決定；Approved 不可修改／刪除／重送；Rejected 修訂後回 Draft；Cancelled 不可再操作。每種非法操作 422。 | I,E | REQ_F4114.1.3, REQ_F4114.1.4, REQ_F4114.1.5, REQ_F4114.1.6 | TODO（006） |
 | PUR-PO-015 | 狀態 | 重複提交／核准／駁回／取消均不得二次消耗或釋回；審批過時決定 409 且 SYS 實例與 PUR 狀態一同回滾。 | I | REQ_F4114.1.4, REQ_F4114.1.5, REQ_F4114.1.6 | TODO（006） |
 | PUR-PO-016 | 關聯 | 未核准、軟刪、跨公司、物料不符或已無餘量請購行拒絕；保存後 MD 停用仍能讀歷史，修改或提交重新驗引用並列具體行。 | I,E | REQ_F4114.1.1, REQ_F4114.1.2, REQ_F4114.1.4 | TODO（006） |
 | PUR-PO-017 | 關聯 | 未提交草稿軟刪不釋回；核准且無入庫引用可取消並只釋回一次；已有入庫引用不得取消／刪除，INV 異動不受採購單取消直接修改。 | I,E | REQ_F4114.1.6 | TODO（006、007） |
-| PUR-PO-018 | 錯誤／交易 | 注入 SYS 發號後、第二行保存後、請購量更新後或 SYS 實例寫入後故障，表頭／行／單號流水號／請購量／審批全回滾；修復後原版本可重試。 | I | REQ_F4114.1.2, REQ_F4114.1.4 | TODO（006） |
+| PUR-PO-018 | 錯誤／交易 | 注入 SYS 發號後、第二行保存後、請購量更新後或 SYS 實例寫入後故障，表頭／行／單號流水號／請購量／審批全回滾；修復後原版本可重試。 | I | REQ_F4114.1.2, REQ_F4114.1.4 | CREATE 發號後兩種 INSERT 故障全回滾 PASS（006a4）；請購量／SYS 實例故障待 006b |
 | PUR-PO-019 | 錯誤 | 400 逐欄提示、409 保留草稿並要求重載、422 指出狀態／引用／行及可用量、500 顯示 traceId、逾時／斷線不顯示成功；API 重讀核對零變更。 | I,E | REQ_F4114.1.2, REQ_F4114.1.3, REQ_F4114.1.4 | TODO（006） |
 | PUR-PO-020 | 檔案 | 建立／編輯／審批沒有上傳，空檔、格式、編碼、列數不適用；VIEW CSV 驗 0 行不下載、10000 行上限、BOM、公式防護、取消及任一頁錯誤整檔失敗。 | E | REQ_F4114.1.1 | TODO（006 前端；上傳 N/A） |
 | PUR-PO-021 | 介面 | 4.1～4.3 正常、空列表、無搜尋結果、無權、驗證、成功、全部拒絕、500／斷線各有三語亮暗截圖；提示筆數與列表／API 保存行及請購餘量一致。 | E | REQ_F4114.1.1, REQ_F4114.1.2, REQ_F4114.1.3, REQ_F4114.1.4 | TODO（006 前端） |

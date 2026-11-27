@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-006a4",
-    "lastCompletedWorkUnit":  "WU-PUR-006a3",
-    "nextAction":  "做 WU-PUR-006a4（006a 最後切片，a1 schema、a2 CREATE／READ、a3 EDIT 已完成）：受權 HTTP 測試（WebApplicationFactory＋真實 SQL）— 缺 PUR.ORDER.CREATE 的 POST 403、缺 EDIT 的 PUT 與 GET /{id}/edit 403、跨公司 GET／PUT 404、PUT 舊版本 409 與非 Draft 422 的 ProblemDetails errorCode／traceId；CREATE 發號後 SQL 故障（仿 RfqConversionTransactionTests 的 FailInsert 攔截 pur_purchase_order_line）整單回滾零保存；雙連線同時 CREATE 單號唯一；EDIT 決標＋人工行混合時表頭合計超 DECIMAL(19,4) 須 422 PUR.ORDER.AMOUNT_OVERFLOW 而非 500（PurchaseOrderDraftService.UpdateAsync 目前直接累加保存值，需補上限檢查）；帶資料 migration Down／Up 驗 006a1 schema。完成後 backlog 結清 006a 父項，再進 006b。勿與後端全量並行跑定向整合測試；勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
+    "currentWorkUnit":  "WU-PUR-006b",
+    "lastCompletedWorkUnit":  "WU-PUR-006a4",
+    "nextAction":  "做 WU-PUR-006b（006a 已全部完成並結清）：SUBMIT 鎖請購行、同訂單多行引用同一請購行先聚合、原子消耗 ordered_quantity 並設 requisition_consumption_active、建 SYS 審批實例（零步驟立即核准）；只認已保存訂單快照。先依 90 分鐘邊界評估是否拆 b1（SUBMIT＋消耗＋零步驟，真實 SQL 先紅）／b2（SYS 決策處理器：駁回釋回一次、最終核准不重消耗）／b3（受權 HTTP、雙連線餘量競態、故障回滾）。參考 PurchaseOrderDraftService（Serializable、RollbackAsync）與 docs/02-modules/PUR business-rules BR-PUR-02x、test-plan PUR-PO-003／004／007／009～011／014／015／018。勿與後端全量並行跑定向整合測試；勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -113,5 +113,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T05:45:15+08:00",
-    "updatedAt":  "2026-11-28T05:45:15+08:00"
+    "updatedAt":  "2026-11-28T06:02:50+08:00"
 }

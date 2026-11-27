@@ -146,7 +146,6 @@ public sealed class PurchaseOrderDraftService(MyErpDbContext db, RequisitionComp
                 var kept = existing.ToDictionary(x => x.LineNo);
                 db.RemoveRange(existing.Where(x => !byLineNo.ContainsKey(x.LineNo)));
                 var savedLines = new PurchaseOrderSourceLine[lines.Length];
-                decimal baseNet = 0m, baseTax = 0m, baseGross = 0m;
                 for (var i = 0; i < lines.Length; i++)
                 {
                     if (!kept.TryGetValue(lines[i].LineNo, out var row))
@@ -159,12 +158,15 @@ public sealed class PurchaseOrderDraftService(MyErpDbContext db, RequisitionComp
                     }
                     // Awarded rows keep their saved commercial snapshot, including amounts (BR-PUR-022).
                     if (!locked.ContainsKey(row.LineNo)) Apply(row, lines[i], i, pricing);
-                    var computed = pricing.Amounts.Lines[i];
-                    baseNet += row.BaseNet ?? computed.BaseNet;
-                    baseTax += row.BaseTax ?? computed.BaseTax;
-                    baseGross += row.BaseGross ?? computed.BaseGross;
                     savedLines[i] = row;
                 }
+                // Saved award amounts are not re-priced, so the header total needs its own storable check.
+                var (baseNet, baseTax, baseGross) = PurchaseOrderAmounts.SumStorable(savedLines.Select((row, i) =>
+                {
+                    var computed = pricing.Amounts.Lines[i];
+                    return (row.BaseNet ?? computed.BaseNet, row.BaseTax ?? computed.BaseTax,
+                        row.BaseGross ?? computed.BaseGross);
+                }));
                 order.SupplierId = input.SupplierId;
                 order.BusinessDate = input.BusinessDate;
                 order.Currency = currencyCode;

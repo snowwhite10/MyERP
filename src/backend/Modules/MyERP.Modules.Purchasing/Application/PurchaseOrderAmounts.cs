@@ -57,6 +57,33 @@ public static class PurchaseOrderAmounts
         return new PurchaseOrderAmountResult(lines, baseNet, baseTax, baseGross);
     }
 
+    /// <summary>
+    /// 累加已取整的行本位幣金額（含不重估的決標行保存值）；任何合計達 DECIMAL(19,4) 上限即
+    /// 422 <c>PUR.ORDER.AMOUNT_OVERFLOW</c>，避免 SQL 溢位成 500。
+    /// </summary>
+    public static (decimal Net, decimal Tax, decimal Gross) SumStorable(
+        IEnumerable<(decimal Net, decimal Tax, decimal Gross)> lines)
+    {
+        ArgumentNullException.ThrowIfNull(lines);
+        decimal net = 0m, tax = 0m, gross = 0m;
+        try
+        {
+            foreach (var line in lines)
+            {
+                net = checked(net + line.Net);
+                tax = checked(tax + line.Tax);
+                gross = checked(gross + line.Gross);
+                RequireStorable(net, tax, gross);
+            }
+        }
+        catch (OverflowException)
+        {
+            throw new BusinessRuleException("PUR.ORDER.AMOUNT_OVERFLOW",
+                "Purchase order amount exceeds the supported range.");
+        }
+        return (net, tax, gross);
+    }
+
     private static void RequireStorable(params decimal[] values)
     {
         if (values.Any(value => value < 0m || value >= DecimalNineteenFourLimit))

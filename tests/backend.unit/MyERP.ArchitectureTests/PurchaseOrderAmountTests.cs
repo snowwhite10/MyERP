@@ -56,4 +56,21 @@ public sealed class PurchaseOrderAmountTests
         action.Should().Throw<BusinessRuleException>()
             .Which.ErrorCode.Should().Be("PUR.ORDER.AMOUNT_OVERFLOW");
     }
+
+    [Fact]
+    public void SumStorableAddsSavedAndRecalculatedLinesAndRejectsTotalsAtTheLimit()
+    {
+        PurchaseOrderAmounts.SumStorable([(50m, 3m, 53m), (20m, 2m, 22m)])
+            .Should().Be((70m, 5m, 75m));
+        PurchaseOrderAmounts.SumStorable([(999_999_999_999_999.9999m, 0m, 999_999_999_999_999.9999m)])
+            .Net.Should().Be(999_999_999_999_999.9999m);
+
+        Action atLimit = () => PurchaseOrderAmounts.SumStorable(
+            [(900_000_000_000_000m, 0m, 900_000_000_000_000m), (100_000_000_000_000m, 0m, 100_000_000_000_000m)]);
+        Action decimalOverflow = () => PurchaseOrderAmounts.SumStorable(
+            [(decimal.MaxValue, 0m, 0m), (decimal.MaxValue, 0m, 0m)]);
+
+        atLimit.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("PUR.ORDER.AMOUNT_OVERFLOW");
+        decimalOverflow.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("PUR.ORDER.AMOUNT_OVERFLOW");
+    }
 }

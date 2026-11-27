@@ -189,6 +189,27 @@ public sealed class PurchaseOrderDraftUpdateTests(TestDatabase database)
         Assert.Equal("ok", updated.Remark);
     }
 
+    [Fact]
+    public async Task SavedAwardAmountsPlusManualLinesBeyondDecimalNineteenFourAreRejectedWithoutChanges()
+    {
+        // WU-PUR-006a4：決標行保存金額不重估，表頭合計須再檢查 DECIMAL(19,4) 上限，不可讓 SQL 溢位成 500。
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var (orderId, version) = await SeedAwardOrderAsync(db, companyId, savedLineBaseNet: 900_000_000_000_000m);
+
+        var error = await Assert.ThrowsAsync<BusinessRuleException>(() => Service(db, companyId).UpdateAsync(
+            orderId, version, new PurchaseOrderInput(101, Day, "overflow",
+                [new(1, 11, null, 5m, 10m, "TWD", 51), new(2, 12, null, 100m, 2_000_000_000_000m, "TWD", 51)]), Ct));
+
+        Assert.Equal("PUR.ORDER.AMOUNT_OVERFLOW", error.ErrorCode);
+        await using var check = Context(companyId);
+        var order = await check.Set<PurchaseOrderSource>().SingleAsync(x => x.Id == orderId, Ct);
+        Assert.Equal(version, order.Version);
+        Assert.Null(order.Remark);
+        Assert.Equal(900_000_000_000_000m, order.BaseGross);
+        Assert.Equal(1, await check.Set<PurchaseOrderSourceLine>().CountAsync(x => x.PurchaseOrderId == orderId, Ct));
+    }
+
     private static async Task<long> SeedRequisitionAsync(MyErpDbContext db, long companyId)
     {
         var requisition = new Requisition { CompanyId = companyId, DocumentNo = "REQ-U",
@@ -201,7 +222,8 @@ public sealed class PurchaseOrderDraftUpdateTests(TestDatabase database)
     }
 
     /// <summary>以最少資料建立一張由決標轉出的 Draft：行 1 物料 11、數量 5、單價 10，帶永久決標來源。</summary>
-    private static async Task<(long OrderId, int Version)> SeedAwardOrderAsync(MyErpDbContext db, long companyId)
+    private static async Task<(long OrderId, int Version)> SeedAwardOrderAsync(MyErpDbContext db, long companyId,
+        decimal? savedLineBaseNet = null)
     {
         var rfq = new Rfq
         {
@@ -240,6 +262,7 @@ public sealed class PurchaseOrderDraftUpdateTests(TestDatabase database)
             BusinessDate = Day, Currency = "TWD", BaseCurrencyCode = "TWD", ExchangeRate = 1m,
             Status = "Draft", OwnerId = 7, BaseNet = 50m, BaseTax = 2.5m, BaseGross = 52.5m
         };
+        if (savedLineBaseNet is { } large) (order.BaseNet, order.BaseTax, order.BaseGross) = (large, 0m, large);
         db.Add(order);
         await db.SaveChangesAsync(Ct);
         var line = new PurchaseOrderSourceLine
@@ -250,6 +273,7 @@ public sealed class PurchaseOrderDraftUpdateTests(TestDatabase database)
             UnitPrice = 10m, TaxRateId = 51, TaxRatePercent = 6m, ExchangeRate = 1m,
             BaseNet = 50m, BaseTax = 3m, BaseGross = 53m
         };
+        if (savedLineBaseNet is { } big) (line.BaseNet, line.BaseTax, line.BaseGross) = (big, 0m, big);
         db.Add(line);
         await db.SaveChangesAsync(Ct);
         db.Add(new PurchaseOrderAwardSource { CompanyId = companyId, PurchaseOrderLineId = line.Id, AwardId = award.Id });
