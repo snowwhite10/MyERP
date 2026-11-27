@@ -64,6 +64,7 @@
             ],
             "remaining": "在 PUR 模組完成或人手指定時先跑一次記憶體守衛；PASS 後補 005f3c2 test-plan 的理由 1／500 字、400／逾時／斷線及 Closed 畫面情境，重跑後端全量與比價專項；本輪不要單獨重試。",
             "branch": "main",
+            "commit": "7a1d1547",
             "deferredAt": "2026-11-27T14:14:38+08:00"
         },
         {
@@ -92,6 +93,6 @@
         "rounds": 0,
         "consecutiveRoundsWithoutIdea": 0
     },
-    "lastSuccessfulPush": "2026-11-27T13:53:50+08:00",
-    "updatedAt": "2026-11-27T14:14:38+08:00"
+    "lastSuccessfulPush": "2026-11-27T14:17:10+08:00",
+    "updatedAt": "2026-11-27T14:17:10+08:00"
 }
