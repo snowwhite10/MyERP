@@ -24,6 +24,7 @@ public sealed class OtherPaymentDocumentDbModel : IModuleDbModel
                     "([is_deleted] = 0 AND [deleted_at] IS NULL) OR ([is_deleted] = 1 AND [deleted_at] IS NOT NULL AND [status] IN ('Draft','Rejected'))");
                 t.HasCheckConstraint("ck_ap_other_payment_doc_custom_fields_json",
                     "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+                t.HasTrigger("tr_ap_other_payment_doc_posted_reference");
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();

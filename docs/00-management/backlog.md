@@ -306,7 +306,7 @@
 | WU-FI-008d | FI/AP/GL | 定義其他付款的非應付費用來源、收支類別、GL 過帳與 AP 邊界及完整情境 | P1 | DONE | 004d、006d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4116.4.1～6、BR-FI-059～066、FI-AP-OTHER-001～020；純設計，無表、端點或產品驗收。 |
 | WU-FI-008a | FI/AP/GL | 其他付款真實 SQL 紅燈、來源與費用類別快照 migration、原子 GL 過帳與冪等 | P1 | 已拆分／進行中 | 008d、004a、SQL 服務 | 仿 007a 依單輪 90 分鐘邊界拆 008a1 Draft schema、008a2 Posted 來源／費用類別快照與對照表 schema、008a3 Draft 服務、008a4 原子過帳／競態；父項不計。 |
 | WU-FI-008a1 | FI/AP | 其他付款 Draft `ap_other_payment_doc` 模型、映射與 migration；真實 SQL 驗 schema、約束及帶資料 Down／Up | P1 | DONE | 008d | 2026-11-27T18:59:33+08:00：REQ_DS43.219、custom_fields＋ISJSON、`Finance_OtherPaymentDocument` migration；架構先紅 CS0246 後綠 5/5，守衛 PASS 9.87 GiB，真實 SQL 9/9，正式 myerp 帶資料 Down／Up 通過，後端全量 4093/4093。 |
-| WU-FI-008a2 | FI/AP/GL | 其他付款 Posted 來源（永久來源鍵、含已刪除歷史的提款參考鍵、指紋、類別／費用科目快照、journal）與 FI 費用類別對照表 schema；真實 SQL 先紅 | P1 | TODO | 008a1 | 仿 006a Posted 來源表與 PurchaseInvoiceAccountMap；不可變觸發器；不得連 AP 應付或付款分配。 |
+| WU-FI-008a2 | FI/AP/GL | 其他付款 Posted 來源（永久來源鍵、含已刪除歷史的提款參考鍵、指紋、類別／費用科目快照、journal）與 FI 費用類別對照表 schema；真實 SQL 先紅 | P1 | DONE | 008a1 | 2026-11-27T19:27:08+08:00：REQ_DS43.220 `ap_other_payment_source`（永久來源鍵、未篩選提款參考唯一、Draft 一致性與不可變觸發器 51039）、REQ_DS43.221 `gl_other_payment_account_map`（公司＋類別唯一、版本遞增）、Draft 參考保留觸發器；`Finance_OtherPaymentSource`；架構先紅 CS0246，守衛 PASS 14.25 GiB，真實 SQL 33/33，myerp 帶資料 Down／Up，後端全量 4126/4126。 |
 | WU-FI-008a3 | FI/AP | 其他付款 Draft 建立／修改／軟刪除服務、MD 費用類別／資金帳戶公開契約核對、提款參考衝突；真實 SQL 先紅 | P1 | TODO | 008a2 | 依 006a2／005b1 模式；不得建立 AP 或改應付餘額。 |
 | WU-FI-008a4 | FI/AP/GL | 原子 GL 過帳（費用借／銀行貸）、來源重放 changed=false、期間鎖、雙連線競態及類別失效／期間／審批回滾 | P1 | TODO | 008a3、SQL 服務 | 完成後結清 008a 父項。 |
 | WU-FI-008b | FI/AP/GL | 其他付款受權草稿／審批 API、Swagger、公司範圍與真實 SQL／HTTP 驗收 | P1 | TODO | 008a | `AP.OTHER_PAYMENT.*` 分權，SYS 最終決定同交易，讀取和提示區分費用與未核銷付款。 |

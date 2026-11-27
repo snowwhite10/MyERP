@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-008a2",
-    "lastCompletedWorkUnit": "WU-FI-008a1",
-    "nextAction": "做 WU-FI-008a2（其他付款 Posted 來源與 FI 費用類別對照表 schema），它只依賴已真實 SQL 驗證的 008a1：仿 006a 的 ap_payment_source 與 PurchaseInvoiceAccountMap，新增永久來源表（company_id+source_type+source_id 唯一、含已刪除歷史的 company+bank+withdrawal reference 唯一、posting fingerprint、費用類別／費用科目快照、journal_id、不可變觸發器）及 FI 費用類別→費用科目對照表（MD 類別／科目只存純量 ID、無跨模組 FK）；先寫真實 SQL 紅燈測試，REQ_DS43 從 220 起分配。只跑一次記憶體守衛，DEFER 就提交可編譯部分並加入 deferredVerifications。不得單獨補驗 FI-007a1／006a1／006a／005c3b2 或 PUR 延後項，也不要挑依賴 007a1／006a1 SQL 驗證的 007a2／006a2；FI 收尾或人手指定才跑守衛補驗。",
+    "currentWorkUnit": "WU-FI-008a3",
+    "lastCompletedWorkUnit": "WU-FI-008a2",
+    "nextAction": "做 WU-FI-008a3（其他付款 Draft 建立／修改／軟刪除服務），只依賴已真實 SQL 驗證的 008a1／008a2：仿 006a2／005b1 Draft 服務模式，經 MD 公開契約核對同公司有效費用類別與資金帳戶，公司範圍發號、版本 409、Draft／Rejected 才可修改或軟刪除；提款參考衝突（含 ap_other_payment_source 保留的已過帳參考，SQL 51039 及唯一索引）轉為具名 409；金額以型別化 EF 屬性寫入（勿用原始插值 decimal，會被當 decimal(18,2)）；不得建立 AP 或改應付餘額。先寫真實 SQL 紅燈測試。只跑一次記憶體守衛，DEFER 就提交可編譯部分並加入 deferredVerifications。不得單獨補驗 FI-007a1／006a1／006a／005c3b2 或 PUR 延後項，也不要挑依賴 007a1／006a1 SQL 驗證的 007a2／006a2；FI 收尾或人手指定才跑守衛補驗。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -25,7 +25,7 @@
         "SCM": "IN_PROGRESS"
     },
     "idCounters": {
-        "REQ_DS43": 219,
+        "REQ_DS43": 221,
         "ADR": 209,
         "nextSrsModuleNo": 17
     },
@@ -144,5 +144,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-27T19:05:15+08:00",
-    "updatedAt": "2026-11-27T19:05:15+08:00"
+    "updatedAt": "2026-11-27T19:27:08+08:00"
 }
