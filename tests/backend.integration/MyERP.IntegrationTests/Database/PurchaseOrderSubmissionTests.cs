@@ -24,7 +24,7 @@ namespace MyERP.IntegrationTests.Database;
 /// 與真實 SYS 審批引擎驗收——聚合同單來源量、原子消耗請購餘量、零步驟立即核准只消耗一次、整單零變更失敗、
 /// 雙連線競爭餘量最多一單成功、請購行更新或 SYS 實例寫入故障全回滾。
 /// </summary>
-public sealed class PurchaseOrderSubmissionTests(TestDatabase database)
+public sealed partial class PurchaseOrderSubmissionTests(TestDatabase database)
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
     private static readonly DateTime Today = new(2028, 2, 29, 9, 30, 0);
@@ -236,7 +236,7 @@ public sealed class PurchaseOrderSubmissionTests(TestDatabase database)
 
     // ------------------------------------------------------------------ helpers
 
-    private sealed record Seeded(long CompanyId, long OtherCompanyId, long UserId);
+    private sealed record Seeded(long CompanyId, long OtherCompanyId, long UserId, long ApproverId);
 
     private sealed record Outcome(PurchaseOrderSubmissionResult? Result, Exception? Error);
 
@@ -266,7 +266,7 @@ public sealed class PurchaseOrderSubmissionTests(TestDatabase database)
         Assert.Empty(await Instances(check, order.Id).ToListAsync(Ct));
     }
 
-    private async Task<Seeded> SeedCompanyAsync(bool withFlow)
+    private async Task<Seeded> SeedCompanyAsync(bool withFlow, int steps = 1)
     {
         var name = "pos" + Guid.NewGuid().ToString("N")[..16];
         var user = new SystemUser { Username = name, NormalizedUsername = name.ToUpperInvariant(), PasswordHash = "x" };
@@ -287,12 +287,13 @@ public sealed class PurchaseOrderSubmissionTests(TestDatabase database)
                 new SystemUserCompany { CompanyId = other.Id, UserId = user.Id });
             await setup.SaveChangesAsync(Ct);
         }
-        var seeded = new Seeded(company.Id, other.Id, user.Id);
+        var seeded = new Seeded(company.Id, other.Id, user.Id, approver.Id);
         if (withFlow)
         {
             await using var db = NewDb(seeded);
             await new ApprovalFlowService(db).CreateAsync(new ApprovalFlowInput("PUR.ORDER", "Purchase order", false,
-                [new ApprovalStepInput("Buyer manager", ApproverType.User, null, approver.Id, null)]), Ct);
+                Enumerable.Range(1, steps).Select(i => new ApprovalStepInput($"Buyer manager {i}", ApproverType.User,
+                    null, approver.Id, null)).ToList()), Ct);
         }
         return seeded;
     }

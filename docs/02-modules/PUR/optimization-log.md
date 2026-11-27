@@ -1,5 +1,13 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-28T06:37:51+08:00 — WU-PUR-006b2 SYS 最終決定處理器切片
+
+1. 問題：SYS `DecideAsync` 預設 READ COMMITTED，未鎖訂單時兩個並行決定（如不同實例版本競態）只靠 SYS 實例版本保護。修改：處理器先以 UPDLOCK／HOLDLOCK 鎖訂單，再按請購行 ID 升冪逐行鎖定，與 SUBMIT 同鎖序，避免 SUBMIT 與駁回互鎖。
+2. 問題：外部資料漂移可使已轉量低於本單量，直接相減會違反 CHECK 或得負數。修改：先全部檢查再一次套用；任何一行不足即 409 `PUR.ORDER.REQUISITION_RELEASE_INVALID`，SYS 決定整筆回滾，無部分釋回。
+3. 審查：請購行讀取用 `IgnoreQueryFilters` 並顯式限公司，避免來源請購其後被關閉／過濾時漏釋回；聚合在 SQL 端 GROUP BY，單次查詢無 N+1。
+4. 驗證：未註冊處理器時新案例 6 紅；略過釋回的變異 5 紅；還原後 18/18 綠。
+5. 剩餘：受權 HTTP 決定路徑與 ProblemDetails 留 006b3；CANCEL 釋回留 006c。
+
 ## 2026-11-28T06:16:01+08:00 — WU-PUR-006b1 SUBMIT、聚合消耗與零步驟核准切片
 
 1. 問題：ADR-213 原定 SUBMIT 用 SERIALIZABLE；但 SYS `SubmitAsync` 會先讀 `sys_approval_instance`／流程再 INSERT，SERIALIZABLE 的範圍鎖會使兩張不共用請購行的訂單在實例 INSERT 互鎖。修改：改 READ COMMITTED＋明確 UPDLOCK／HOLDLOCK（先訂單，後請購行 ID 升冪逐行），ADR-214 記錄。效果：雙連線競爭同一餘量恰一單成功，敗者 422 不足或 409。

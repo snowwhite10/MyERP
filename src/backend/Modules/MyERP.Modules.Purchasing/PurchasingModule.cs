@@ -34,6 +34,7 @@ public sealed class PurchasingModule : IErpModule
         services.AddScoped<RequisitionMutationService>();
         services.AddScoped<RequisitionSubmissionService>();
         services.AddScoped<IApprovalResultHandler, RequisitionApprovalResultHandler>();
+        services.AddScoped<IApprovalResultHandler, PurchaseOrderApprovalResultHandler>();
         services.AddSingleton<IModuleDbModel, RequisitionDbModel>();
         services.AddSingleton<IModuleDbModel, RfqDbModel>();
         services.AddSingleton<IModuleDbModel, QuotationDbModel>();

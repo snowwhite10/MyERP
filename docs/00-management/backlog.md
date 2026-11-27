@@ -741,7 +741,7 @@
 | WU-PUR-006a4 | PUR | 受權 HTTP（缺 CREATE／EDIT 403、跨公司 404）、發號後 SQL 故障回滾、雙連線唯一號、帶資料 migration Down／Up | P1 | DONE | 006a3 | 2026-11-28T06:02:50+08:00 受權 HTTP 2/2（公司閘道與權限 403 分層、跨公司 404、409／422 ProblemDetails＋traceId）、真實 SYS 發號故障回滾＋雙連線唯一號 2/2、EDIT 表頭溢位 422 先紅後綠、帶資料 Down／Up；後端 Debug 全量 4196/4196。006a 父項結清。 |
 | WU-PUR-006b | PUR | SUBMIT 鎖請購行、聚合來源量、原子消耗與 SYS 審批實例 | P1 | IN_PROGRESS（拆 b1～b3，父項不計） | 006a | 2026-11-28T06:16:01+08:00 依 90 分鐘邊界拆 006b1～006b3（ADR-214）。雙連線餘量競態、整單回滾、零步驟立即核准；只認已保存訂單快照。 |
 | WU-PUR-006b1 | PUR | SUBMIT：鎖訂單與請購行、聚合來源量、原子消耗、SYS 實例（零步驟立即核准）；真實 SQL＋真實 SYS 引擎 | P1 | DONE | 006a | 2026-11-28T06:16:01+08:00 `PurchaseOrderSubmissionTests` 12/12（兩單累計、剛好餘量、最小精度超量整單 422＋shortages、無效來源 lineNos、版本／狀態／範圍／他公司、雙連線競態、請購量／SYS 實例故障回滾）；新權限 PUR.ORDER.SUBMIT。 |
-| WU-PUR-006b2 | PUR | `PUR.ORDER` SYS 決策處理器：最終核准保留消耗、駁回同交易釋回一次並清旗標、過時決定 409；多級中間核准不重消耗；駁回修訂重送按當時餘量 | P1 | TODO | 006b1 | PUR-PO-004／015／022（駁回部分）；真實 SYS 審批 API 決定。 |
+| WU-PUR-006b2 | PUR | `PUR.ORDER` SYS 決策處理器：最終核准保留消耗、駁回同交易釋回一次並清旗標、過時決定 409；多級中間核准不重消耗；駁回修訂重送按當時餘量 | P1 | DONE | 006b1 | PUR-PO-004／015／022（駁回部分）；`PurchaseOrderApprovalResultHandler` 於 PurchasingModule 註冊，真實 SQL＋真實 SYS ApproveAsync／RejectAsync：PUR-PO-DEC-001～005 共 7 案例（兩步核准不重消耗、駁回聚合釋回一次、修訂重送按當時餘量、狀態／旗標不符 409、釋回不足整筆 409、三種 UPDATE 故障回滾後只釋回一次）；未註冊 6 紅、略過釋回變異 5 紅；`PurchaseOrderSubmissionTests` 18/18。 |
 | WU-PUR-006b3 | PUR | SUBMIT／決策受權 HTTP（401／403／404／409／422 ProblemDetails 含 shortages／lineNos／traceId）、MD 供應商／物料失效整單 422、SYS 決策故障回滾 | P1 | TODO | 006b2 | PUR-PO-010／011／012／019 HTTP 部分。 |
 | WU-PUR-006c | PUR | SYS 最終核准／駁回、釋回請購量、取消與草稿軟刪 | P1 | TODO | 006b | 不重複釋回，保留決標來源；入庫後取消限制與 WU-PUR-007 公開契約銜接。 |
 | WU-PUR-006e | PUR | 採購單列表／詳情、來源及審批歷史、CSV／列印、三語亮暗 QA | P1 | TODO | 006a,006c | 4.1 畫面與逐態 Playwright，提示與保存資料雙斷言。 |
