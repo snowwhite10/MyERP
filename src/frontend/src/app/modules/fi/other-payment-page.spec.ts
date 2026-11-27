@@ -8,6 +8,7 @@ import { PermissionService } from '../../core/auth/permission.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { APP_ICONS } from '../../core/icons';
 import { By } from '@angular/platform-browser';
+import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { OtherPaymentEditor } from './other-payment-editor';
 import { OtherPaymentPage } from './other-payment-page';
 
@@ -117,5 +118,121 @@ describe('FI-OP-UI other payment list', () => {
     expect(element.querySelector('[data-testid="fi-op-editor"]')).toBeNull();
     expect(element.querySelector('[data-testid="fi-op-deleted"]')?.textContent).toContain('Draft payment OP2026110007 was deleted');
     expect(element.querySelector('[data-testid="fi-op-row-7"]')).toBeNull();
+  });
+});
+
+describe('FI-OP-UI other payment list URL state (WU-FI-008c5)', () => {
+  let query: Record<string, string>;
+  const navigate = vi.fn((_commands: unknown[], _extras: { queryParams: Record<string, unknown> }) => Promise.resolve(true));
+  const company = signal<{ id: number } | null>({ id: 1 });
+  beforeEach(() => {
+    query = {}; navigate.mockClear(); company.set({ id: 1 });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(),
+      ...provideTestTranslations('en'), provideNzIcons(APP_ICONS), { provide: ANIMATION_MODULE_TYPE, useValue: 'NoopAnimations' },
+      { provide: ActivatedRoute, useFactory: () => ({ snapshot: { queryParamMap: convertToParamMap(query) } }) },
+      { provide: Router, useValue: { navigate } },
+      { provide: CompanyContextService, useValue: { current: company } },
+      { provide: PermissionService, useValue: { has: (code: string) => code === 'AP.OTHER_PAYMENT.VIEW' } }] });
+  });
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+  const lastQuery = () => navigate.mock.calls.at(-1)![1].queryParams;
+  const params = (r: HttpRequest<unknown>) => ['keyword', 'status', 'from', 'to', 'page', 'pageSize', 'sort'].map(key => r.params.get(key));
+  function start() {
+    const fixture = TestBed.createComponent(OtherPaymentPage);
+    TestBed.tick();
+    const http = TestBed.inject(HttpTestingController);
+    return { fixture, http, view: fixture.componentInstance, first: http.expectOne(isList) };
+  }
+
+  it('FI-OP-UI-030 restores keyword, status, dates, page, size and sort from a shared link into the first request', async () => {
+    query = { keyword: ' WD-7 ', status: 'Posted', from: '2026-11-01', to: '2026-11-30', page: '3', pageSize: '50', sort: 'amount' };
+    const { fixture, first, view } = start();
+    expect(params(first.request)).toEqual(['WD-7', 'Posted', '2026-11-01', '2026-11-30', '3', '50', 'amount']);
+    first.flush(list([row()]).replace('"totalCount":1', '"totalCount":120'));
+    fixture.detectChanges(); await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector<HTMLInputElement>('[data-testid="fi-op-keyword"]')!.value).toBe('WD-7');
+    expect(element.querySelector<HTMLSelectElement>('[data-testid="fi-op-status-filter"]')!.value).toBe('Posted');
+    expect(element.querySelector('th[nzcolumnkey="amount"]')?.className).toContain('ant-table-column-sort');
+    expect([view.keyword, view.status, view.from, view.to, view.page(), view.pageSize(), view.sort()])
+      .toEqual(['WD-7', 'Posted', '2026-11-01', '2026-11-30', 3, 50, 'amount']);
+    expect(view.filtered()).toBe(true);
+  });
+
+  it('FI-OP-UI-031 invalid URL values fall back to defaults without an error or a bad request', () => {
+    query = { keyword: 'x'.repeat(51), status: 'Deleted', from: '2026-02-30', to: 'bad', page: '-2', pageSize: '33', sort: 'payee' };
+    const { fixture, first, view } = start();
+    expect(params(first.request)).toEqual([null, null, null, null, '1', '20', '-businessDate']);
+    first.flush(list());
+    fixture.detectChanges();
+    expect(view.error()).toBeNull();
+    expect(view.rangeInvalid()).toBe(false);
+    expect(view.filtered()).toBe(false);
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="fi-op-range-error"]')).toBeNull();
+  });
+
+  it('FI-OP-UI-031 a reversed date range in the URL is dropped instead of blocking the list', () => {
+    query = { from: '2026-11-30', to: '2026-11-01', status: 'Draft' };
+    const { first, view } = start();
+    expect(params(first.request).slice(0, 4)).toEqual([null, 'Draft', null, null]);
+    first.flush(list());
+    expect(view.rangeInvalid()).toBe(false);
+  });
+
+  it('FI-OP-UI-032 search writes the submitted filters to the URL, omits defaults and resets to page 1', () => {
+    query = { page: '2' };
+    const { first, http, view } = start();
+    first.flush(list());
+    view.keyword = '  Power '; view.status = 'Draft'; view.from = '2026-11-01'; view.search();
+    const request = http.expectOne(isList);
+    expect(params(request.request)).toEqual(['Power', 'Draft', '2026-11-01', null, '1', '20', '-businessDate']);
+    request.flush(list());
+    expect(lastQuery()).toEqual({ keyword: 'Power', status: 'Draft', from: '2026-11-01', to: null, page: null, pageSize: null, sort: null });
+    expect(navigate.mock.calls.at(-1)![1]).toMatchObject({ replaceUrl: true });
+  });
+
+  it('FI-OP-UI-032 paging and sort use the submitted filters, not unsent typing, and are written to the URL', () => {
+    query = { status: 'Posted' };
+    const { first, http, view } = start();
+    first.flush(list());
+    view.keyword = 'typed but not searched';
+    view.onQuery({ pageIndex: 2, pageSize: 100, sort: [{ key: 'amount', value: 'descend' }], filter: [] });
+    const request = http.expectOne(isList);
+    expect(params(request.request)).toEqual([null, 'Posted', null, null, '2', '100', '-amount']);
+    request.flush(list());
+    expect(lastQuery()).toEqual({ keyword: null, status: 'Posted', from: null, to: null, page: 2, pageSize: 100, sort: '-amount' });
+  });
+
+  it('FI-OP-UI-033 an invalid range typed by the user keeps the URL and the last list unchanged', () => {
+    const { first, http, view } = start();
+    first.flush(list());
+    navigate.mockClear();
+    view.from = '2026-11-30'; view.to = '2026-11-01'; view.search();
+    http.expectNone(isList);
+    expect(navigate).not.toHaveBeenCalled();
+    expect(view.rangeInvalid()).toBe(true);
+  });
+
+  it('FI-OP-UI-033 a deep link past the last page re-reads page 1 and corrects the URL', () => {
+    query = { page: '9' };
+    const { first, http, view } = start();
+    first.flush(JSON.stringify({ items: [], totalCount: 3, page: 9, pageSize: 20 }));
+    const retry = http.expectOne(isList);
+    expect(retry.request.params.get('page')).toBe('1');
+    retry.flush(list());
+    expect(view.page()).toBe(1);
+    expect(lastQuery()['page']).toBeNull();
+  });
+
+  it('FI-OP-UI-034 a company switch drops the restored query, reads page 1 and clears the URL', () => {
+    query = { keyword: 'WD', page: '2', sort: 'documentNo' };
+    const { first, http, view } = start();
+    first.flush(list());
+    company.set({ id: 2 }); TestBed.tick();
+    const request = http.expectOne(isList);
+    expect(params(request.request)).toEqual([null, null, null, null, '1', '20', 'documentNo']);
+    request.flush(list());
+    expect(view.keyword).toBe('');
+    expect(lastQuery()).toEqual({ keyword: null, status: null, from: null, to: null, page: null, pageSize: null, sort: 'documentNo' });
   });
 });

@@ -79,3 +79,62 @@ test('FI-OP-UI-102 empty, search-empty, error and retry keep read feedback hones
   await expect(page.getByTestId('fi-op-table')).toContainText('尚無其他付款');
   await expect(page.getByTestId('fi-op-error')).toHaveCount(0);
 });
+
+test('FI-OP-UI-103 filters, page, size and sort live in the URL and survive reload, back and invalid links', async ({ page }) => {
+  const requests: URLSearchParams[] = [];
+  await page.route('**/api/v1/ap/other-payments**', route => {
+    requests.push(new URL(route.request().url()).searchParams);
+    return route.fulfill({ contentType: 'application/json', body: `{"items":[${rowJson}],"totalCount":120,"page":2,"pageSize":50}` });
+  });
+  await page.route('**/api/v1/gl/other-payment-account-map', route => route.fulfill({ json: { items: [map] } }));
+  const keys = ['keyword', 'status', 'from', 'to', 'page', 'pageSize', 'sort'] as const;
+  const last = () => Object.fromEntries(keys.map(key => [key, requests.at(-1)!.get(key)]));
+  const inUrl = () => Object.fromEntries(keys.map(key => [key, new URL(page.url()).searchParams.get(key)]));
+
+  await page.goto(`${PATH}?status=Posted&from=2026-11-01&to=2026-11-30&page=2&pageSize=50&sort=-amount`);
+  await expect(page.getByTestId('fi-op-row-7')).toBeVisible();
+  expect(last()).toEqual({ keyword: null, status: 'Posted', from: '2026-11-01', to: '2026-11-30', page: '2', pageSize: '50', sort: '-amount' });
+  await expect(page.getByTestId('fi-op-status-filter')).toHaveValue('Posted');
+  await expect(page.getByTestId('fi-op-from')).toHaveValue('2026-11-01');
+  await expect(page.locator('nz-table .ant-pagination-item-active')).toHaveText('2');
+  // The restored page number must be readable without scrolling the wide table sideways.
+  await expect(page.locator('nz-table .ant-pagination-item-active')).toBeInViewport();
+
+  await page.getByTestId('fi-op-keyword').fill('  WD-7 ');
+  await page.getByTestId('fi-op-search').click();
+  await expect(page).toHaveURL(/keyword=WD-7/);
+  expect(inUrl()).toEqual({ keyword: 'WD-7', status: 'Posted', from: '2026-11-01', to: '2026-11-30', page: null, pageSize: '50', sort: '-amount' });
+  expect(last()).toEqual({ ...inUrl(), page: '1' });
+
+  await page.locator('nz-table .ant-pagination-item').filter({ hasText: /^3$/ }).click();
+  await expect(page).toHaveURL(/page=3/);
+  expect(last()).toEqual({ ...inUrl() });
+
+  await page.reload();
+  await expect(page.getByTestId('fi-op-row-7')).toBeVisible();
+  await expect(page.getByTestId('fi-op-keyword')).toHaveValue('WD-7');
+  expect(last()).toEqual({ ...inUrl() });
+  await capture(page, 'url-restored-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'url-restored-dark-zh-Hant');
+  await chooseLanguage(page, 'en');
+  await expect(page.getByTestId('fi-op-keyword')).toHaveValue('WD-7');
+  await capture(page, 'url-restored-dark-en');
+  await chooseTheme(page, 'light'); await capture(page, 'url-restored-light-en');
+  await chooseLanguage(page, 'zh-Hans'); await capture(page, 'url-restored-light-zh-Hans');
+  await chooseTheme(page, 'dark'); await capture(page, 'url-restored-dark-zh-Hans');
+
+  // Returning from another page restores the same query.
+  await page.goto('/');
+  await page.goBack();
+  await expect(page.getByTestId('fi-op-row-7')).toBeVisible();
+  await expect(page.getByTestId('fi-op-keyword')).toHaveValue('WD-7');
+  expect(last()).toEqual({ ...inUrl() });
+
+  // Hand-edited links: unknown values fall back silently and the URL is normalised.
+  await page.goto(`${PATH}?status=Deleted&from=2026-02-30&to=2026-11-01&page=x&pageSize=33&sort=payee`);
+  await expect(page.getByTestId('fi-op-row-7')).toBeVisible();
+  expect(last()).toEqual({ keyword: null, status: null, from: null, to: '2026-11-01', page: '1', pageSize: '20', sort: '-businessDate' });
+  await expect(page).toHaveURL(/\/ap\/other-payments\?to=2026-11-01$/);
+  await expect(page.getByTestId('fi-op-range-error')).toHaveCount(0);
+  await expect(page.getByTestId('fi-op-error')).toHaveCount(0);
+});

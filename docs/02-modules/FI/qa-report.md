@@ -85,3 +85,14 @@ Timeout/network loss on 6.11/6.12 only by unit tests of the shared error display
 
 ### Conclusion
 P1: 0, P2: 0 open for other payments.
+
+## AP: Other Payment 6.10 URL state review (WU-FI-008c5)
+
+Scope: 6.10 restored from a shared link (keyword, status, dates, page 2/3, 50 per page, amount sort) after reload and Back; 6 screenshots `tests/qa/FI/screenshots/6.10-url-restored-{light,dark}-{zh-Hant,en,zh-Hans}.png`, each opened and checked. Invalid hand-edited links are asserted in FI-OP-UI-103 (no error banner, URL normalised); no new visual state.
+
+| # | Screenshot | Checklist | Finding | Severity | Handling |
+|---|---|---|---|---|---|
+| 1 | 6.10-url-restored-light-zh-Hant | Layout | At 1280px the pager sat at the right end of the 1300px scrolling table, so the restored page number was off screen. | P2 | Fixed: pager sticks to the left of the scroll area; E2E `toBeInViewport` (red before, green after). |
+| 2 | all | Web Interface Guidelines | Document number is a button opening the inline editor; the open payment is not in the URL and cannot be opened in a new tab. | P3 | backlog WU-FI-008c6 |
+
+Conclusion: P1 0, P2 0 open.
