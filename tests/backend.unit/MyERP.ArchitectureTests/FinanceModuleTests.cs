@@ -44,7 +44,8 @@ public sealed class FinanceModuleTests
                 typeof(SalesSourceDbModel), typeof(SalesInvoiceAccountMapDbModel), typeof(PurchaseSourceDbModel),
                 typeof(PurchasePaymentDbModel),
                 typeof(PurchaseInvoiceAccountMapDbModel), typeof(CollectionDbModel), typeof(SalesCollectionAccountMapDbModel),
-                typeof(CollectionReceiptDocumentDbModel), typeof(CollectionSettlementDocumentDbModel)]);
+                typeof(CollectionReceiptDocumentDbModel), typeof(CollectionSettlementDocumentDbModel),
+                typeof(PurchasePaymentDocumentDbModel)]);
         services.Should().ContainSingle(x => x.ServiceType == typeof(CreditLimitQueryService)
             && x.Lifetime == ServiceLifetime.Scoped);
         services.Should().ContainSingle(x => x.ServiceType == typeof(CreditLimitCommandService)

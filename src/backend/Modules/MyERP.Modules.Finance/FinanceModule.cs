@@ -26,6 +26,7 @@ public sealed class FinanceModule : IErpModule
         services.AddSingleton<IModuleDbModel, SalesInvoiceAccountMapDbModel>();
         services.AddSingleton<IModuleDbModel, PurchaseSourceDbModel>();
         services.AddSingleton<IModuleDbModel, PurchasePaymentDbModel>();
+        services.AddSingleton<IModuleDbModel, PurchasePaymentDocumentDbModel>();
         services.AddSingleton<IModuleDbModel, PurchaseInvoiceAccountMapDbModel>();
         services.AddSingleton<IModuleDbModel, CollectionDbModel>();
         services.AddSingleton<IModuleDbModel, SalesCollectionAccountMapDbModel>();

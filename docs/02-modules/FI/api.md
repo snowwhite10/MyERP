@@ -112,6 +112,8 @@ Final approval is a SYS workflow callback guarded by the corresponding APPROVE a
 
 ## WU-FI-006d planned purchase payment and AP settlement API
 
+WU-FI-006a1 supplies only the payment Draft persistence model; it adds no endpoint or public contract. The routes below remain planned for WU-FI-006b.
+
 No route or C# interface is implemented here. Proposed FI Contracts operations `ApprovePurchasePaymentAsync(savedPaymentId, version, fingerprint, transaction)` and `ApprovePaymentSettlementAsync(savedSettlementId, version, fingerprint, transaction)` join the SYS caller's transaction, verify FI-saved documents and call `IGlPostingService`. `FindCommittedPaymentSourceAsync(companyId, type, id)` resolves an unknown timeout with a fresh transaction. The result gives source/payment/settlement/journal IDs, company/supplier, saved version/fingerprint, original/allocated/unapplied payment and open payable base amounts, and `changed`. `GetOpenApSnapshotAsync` exposes committed FI payables less committed allocations, without reading PUR tables.
 
 | Method | Proposed route | Permission | Purpose |

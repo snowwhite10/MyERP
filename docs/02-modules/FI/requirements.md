@@ -188,7 +188,7 @@ This slice specifies BlueWhale Accounting 6.3 Purchase Payment and 6.6 Payment W
 | REQ_F4116.6.5 | 1.0 | System should allow user to reject payment write-offs. | Developer | Pending allocation may be rejected with reason and audit; payment and AP balances and GL remain unchanged. |
 | REQ_F4116.6.6 | 1.0 | System should allow user to delete payment write-offs. | Developer | Only unposted Draft/Rejected may be soft deleted. Posted allocation requires a separately specified compensating transaction. |
 
-Acceptance is planned for WU-FI-006a/b/c. This base-currency slice excludes foreign-currency settlement, refund, bank reconciliation, prepayment reclassification and posted reversal until separate contracts exist. See BR-FI-041–050 and FI-AP-PAY-001–028.
+Acceptance is planned for WU-FI-006a/b/c. WU-FI-006a1 generated the REQ_F4116.3.2 Draft schema (REQ_DS43.217); the memory guard deferred its real SQL acceptance, so create/edit/delete and posting are not yet accepted. This base-currency slice excludes foreign-currency settlement, refund, bank reconciliation, prepayment reclassification and posted reversal until separate contracts exist. See BR-FI-041–050 and FI-AP-PAY-001–028.
 
 Change record: 2026-10-24T16:58:26+08:00 WU-FI-006d defines the existing 6.3/6.6 baseline without allocating table or interface IDs or claiming product verification.
 

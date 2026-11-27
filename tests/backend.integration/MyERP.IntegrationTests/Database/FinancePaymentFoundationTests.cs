@@ -6,6 +6,27 @@ namespace MyERP.IntegrationTests.Database;
 public sealed class FinancePaymentFoundationTests(TestDatabase database)
 {
     [Fact]
+    public async Task PaymentDraftHasCompanyScopedNumberAndLiveBankReference()
+    {
+        await using var db = database.CreateRawContext();
+        var token = TestContext.Current.CancellationToken;
+        var tables = await db.Database.SqlQueryRaw<string>(
+            "SELECT name AS [Value] FROM sys.tables WHERE name = 'ap_purchase_payment_doc'").ToListAsync(token);
+        Assert.Single(tables);
+        var indexes = await db.Database.SqlQueryRaw<string>(
+            "SELECT name AS [Value] FROM sys.indexes WHERE object_id = OBJECT_ID('dbo.ap_purchase_payment_doc')")
+            .ToListAsync(token);
+        Assert.Contains("ux_ap_purchase_payment_doc_company_id_document_no", indexes);
+        Assert.Contains("ux_ap_purchase_payment_doc_company_id_bank_account_id_bank_reference", indexes);
+        var constraints = await db.Database.SqlQueryRaw<string>(
+            "SELECT name AS [Value] FROM sys.check_constraints WHERE parent_object_id = OBJECT_ID('dbo.ap_purchase_payment_doc')")
+            .ToListAsync(token);
+        Assert.Contains("ck_ap_purchase_payment_doc_amount", constraints);
+        Assert.Contains("ck_ap_purchase_payment_doc_deleted", constraints);
+        Assert.Contains("ck_ap_purchase_payment_doc_status", constraints);
+    }
+
+    [Fact]
     public async Task PaymentAndSettlementTablesHavePermanentKeysAndCompanyForeignKeys()
     {
         await using var db = database.CreateRawContext();

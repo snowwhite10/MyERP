@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-006a",
+    "currentWorkUnit": "WU-FI-006a1",
     "lastCompletedWorkUnit": "WU-PUR-005e3",
-    "nextAction": "續做 WU-FI-006a 實作，不要單獨重挑已延後的全量驗證：基於 Finance_PaymentFoundation 三張 Posted 來源表，先寫付款 Draft／核銷 Draft 與原子 GL 服務的真實 SQL 紅燈，實作供應商→付款→應付排序鎖、來源重放、餘額／逐行回滾；補 migration 帶資料 Down／Up、雙連線競態及測試情境。先核對 schema 與 API／業務規則，當輪資源守衛 PASS 才執行真實 SQL；已延後後端全量只在 FI 模組收尾或人手指示時補驗。PUR-005e4／005f3c2 同樣不得單獨補驗。",
+    "nextAction": "改做不依賴已延後 AP schema 驗證的 WU-FI-005c3b2：以 SD 已過帳發票作真實應收來源，補收款核銷真實 API E2E（建立→送審→最終核准→畫面及 SQL 餘額一致）；先讀該 backlog 行與既有 real-api-finance-collection.spec.ts，再寫失敗情境。不要單獨補驗 FI-006a1／006a、PUR-005e4／005f3c2；FI 收尾或人手指定才跑守衛補驗。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -25,7 +25,7 @@
         "SCM": "IN_PROGRESS"
     },
     "idCounters": {
-        "REQ_DS43": 216,
+        "REQ_DS43": 217,
         "ADR": 209,
         "nextSrsModuleNo": 17
     },
@@ -55,6 +55,18 @@
         "WU-P0-E2E-FLAKE-MENU"
     ],
     "deferredVerifications": [
+        {
+            "workUnit": "WU-FI-006a1",
+            "reason": "2026-11-27 唯一記憶體守衛 DEFER：0.904／0.795／0.876 GiB，低於 2.5 GiB。付款 Draft schema 與 migration 已產生，架構測試先紅後綠 1/1；真實 SQL 未執行。",
+            "commands": [
+                "dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --filter-method '*PaymentDraftHasCompanyScopedNumberAndLiveBankReference*' --max-threads 2",
+                "dotnet test --solution src/backend/MyERP.sln -c Debug --max-threads 2",
+                "dotnet ef database update -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api"
+            ],
+            "remaining": "FI 模組收尾或人手指定時先跑一次記憶體守衛；PASS 後驗真實 SQL 表／索引／CHECK 與資料變更拒絕、帶資料 migration Down／Up、全量後端，並核對正式 myerp migration。此項不得單獨選為下一輪工作單元。",
+            "branch": "main",
+            "deferredAt": "2026-11-27T14:43:04+08:00"
+        },
         {
             "workUnit": "WU-FI-006a",
             "reason": "2026-11-27 守衛起始 PASS，但後端全量整合測試執行時可用實體記憶體降至 1.289 GiB；停止全量以免造成 SQL 逾時。已完成資料結構定向真實 SQL 1/1、架構 5/5。",
@@ -107,5 +119,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-27T14:36:13+08:00",
-    "updatedAt": "2026-11-27T14:36:13+08:00"
+    "updatedAt": "2026-11-27T14:43:04+08:00"
 }
