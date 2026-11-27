@@ -3,10 +3,10 @@
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-008c5",
-    "lastCompletedWorkUnit":  "WU-FI-008c5",
-    "nextAction":  "WU-FI-008c（其他付款畫面）c1～c5 全部完成。下一輪依 backlog 週次表選下一個不依賴 deferredVerifications 的工作單元：先查 WU-PUR-008a51／008a52／008a／008b／008c（週次 1 次序 1，採購發票進行中）是否仍有可做且不需 SQL 補驗的切片，有就做；如全部依賴延後的 SQL 驗證，改做 P3 WU-FI-008c6（其他付款單號連結與 payment=<id> URL，仿 gl-journal-page 的 journalHref／journal 參數）或 WU-P0-ALERT-LIGHT。FI 006a2／007a2 等依賴 006a1／007a1 SQL 補驗，不要單獨挑 deferredVerifications。",
+    "currentModule":  "PUR",
+    "currentWorkUnit":  "WU-PUR-005f2a2",
+    "lastCompletedWorkUnit":  "WU-PUR-005f2a2",
+    "nextAction":  "WU-PUR-005f2a2 BLOCKED 重試已 DONE（守衛 17 GiB PASS、後端全量 4170/4170）。週次 1 次序 1：008a51／52 DONE，008b DONE，008a 父項只剩結案核對（POST 已由 008b4 交付），008c2 依賴 006a～c 來源。下一輪繼續週次 1 次序 2 重試受阻項：WU-PUR-005f3e（QUOTE 專屬詢價上下文與幣別／進項稅率選項；先跑一次記憶體守衛，PASS 後按 blocked.md 該列恢復步驟補真實 SQL／受權 HTTP、整合全量及帶 DB DocGen）。005e4／005f3c2 在 deferredVerifications，不要單獨挑；守衛 PASS 時可在 005f3e 之後依次序 3 處理。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -34,7 +34,6 @@
                              "WU-P0-015":  3,
                              "WU-PUR-005e3":  3,
                              "WU-PUR-005e4":  0,
-                             "WU-PUR-005f2a2":  3,
                              "WU-PUR-005f3e":  3,
                              "WU-PUR-006a":  3,
                              "WU-P0-016":  3,
@@ -47,7 +46,6 @@
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
-                             "WU-PUR-005f2a2",
                              "WU-PUR-005f3e",
                              "WU-PUR-006a",
                              "WU-SD-001",
@@ -144,5 +142,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T01:06:58+08:00",
-    "updatedAt":  "2026-11-28T01:06:32+08:00"
+    "updatedAt":  "2026-11-28T01:20:34+08:00"
 }

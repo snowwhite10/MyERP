@@ -720,7 +720,7 @@
 | WU-PUR-005f1 | PUR | 詢價唯讀列表／保存詳情、三語亮暗、權限／錯誤與畫面 QA | P1 | DONE | 005c1 | GET RFQ 三語亮暗列表／詳情、URL 篩選、20 張 QA 截圖；RFQ 專項 8/8（最後兩案分別重跑）、全量模擬 E2E 283 通過／5 略過，前端 685/685。發送、關閉或轉單留後續。 |
 | WU-PUR-005f2 | PUR | 詢價建立／修訂、發送／關閉、CSV／列印與畫面 QA | P1 | IN_PROGRESS | 005f1 | 拆為 005f2a1～a2、005f2b～c；a2 真實 SQL 驗收仍受阻，b 已完成，c 待做。 |
 | WU-PUR-005f2a1 | PUR | 詢價草稿前端寫入契約與逐欄邊界驗證 | P1 | DONE | 005f1 | 接手兩項未提交草稿；POST／PUT 保留十進位字串及版本，日期、行、供應商與來源 ID 驗證，專項單元 2/2。 |
-| WU-PUR-005f2a2 | PUR | 詢價建立／修訂表單、RFQ 專屬 MD 選項、三語亮暗及畫面 QA | P1 | BLOCKED | 005f2a1 | 表單、選項、來源選擇器、三語亮暗與模擬 E2E 已提交；SQL 服務連續多輪停止且無啟動權，真實 SQL／HTTP 及後端全量未驗。重試步驟見 blocked.md。 |
+| WU-PUR-005f2a2 | PUR | 詢價建立／修訂表單、RFQ 專屬 MD 選項、三語亮暗及畫面 QA | P1 | DONE | 005f2a1 | 2026-11-28T01:20:34+08:00：BLOCKED 重試解除。守衛 17.36 GiB PASS；新增真實 HTTP／SQL `RfqFormOptionsEnforceCreateEditPermissionScopeAndSourceAvailability`（VIEW-only 403、CREATE-only 無 saved-options、EDIT-only Self 範圍外／他公司 404、來源只列同公司 Approved 有餘量行、已保存失效引用標示），`RfqQueryTests`／`SupplierSelectionOptionsTests` 3/3、模擬 E2E 15/15、後端全量 4170/4170、帶 myerp SQL DocGen 0 Error／614 Warning；PUR-RFQ-076～082 PASS。 |
 | WU-PUR-005f2b | PUR | 詢價發送／關閉前端操作、三語提示與模擬 E2E 畫面 QA | P1 | DONE | 005f1,005c3 | 接既有 SEND／CLOSE API；確認、版本、授權及三語亮暗畫面均有離線測試；真實 SQL 驗收與模組結案仍待服務恢復。 |
 | WU-PUR-005f2c | PUR | 詢價 CSV／列印保存資料、權限及三語畫面 QA | P1 | DONE | 005f1 | VIEW + EXPORT 顯示授權、完整安全 CSV、保存詳情列印及白底列印媒體；新 4.11 截圖逐張 QA，前端／E2E 與後端非 SQL 測試通過；SQL 受阻不屬此唯讀前端切片。 |
 | WU-PUR-005f3 | PUR | 報價與比價三語亮暗畫面、決標／轉單及 E2E 畫面 QA | P1 | 已拆分 | 005f2,005e3,005e4 | 005f3a 可先用已驗收的報價 GET 做唯讀畫面；後續寫入、決標／轉單仍待相應後端及 SQL 驗收後拆分。 |

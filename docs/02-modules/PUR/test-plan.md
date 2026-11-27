@@ -1262,16 +1262,18 @@ U=單元、I=真實 SQL／HTTP 整合、E=Playwright 畫面與保存資料雙斷
 
 | ID | 類別 | 情境／斷言 | 層級 | 需求 | 結果 |
 |---|---|---|---|---|---|
-| PUR-RFQ-076 | 正常 | 建立草稿、編輯保存行及供應商；成功訊息單號與 GET 保存資料一致。 | E | REQ_F4114.4.2／3 | TODO |
-| PUR-RFQ-077 | 邊界 | 日期倒置、空物料／供應商、零量／七位小數、重複供應商、行及邀請上限於送出前逐欄指出；閏日與六位小數有效。 | U,E | REQ_F4114.4.2 | TODO |
-| PUR-RFQ-078 | 重複／衝突 | 保存帶目前版本，409 保留輸入並可確認重新載入；無變更不顯示保存成功。軟刪或重複代碼由 MD／後端拒絕，不在表單重用。 | E | REQ_F4114.4.3 | TODO |
-| PUR-RFQ-079 | 部分結果 | 整單保存不可部分成功或略過；任何行／供應商錯誤時零成功提示且保留草稿。 | E | REQ_F4114.4.2／3 | TODO |
-| PUR-RFQ-080 | 權限／狀態 | CREATE／EDIT 路由獨立授權；跨公司或資料範圍外 404；已發／關閉不可保存，換公司清舊表單；未存離開須確認。 | E | REQ_F4114.4.2／3 | 部分 PASS：模擬 E2E 驗路由 403、換公司替換資料、未存離開；真實 SQL／HTTP 待驗。 |
-| PUR-RFQ-081 | 關聯 | MD 物料及已核准供應商選項；停用、軟刪及不符請購來源由後端明示拒絕；來源量不超剩餘量；空來源不更改草稿。 | E | REQ_F4114.4.2／3 | 部分 PASS：模擬 E2E 驗來源 ID、空來源與未寫入；停用引用及真實 SQL 待驗。 |
-| PUR-RFQ-082 | 錯誤 | 400 逐欄、409 重載、422 行原因、500 traceId、逾時及斷線保留輸入並可重試；三語亮暗截圖。 | E | REQ_F4114.4.2／3 | TODO |
+| PUR-RFQ-076 | 正常 | 建立草稿、編輯保存行及供應商；成功訊息單號與 GET 保存資料一致。 | E | REQ_F4114.4.2／3 | PASS（2026-11-28 重試：模擬 E2E 15/15；080／081 真實 HTTP／SQL `RfqFormOptionsEnforceCreateEditPermissionScopeAndSourceAvailability` 1/1，保存時失效拒絕由 `RfqDraftMutationTests` 真實 SQL 驗收） |
+| PUR-RFQ-077 | 邊界 | 日期倒置、空物料／供應商、零量／七位小數、重複供應商、行及邀請上限於送出前逐欄指出；閏日與六位小數有效。 | U,E | REQ_F4114.4.2 | PASS（2026-11-28 重試：模擬 E2E 15/15；080／081 真實 HTTP／SQL `RfqFormOptionsEnforceCreateEditPermissionScopeAndSourceAvailability` 1/1，保存時失效拒絕由 `RfqDraftMutationTests` 真實 SQL 驗收） |
+| PUR-RFQ-078 | 重複／衝突 | 保存帶目前版本，409 保留輸入並可確認重新載入；無變更不顯示保存成功。軟刪或重複代碼由 MD／後端拒絕，不在表單重用。 | E | REQ_F4114.4.3 | PASS（2026-11-28 重試：模擬 E2E 15/15；080／081 真實 HTTP／SQL `RfqFormOptionsEnforceCreateEditPermissionScopeAndSourceAvailability` 1/1，保存時失效拒絕由 `RfqDraftMutationTests` 真實 SQL 驗收） |
+| PUR-RFQ-079 | 部分結果 | 整單保存不可部分成功或略過；任何行／供應商錯誤時零成功提示且保留草稿。 | E | REQ_F4114.4.2／3 | PASS（2026-11-28 重試：模擬 E2E 15/15；080／081 真實 HTTP／SQL `RfqFormOptionsEnforceCreateEditPermissionScopeAndSourceAvailability` 1/1，保存時失效拒絕由 `RfqDraftMutationTests` 真實 SQL 驗收） |
+| PUR-RFQ-080 | 權限／狀態 | CREATE／EDIT 路由獨立授權；跨公司或資料範圍外 404；已發／關閉不可保存，換公司清舊表單；未存離開須確認。 | E | REQ_F4114.4.2／3 | PASS（2026-11-28 重試：模擬 E2E 15/15；080／081 真實 HTTP／SQL `RfqFormOptionsEnforceCreateEditPermissionScopeAndSourceAvailability` 1/1，保存時失效拒絕由 `RfqDraftMutationTests` 真實 SQL 驗收） |
+| PUR-RFQ-081 | 關聯 | MD 物料及已核准供應商選項；停用、軟刪及不符請購來源由後端明示拒絕；來源量不超剩餘量；空來源不更改草稿。 | E | REQ_F4114.4.2／3 | PASS（2026-11-28 重試：模擬 E2E 15/15；080／081 真實 HTTP／SQL `RfqFormOptionsEnforceCreateEditPermissionScopeAndSourceAvailability` 1/1，保存時失效拒絕由 `RfqDraftMutationTests` 真實 SQL 驗收） |
+| PUR-RFQ-082 | 錯誤 | 400 逐欄、409 重載、422 行原因、500 traceId、逾時及斷線保留輸入並可重試；三語亮暗截圖。 | E | REQ_F4114.4.2／3 | PASS（2026-11-28 重試：模擬 E2E 15/15；080／081 真實 HTTP／SQL `RfqFormOptionsEnforceCreateEditPermissionScopeAndSourceAvailability` 1/1，保存時失效拒絕由 `RfqDraftMutationTests` 真實 SQL 驗收） |
 | PUR-RFQ-083 | 檔案 | 本表單沒有檔案輸入；空檔、格式、大小與編碼不適用，CSV 另由 005f2c 驗。 | E | REQ_F4114.4.2／3 | N/A |
 
 WU-PUR-005f2a2 切片檢查（2026-10-23T06:21:24+08:00）：PUR-RFQ-080／081 已新增真實 SQL 測試原始碼，涵蓋 EDIT 無 VIEW 的自身／範圍外查詢，以及供應商選項的已核准、待審、停用、軟刪、跨公司與已保存引用。SQL 服務停止，測試尚未執行，故情境仍維持 TODO；前端服務路由契約紅燈後 3/3 通過。
+
+WU-PUR-005f2a2 BLOCKED 重試（2026-11-28T01:15:39+08:00）：記憶體守衛 17.36／17.38／17.38 GiB PASS、SQL 服務正常。`RfqQueryTests`／`SupplierSelectionOptionsTests` 3/3；新增真實 HTTP／SQL `RequisitionAuthorizedHttpTests.RfqFormOptionsEnforceCreateEditPermissionScopeAndSourceAvailability`：VIEW-only 對三個選項端點、`/edit`、`saved-options` 皆 403，CREATE-only 對 `saved-options` 403，EDIT-only（Self）不能讀列表；CREATE／EDIT 的 `source-options` 只回同公司 Approved 且有剩餘量的請購行（3.123456），零餘量、Draft、他公司均排除，`itemId=0` 400；供應商選項只回已核准；`saved-options` 保留待審供應商與零餘量來源並標 `isApproved=false`／`isAvailable=false`；他人、他公司及不存在 RFQ 的 `/edit` 與 `saved-options` 404，未指派公司 403。實作既有，首次執行即通過（驗收補測，無產品變更）。模擬 E2E `purchasing-rfq-form.spec.ts` 15/15；帶正式 myerp SQL DocGen 0 Error／614 Warning。
 
 WU-PUR-005f2a2 前端切片（2026-10-23T06:35:10+08:00）：`purchasing-rfq-form.spec.ts` 7/7，涵蓋 076 建立及保存資料一致、077 無效欄位零寫入、078 無修改與 409 保留、079 整單失敗零成功、080 已發不可修訂、082 400／422／500 traceId／網絡中斷與重試；與既有 4.11 合跑 15/15。`rfq-form.spec.ts` 驗已保存行、供應商、六位小數還原，前端全量 689/689。介面 4.12／4.13 亮暗及三語截圖見 `tests/qa/PUR/screenshots/`。未補：080 路由獨立授權與換公司 E2E、081 已核准請購來源選擇及停用引用拒絕、082 真實逾時、未存離開明確 E2E；SQL／HTTP 測試仍未跑。檔案情境 083 不適用：此表單無檔案輸入；CSV 屬後續 005f2 切片。故 076～082 維持 TODO，不將部分案例當整項完成。
 | PUR-RFQ-084 | 契約 | POST／PUT 僅送單據日、期限、備註、順序行與供應商 ID；六位小數保留為字串，PUT 帶目前版本。 | U | REQ_F4114.4.2／3 | PASS：rfq.service.spec.ts 2/2 |

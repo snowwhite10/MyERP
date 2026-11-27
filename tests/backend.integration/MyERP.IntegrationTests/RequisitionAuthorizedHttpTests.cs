@@ -1223,6 +1223,157 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(http, $"{path}/{otherDocumentId}", viewerToken, company)).StatusCode);
     }
 
+    /// <summary>PUR-RFQ-080／081：RFQ 表單選項與修訂讀取的真實 HTTP／SQL 授權、公司及資料範圍（WU-PUR-005f2a2 重試）。</summary>
+    [Fact]
+    public async Task RfqFormOptionsEnforceCreateEditPermissionScopeAndSourceAvailability()
+    {
+        long company, otherCompany;
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var organizations = scope.ServiceProvider.GetRequiredService<OrganizationService>();
+            company = (await organizations.CreateCompanyAsync("P" + Guid.NewGuid().ToString("N")[..12], "RFQ options", Ct)).Id;
+            otherCompany = (await organizations.CreateCompanyAsync("P" + Guid.NewGuid().ToString("N")[..12], "RFQ other", Ct)).Id;
+        }
+        using var http = factory.CreateClient();
+        var (editorId, editorToken) = await CreateUserAsync(http);
+        var (creatorId, creatorToken) = await CreateUserAsync(http);
+        var (viewerId, viewerToken) = await CreateUserAsync(http);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
+            async Task AssignAsync(long userId, DataScope dataScope, string permission)
+            {
+                var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12], "RFQ form",
+                    null, dataScope, false, [permission]), Ct)).Id;
+                await roles.AssignAsync(userId, company, new UserCompanyAssignment(null, null, false, true, [role]), Ct);
+            }
+            await AssignAsync(editorId, DataScope.Self, PurchasingPermissions.RfqEdit);
+            await AssignAsync(creatorId, DataScope.Company, PurchasingPermissions.RfqCreate);
+            await AssignAsync(viewerId, DataScope.Company, PurchasingPermissions.RfqView);
+        }
+        long itemId, supplierId, openLineId, usedUpLineId, ownRfqId, outsiderRfqId, otherCompanyRfqId;
+        string openDocumentNo;
+        await using (var db = FullContext(company))
+        {
+            var uom = new UnitOfMeasure { CompanyId = company, Code = "EA", Name = "Each", DecimalPlaces = 6 };
+            db.Add(uom);
+            await db.SaveChangesAsync(Ct);
+            var item = new Item { CompanyId = company, Code = "I" + Guid.NewGuid().ToString("N")[..8],
+                Name = "RFQ option part", BaseUomId = uom.Id };
+            var supplier = new Supplier { CompanyId = company, Code = "S" + Guid.NewGuid().ToString("N")[..8],
+                Name = "RFQ approved supplier", ReviewStatus = PartnerReviewStatus.Approved };
+            var pending = new Supplier { CompanyId = company, Code = "S" + Guid.NewGuid().ToString("N")[..8],
+                Name = "RFQ pending supplier", ReviewStatus = PartnerReviewStatus.Pending };
+            db.AddRange(item, supplier, pending);
+            await db.SaveChangesAsync(Ct);
+            Requisition NewRequisition(string prefix, RequisitionStatus status, decimal quantity, decimal ordered)
+            {
+                var requisition = new Requisition { CompanyId = company,
+                    DocumentNo = prefix + Guid.NewGuid().ToString("N")[..8], BusinessDate = new DateOnly(2028, 2, 29),
+                    RequesterId = 7, Status = status };
+                requisition.Lines.Add(new RequisitionLine { CompanyId = company, LineNo = 1, ItemId = item.Id,
+                    RequiredDate = new DateOnly(2028, 3, 2), Quantity = quantity, OrderedQuantity = ordered });
+                return requisition;
+            }
+            var open = NewRequisition("RQA-", RequisitionStatus.Approved, 5.123456m, 2m);
+            var usedUp = NewRequisition("RQZ-", RequisitionStatus.Approved, 4m, 4m);
+            var draft = NewRequisition("RQD-", RequisitionStatus.Draft, 5m, 0m);
+            db.AddRange(open, usedUp, draft);
+            await db.SaveChangesAsync(Ct);
+            Rfq NewRfq(long ownerId)
+            {
+                var rfq = new Rfq { CompanyId = company, DocumentNo = "RFQ-OPT-" + Guid.NewGuid().ToString("N")[..8],
+                    BusinessDate = new DateOnly(2028, 2, 29), ReplyDeadline = new DateOnly(2028, 3, 1), OwnerId = ownerId };
+                rfq.Lines.Add(new RfqLine { CompanyId = company, LineNo = 1, ItemId = item.Id,
+                    RequisitionLineId = open.Lines[0].Id, RequiredDate = new DateOnly(2028, 3, 2), Quantity = 1m });
+                rfq.Lines.Add(new RfqLine { CompanyId = company, LineNo = 2, ItemId = item.Id,
+                    RequisitionLineId = usedUp.Lines[0].Id, RequiredDate = new DateOnly(2028, 3, 2), Quantity = 1m });
+                rfq.Invitations.Add(new RfqInvitation { CompanyId = company, SupplierId = supplier.Id });
+                rfq.Invitations.Add(new RfqInvitation { CompanyId = company, SupplierId = pending.Id });
+                return rfq;
+            }
+            var own = NewRfq(editorId);
+            var outsider = NewRfq(long.MaxValue);
+            db.AddRange(own, outsider);
+            await db.SaveChangesAsync(Ct);
+            (itemId, supplierId, openLineId, usedUpLineId, ownRfqId, outsiderRfqId, openDocumentNo) =
+                (item.Id, supplier.Id, open.Lines[0].Id, usedUp.Lines[0].Id, own.Id, outsider.Id, open.DocumentNo);
+        }
+        await using (var db = FullContext(otherCompany))
+        {
+            var requisition = new Requisition { CompanyId = otherCompany, DocumentNo = "RQX-" + Guid.NewGuid().ToString("N")[..8],
+                BusinessDate = new DateOnly(2028, 2, 29), RequesterId = 7, Status = RequisitionStatus.Approved };
+            requisition.Lines.Add(new RequisitionLine { CompanyId = otherCompany, LineNo = 1, ItemId = 11,
+                RequiredDate = new DateOnly(2028, 3, 2), Quantity = 9m });
+            var rfq = new Rfq { CompanyId = otherCompany, DocumentNo = "RFQ-X-" + Guid.NewGuid().ToString("N")[..8],
+                BusinessDate = new DateOnly(2028, 2, 29), ReplyDeadline = new DateOnly(2028, 3, 1), OwnerId = editorId };
+            db.AddRange(requisition, rfq);
+            await db.SaveChangesAsync(Ct);
+            otherCompanyRfqId = rfq.Id;
+        }
+        const string path = "/api/v1/pur/rfqs";
+        foreach (var option in new[] { $"{path}/item-options", $"{path}/supplier-options", $"{path}/source-options" })
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, (await http.GetAsync(option, Ct)).StatusCode);
+            Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(http, option, viewerToken, company)).StatusCode);
+        }
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(http, $"{path}/{ownRfqId}/edit", viewerToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await SendAsync(http, $"{path}/{ownRfqId}/saved-options", viewerToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await SendAsync(http, $"{path}/{ownRfqId}/saved-options", creatorToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(http, path, editorToken, company)).StatusCode);
+
+        foreach (var token in new[] { creatorToken, editorToken })
+        {
+            var sources = await SendAsync(http, $"{path}/source-options?pageSize=20&page=1", token, company);
+            Assert.Equal(HttpStatusCode.OK, sources.StatusCode);
+            var sourceBody = await sources.Content.ReadFromJsonAsync<JsonElement>(Ct);
+            Assert.Equal(1, sourceBody.GetProperty("totalCount").GetInt64());
+            var only = sourceBody.GetProperty("items")[0];
+            Assert.Equal(openLineId, only.GetProperty("id").GetInt64());
+            Assert.Equal(openDocumentNo, only.GetProperty("documentNo").GetString());
+            Assert.Equal(3.123456m, only.GetProperty("remainingQuantity").GetDecimal());
+            var filtered = await SendAsync(http, $"{path}/source-options?itemId={itemId + 100000}", token, company);
+            Assert.Equal(HttpStatusCode.OK, filtered.StatusCode);
+            Assert.Equal(0, (await filtered.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("totalCount").GetInt64());
+            Assert.Equal(HttpStatusCode.BadRequest,
+                (await SendAsync(http, $"{path}/source-options?itemId=0", token, company)).StatusCode);
+            var suppliers = await SendAsync(http, $"{path}/supplier-options?pageSize=20", token, company);
+            Assert.Equal(HttpStatusCode.OK, suppliers.StatusCode);
+            Assert.Equal([supplierId], (await suppliers.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("items")
+                .EnumerateArray().Select(x => x.GetProperty("id").GetInt64()));
+            var items = await SendAsync(http, $"{path}/item-options?pageSize=20", token, company);
+            Assert.Equal(HttpStatusCode.OK, items.StatusCode);
+            Assert.Equal([itemId], (await items.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("items")
+                .EnumerateArray().Select(x => x.GetProperty("id").GetInt64()));
+        }
+
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(http, $"{path}/{ownRfqId}/edit", editorToken, company)).StatusCode);
+        var saved = await SendAsync(http, $"{path}/{ownRfqId}/saved-options", editorToken, company);
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+        var savedBody = await saved.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal([itemId], savedBody.GetProperty("items").EnumerateArray().Select(x => x.GetProperty("id").GetInt64()));
+        var savedSuppliers = savedBody.GetProperty("suppliers").EnumerateArray()
+            .ToDictionary(x => x.GetProperty("id").GetInt64(), x => x.GetProperty("isApproved").GetBoolean());
+        Assert.Equal(2, savedSuppliers.Count);
+        Assert.True(savedSuppliers[supplierId]);
+        Assert.Single(savedSuppliers, x => !x.Value);
+        var savedSources = savedBody.GetProperty("sources").EnumerateArray()
+            .ToDictionary(x => x.GetProperty("id").GetInt64(), x => x.GetProperty("isAvailable").GetBoolean());
+        Assert.Equal(2, savedSources.Count);
+        Assert.True(savedSources[openLineId]);
+        Assert.False(savedSources[usedUpLineId]);
+
+        foreach (var hidden in new[] { $"{path}/{outsiderRfqId}", $"{path}/{otherCompanyRfqId}", $"{path}/{long.MaxValue}" })
+        {
+            Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(http, $"{hidden}/edit", editorToken, company)).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(http, $"{hidden}/saved-options", editorToken, company)).StatusCode);
+        }
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await SendAsync(http, $"{path}/source-options", editorToken, otherCompany)).StatusCode);
+    }
+
     private async Task<(long Id, string Token)> CreateUserAsync(HttpClient client)
     {
         const string password = "Strong pass 2026!";
