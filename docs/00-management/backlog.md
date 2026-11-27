@@ -288,7 +288,7 @@
 | WU-FI-DOCGEN-REFS | FI | DocGen with DB (2026-11-16) has 12 FI Errors: REQ_DS43.189 is used by both PUR and FI data-structure.md; FI ui-spec 6.26–6.30 writes REQ_F as ranges or short forms ("1.4–1.6", "5.10", "REQ_F4116.5.4–5.8"). Give the duplicate a new ID (from the idCounters) and expand each to a full REQ_F ID; DocGen must reach 0 Error | P2 | WONT_DO | - | 已由較高優先級 WU-P0-043 於 2026-11-25T21:45:27+08:00 完成，避免重複工作；隔離真實 SQL 報告 0 Error。 |
 | WU-SYS-NUMSEQ-LOCK | SYS | SYS NumberGenerator 的 MERGE HOLDLOCK 在一個交易持有序號列時，令另一公司的取號等待（WU-SD-004a2b10 雙連線測試觀察到 1222）；確認計劃，改為只鎖自身 (company, document_type, period) 鍵並加跨公司不互鎖測試 | P2 | TODO | - | 2026-11-16 ADR-138 記錄；同公司同單據類型仍須序列化。 |
 | WU-FI-006d | FI/AP | 定義採購付款、未核銷款與應付核銷來源、餘額、鎖序及完整情境 | P1 | DONE | 003d、004d 設計基線 | REQ_F4116.3.1～6／6.6.1～6、BR-FI-041～050、FI-AP-PAY-001～028；純設計，無表、端點或產品驗收。 |
-| WU-FI-006a | FI/AP | 先寫真實 SQL 紅燈，建立付款／核銷來源、永久鍵、餘額、分錄 migration 及原子服務 | P1 | TODO | 003a、004a、006d、SQL 服務 | 分配 REQ_DS43；雙連線供應商／付款／應付競態、來源重放與回滾必驗。 |
+| WU-FI-006a | FI/AP | 先寫真實 SQL 紅燈，建立付款／核銷來源、永久鍵、餘額、分錄 migration 及原子服務 | P1 | IN_PROGRESS | 003a、004a、006d、SQL 服務 | 2026-11-27T14:34:18+08:00 已交付 REQ_DS43.214–216 三張 Posted 來源表、永久鍵、公司 FK、CHECK 及不可變觸發器；定向真實 SQL 1/1。Draft／原子服務、雙連線競態、回滾與全量驗證未完成；全量因記憶體降至 1.289 GiB 延後。 |
 | WU-FI-006b | FI/AP | 付款／核銷受權 CRUD、SYS 最終審批同交易、Swagger 與真實 SQL／HTTP 驗收 | P1 | TODO | 006a | 獨立 AP.PAYMENT／SETTLEMENT 權限；草稿、駁回、部分核銷、0 變更重放與逐行原因。 |
 | WU-FI-006c | FI/AP | 三語亮暗付款與核銷畫面、Playwright 截圖 QA 與保存資料對帳 | P1 | TODO | 006b | 分配 REQ_IO_A；付款成功提示不可宣稱 AP 已清，核銷訊息與實際餘額一致。 |
 | WU-FI-007d | FI/AR/GL | 定義其他收款的非發票來源、收支類別、GL 過帳與 AR 邊界及完整情境 | P1 | DONE | 004d、005d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4116.2.1～6、BR-FI-051～058、FI-AR-OTHER-001～020；純設計，無表、端點或產品驗收。 |

@@ -3,10 +3,10 @@
     "project": "MyERP",
     "status": "IN_PROGRESS",
     "phase": "P1",
-    "currentModule": "PUR",
-    "currentWorkUnit": "WU-PUR-005f3c2",
+    "currentModule": "FI",
+    "currentWorkUnit": "WU-FI-006a",
     "lastCompletedWorkUnit": "WU-PUR-005e3",
-    "nextAction": "005f3c2 決標頁與定向 SQL 已提交，但後端全量因記憶體不足延後；按 MASTER_PROMPT 第 1 節不得單獨重挑 005e4／005f3c2 補驗。第一週 PUR-005f3d 依賴 005e4、006a 受阻，改選第一期下一個不依賴它們的 WU-FI-006a（採購付款來源／migration／原子服務）；先核對 003a、004a1～a3、006d 已完成及當輪資源守衛，再依測試先行落地。005f3c2 邊界／錯誤未完項目見 test-plan，於模組收尾補驗時處理。",
+    "nextAction": "續做 WU-FI-006a 實作，不要單獨重挑已延後的全量驗證：基於 Finance_PaymentFoundation 三張 Posted 來源表，先寫付款 Draft／核銷 Draft 與原子 GL 服務的真實 SQL 紅燈，實作供應商→付款→應付排序鎖、來源重放、餘額／逐行回滾；補 migration 帶資料 Down／Up、雙連線競態及測試情境。先核對 schema 與 API／業務規則，當輪資源守衛 PASS 才執行真實 SQL；已延後後端全量只在 FI 模組收尾或人手指示時補驗。PUR-005e4／005f3c2 同樣不得單獨補驗。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -25,7 +25,7 @@
         "SCM": "IN_PROGRESS"
     },
     "idCounters": {
-        "REQ_DS43": 213,
+        "REQ_DS43": 216,
         "ADR": 209,
         "nextSrsModuleNo": 17
     },
@@ -55,6 +55,18 @@
         "WU-P0-E2E-FLAKE-MENU"
     ],
     "deferredVerifications": [
+        {
+            "workUnit": "WU-FI-006a",
+            "reason": "2026-11-27 守衛起始 PASS，但後端全量整合測試執行時可用實體記憶體降至 1.289 GiB；停止全量以免造成 SQL 逾時。已完成資料結構定向真實 SQL 1/1、架構 5/5。",
+            "commands": [
+                "dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --filter-method '*FinancePaymentFoundationTests*' --max-threads 2",
+                "dotnet test --solution src/backend/MyERP.sln -c Debug --max-threads 2",
+                "dotnet ef database update -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api"
+            ],
+            "remaining": "在 FI 模組完成或人手指定時先跑一次記憶體守衛；PASS 後補擴充後的 SQL CHECK／trigger 測試、完整後端全量及 migration Down／Up，並核對正式 myerp migration。此項不得單獨選為下一輪工作單元。",
+            "branch": "main",
+            "deferredAt": "2026-11-27T14:34:48+08:00"
+        },
         {
             "workUnit": "WU-PUR-005f3c2",
             "reason": "2026-11-27 後端全量執行中可用實體記憶體降至 0.94 GiB、整合測試程序佔 2.39 GiB，長時間無結果；依資源不足規則中止。決標快照定向真實 SQL 1/1、前端 1305/1305、模擬 E2E 7/7 已通過。",
@@ -94,5 +106,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-27T14:17:10+08:00",
-    "updatedAt": "2026-11-27T14:17:10+08:00"
+    "updatedAt": "2026-11-27T14:34:48+08:00"
 }

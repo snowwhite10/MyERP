@@ -889,6 +889,8 @@ The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permis
 | FI-AP-PAY-027 | File | No import/export exists in this slice; empty, malformed, oversized, wrong-encoding and missing/extra-column files are inapplicable. | — | REQ_F4116.3.1,6.1 | N/A |
 | FI-AP-PAY-028 | Scope | FX settlement, refund, bank reconciliation, prepayment reclassification, debt forgiveness and reversal fail closed pending separate authorised contracts. | I,E | REQ_F4116.3.4,6.4 | TODO |
 
+WU-FI-006a foundation checkpoint (2026-11-27T14:33:49+08:00): the real SQL table/index/FK/precision test went red (0/3 tables), then green (1/1) after `Finance_PaymentFoundation`; the expanded trigger/check assertions and full suite are pending after available physical memory fell to 1.289 GiB during the suite. FI-AP-PAY-026 remains TODO until data mutation, rollback, concurrent balance and Down/Up tests pass. API, UI and all other cases remain TODO.
+
 Traceability: REQ_F4116.3.1–6 → BR-FI-041–043,045,047–050 → FI-AP-PAY-001–002,005–006,008–010,012,014–017,019,021–028. REQ_F4116.6.1–6 → BR-FI-043–050 → FI-AP-PAY-003–007,009–018,020–028. All real SQL, HTTP and UI cases remain TODO.
 
 ## WU-FI-007d other collection scenarios (design; product tests TODO)

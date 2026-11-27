@@ -1,5 +1,11 @@
 # FI optimization log
 
+## WU-FI-006a payment foundation review — 2026-11-27T14:33:49+08:00
+
+- The first migration was empty because `PurchasePaymentDbModel` was not registered. Registered it before regenerating the migration; the real SQL table test changed from 0/3 to 3/3. The generated migration also needs the existing `ap_posted_payable` company alternate key for company-scoped allocation FKs.
+- Added database triggers to keep posted source identity immutable, start payments fully unapplied, prevent an unapplied increase, and prevent changes to posted settlements or allocations. Aggregate allocation limits still require the WU-FI-006a transaction service; the foundation alone does not post or settle money.
+- The first full suite exposed a stale explicit architecture model list. Added the new model to that list and reran focused `FinanceModuleTests` 5/5. During the full integration run, free physical memory fell to 1.289 GiB; the run was stopped and is deferred with the expanded SQL constraint test. No further full run was attempted.
+
 ## WU-FI-002c1 sales source read API review — 2026-11-26T01:20:21+08:00
 
 - **Company and SYS scope.** FI's source and receivable entities use the current-company EF filters; no branch, department or owner column exists. Reused the same company-wide permission rule as GL journals, with a distinct `AR.SALES_SOURCE.VIEW` code. The real SQL HTTP test proves other-company IDs are 404 and an ungranted role gets 403.

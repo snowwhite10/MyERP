@@ -1380,6 +1380,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_ap_posted_payable");
 
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_ap_posted_payable_company_id_id");
+
                     b.HasIndex("CompanyId", "PurchaseSourceId")
                         .IsUnique()
                         .HasDatabaseName("ux_ap_posted_payable_company_id_purchase_source_id");
@@ -1568,6 +1571,350 @@ namespace MyERP.Migrations.Migrations
                             t.HasCheckConstraint("ck_gl_purchase_invoice_account_map_codes", "LEN(TRIM([payable_account_code])) > 0 AND LEN(TRIM([purchase_account_code])) > 0 AND LEN(TRIM([input_tax_account_code])) > 0");
 
                             t.HasCheckConstraint("ck_gl_purchase_invoice_account_map_identity", "[company_id] > 0 AND [version] > 0");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.PurchasePaymentAllocation", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("amount");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("PayableId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("payable_id");
+
+                    b.Property<long>("PaymentId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("payment_id");
+
+                    b.Property<long>("SettlementId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("settlement_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ap_payment_allocation");
+
+                    b.HasIndex("CompanyId", "PayableId")
+                        .HasDatabaseName("ix_ap_payment_allocation_company_id_payable_id");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("CompanyId", "PayableId"), new[] { "Amount" });
+
+                    b.HasIndex("CompanyId", "PaymentId")
+                        .HasDatabaseName("ix_ap_payment_allocation_company_id_payment_id");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("CompanyId", "PaymentId"), new[] { "Amount" });
+
+                    b.HasIndex("CompanyId", "SettlementId", "PayableId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ap_payment_allocation_company_id_settlement_id_payable_id");
+
+                    b.ToTable("ap_payment_allocation", null, t =>
+                        {
+                            t.HasTrigger("tr_ap_payment_allocation_immutable");
+
+                            t.HasCheckConstraint("ck_ap_payment_allocation_amount", "[amount] > 0");
+
+                            t.HasCheckConstraint("ck_ap_payment_allocation_refs", "[company_id] > 0 AND [settlement_id] > 0 AND [payment_id] > 0 AND [payable_id] > 0");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.PurchasePaymentSettlement", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("BaseCurrency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("base_currency")
+                        .IsFixedLength();
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Fingerprint")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(128)")
+                        .HasColumnName("fingerprint");
+
+                    b.Property<long>("GlJournalId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("gl_journal_id");
+
+                    b.Property<long>("PaymentId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("payment_id");
+
+                    b.Property<long>("SourceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("source_id");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("source_type");
+
+                    b.Property<int>("SourceVersion")
+                        .HasColumnType("int")
+                        .HasColumnName("source_version");
+
+                    b.Property<long>("SupplierId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("total_amount");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ap_payment_settlement");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_ap_payment_settlement_company_id_id");
+
+                    b.HasIndex("GlJournalId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ap_payment_settlement_gl_journal_id");
+
+                    b.HasIndex("CompanyId", "GlJournalId")
+                        .HasDatabaseName("ix_ap_payment_settlement_company_id_gl_journal_id");
+
+                    b.HasIndex("CompanyId", "PaymentId")
+                        .HasDatabaseName("ix_ap_payment_settlement_company_id_payment_id");
+
+                    b.HasIndex("CompanyId", "SupplierId")
+                        .HasDatabaseName("ix_ap_payment_settlement_company_id_supplier_id");
+
+                    b.HasIndex("CompanyId", "SourceType", "SourceId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ap_payment_settlement_company_id_source_type_source_id");
+
+                    b.ToTable("ap_payment_settlement", null, t =>
+                        {
+                            t.HasTrigger("tr_ap_payment_settlement_immutable");
+
+                            t.HasCheckConstraint("ck_ap_payment_settlement_amount", "[total_amount] > 0");
+
+                            t.HasCheckConstraint("ck_ap_payment_settlement_currency", "[base_currency] COLLATE Latin1_General_BIN LIKE '[A-Z][A-Z][A-Z]'");
+
+                            t.HasCheckConstraint("ck_ap_payment_settlement_identity", "[company_id] > 0 AND [supplier_id] > 0 AND [source_id] > 0 AND [source_version] > 0 AND [gl_journal_id] > 0 AND LEN(TRIM([fingerprint])) > 0 AND [payment_id] > 0");
+
+                            t.HasCheckConstraint("ck_ap_payment_settlement_type", "[source_type] = 'PaymentWriteOff'");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.PurchasePaymentSource", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("amount");
+
+                    b.Property<long>("BankAccountId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("bank_account_id");
+
+                    b.Property<string>("BankReference")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("bank_reference");
+
+                    b.Property<string>("BaseCurrency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("base_currency")
+                        .IsFixedLength();
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Fingerprint")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(128)")
+                        .HasColumnName("fingerprint");
+
+                    b.Property<long>("GlJournalId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("gl_journal_id");
+
+                    b.Property<long>("SourceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("source_id");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("source_type");
+
+                    b.Property<int>("SourceVersion")
+                        .HasColumnType("int")
+                        .HasColumnName("source_version");
+
+                    b.Property<long>("SupplierId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<decimal>("UnappliedAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("unapplied_amount");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ap_payment_source");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_ap_payment_source_company_id_id");
+
+                    b.HasIndex("GlJournalId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ap_payment_source_gl_journal_id");
+
+                    b.HasIndex("CompanyId", "GlJournalId")
+                        .HasDatabaseName("ix_ap_payment_source_company_id_gl_journal_id");
+
+                    b.HasIndex("CompanyId", "BankAccountId", "BankReference")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ap_payment_source_company_id_bank_account_id_bank_reference");
+
+                    b.HasIndex("CompanyId", "SourceType", "SourceId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ap_payment_source_company_id_source_type_source_id");
+
+                    b.HasIndex("CompanyId", "SupplierId", "BusinessDate")
+                        .HasDatabaseName("ix_ap_payment_source_company_id_supplier_id_business_date");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("CompanyId", "SupplierId", "BusinessDate"), new[] { "UnappliedAmount" });
+
+                    b.ToTable("ap_payment_source", null, t =>
+                        {
+                            t.HasTrigger("tr_ap_payment_source_origin");
+
+                            t.HasCheckConstraint("ck_ap_payment_source_amounts", "[amount] > 0 AND [unapplied_amount] >= 0 AND [unapplied_amount] <= [amount]");
+
+                            t.HasCheckConstraint("ck_ap_payment_source_bank", "[bank_account_id] > 0 AND LEN(TRIM([bank_reference])) > 0");
+
+                            t.HasCheckConstraint("ck_ap_payment_source_currency", "[base_currency] COLLATE Latin1_General_BIN LIKE '[A-Z][A-Z][A-Z]'");
+
+                            t.HasCheckConstraint("ck_ap_payment_source_identity", "[company_id] > 0 AND [supplier_id] > 0 AND [source_id] > 0 AND [source_version] > 0 AND [gl_journal_id] > 0 AND LEN(TRIM([fingerprint])) > 0");
+
+                            t.HasCheckConstraint("ck_ap_payment_source_type", "[source_type] = 'PurchasePayment'");
                         });
 
                     b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
@@ -12825,6 +13172,63 @@ namespace MyERP.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_ar_posted_receivable_ar_credit_key_company_id_customer_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.PurchasePaymentAllocation", b =>
+                {
+                    b.HasOne("MyERP.Modules.Finance.Domain.PostedPayable", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "PayableId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ap_payment_allocation_ap_posted_payable_company_id_payable_id");
+
+                    b.HasOne("MyERP.Modules.Finance.Domain.PurchasePaymentSource", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "PaymentId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ap_payment_allocation_ap_payment_source_company_id_payment_id");
+
+                    b.HasOne("MyERP.Modules.Finance.Domain.PurchasePaymentSettlement", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "SettlementId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ap_payment_allocation_ap_payment_settlement_company_id_settlement_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.PurchasePaymentSettlement", b =>
+                {
+                    b.HasOne("MyERP.Modules.Finance.Domain.GlJournal", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "GlJournalId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ap_payment_settlement_gl_journal_company_id_gl_journal_id");
+
+                    b.HasOne("MyERP.Modules.Finance.Domain.PurchasePaymentSource", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "PaymentId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ap_payment_settlement_ap_payment_source_company_id_payment_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.PurchasePaymentSource", b =>
+                {
+                    b.HasOne("MyERP.Modules.Finance.Domain.GlJournal", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "GlJournalId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ap_payment_source_gl_journal_company_id_gl_journal_id");
                 });
 
             modelBuilder.Entity("MyERP.Modules.Finance.Domain.PurchaseSource", b =>
