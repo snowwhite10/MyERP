@@ -8,12 +8,12 @@ namespace MyERP.Modules.Finance.Application;
 /// <summary>
 /// Reports to MD that an account code is referenced by a saved Posted journal line of the current company
 /// (BR-FI-027, ADR-039) or by the company's SD invoice account map (BR-FI-147, WU-FI-002a4b) or PUR purchase invoice
-/// account map (BR-FI-150, WU-FI-003a2c) or sales collection account map (BR-FI-154, WU-FI-005a2d), so MD keeps a mapped
+/// account map (BR-FI-150, WU-FI-003a2c) or sales collection account map (BR-FI-154, WU-FI-005a2d) or other payment expense account map (BR-FI-060, WU-FI-008b3b), so MD keeps a mapped
 /// account deletable-protected and postable (no delete, no direction change, no child). Matching is exact on the saved
 /// code; parents and prefixes are not in use by themselves. Only FI tables are read; the company query filter scopes
 /// the lookup.
 /// </summary>
-public sealed class FinanceAccountUsage(MyErpDbContext db) : IAccountUsage
+public sealed class FinanceAccountUsage(MyErpDbContext db, IChartOfAccounts chart) : IAccountUsage
 {
     public async Task<bool> IsInUseAsync(string accountCode, CancellationToken token = default)
     {
@@ -26,6 +26,10 @@ public sealed class FinanceAccountUsage(MyErpDbContext db) : IAccountUsage
             return true;
         if (await db.Set<SalesCollectionAccountMapping>().AnyAsync(map => map.UnappliedCashAccountCode == accountCode
                 || map.ReceivableAccountCode == accountCode, token))
+            return true;
+        // 其他付款費用對照只存 MD 科目 ID（WU-FI-008b3b）：以 MD 公開契約把代碼換成目前公司的 ID 再比對。
+        if (await chart.FindAsync(accountCode, token) is { } account
+            && await db.Set<OtherPaymentAccountMapping>().AnyAsync(map => map.ExpenseAccountId == account.Id, token))
             return true;
         return await db.Set<GlJournalLine>().AnyAsync(line => line.AccountCode == accountCode &&
             db.Set<GlJournal>().Any(journal => journal.Id == line.JournalId && journal.Status == GlJournalStatus.Posted), token);

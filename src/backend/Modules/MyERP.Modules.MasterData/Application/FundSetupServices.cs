@@ -193,6 +193,15 @@ public sealed class IncomeExpenseCategoryLookup(MyErpDbContext db) : IIncomeExpe
         return item is null ? null : await ToInfoAsync(item, token);
     }
 
+    public async Task<IReadOnlyList<IncomeExpenseCategoryItem>> ListAsync(IncomeExpenseDirection direction, CancellationToken token = default)
+    {
+        MasterDataQueries.RequireCompany(db);
+        var value = direction.ToString();
+        var items = await db.Set<IncomeExpenseCategory>().AsNoTracking().Where(x => x.Direction == value).OrderBy(x => x.Code)
+            .Select(x => new { x.Id, x.Code, x.Name, x.IsActive }).ToListAsync(token);
+        return [.. items.Select(x => new IncomeExpenseCategoryItem(x.Id, x.Code, x.Name, direction, x.IsActive))];
+    }
+
     private async Task<IncomeExpenseCategoryInfo> ToInfoAsync(IncomeExpenseCategory item, CancellationToken token)
     {
         var ledger = item.LedgerAccountId is null ? null : await db.Set<Account>().Where(x => x.Id == item.LedgerAccountId).Select(x => x.Code).SingleAsync(token);

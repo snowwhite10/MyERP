@@ -81,6 +81,7 @@ public sealed class FinanceModule : IErpModule
         services.AddScoped<SalesInvoiceAccountMapService>();
         services.AddScoped<PurchaseInvoiceAccountMapService>();
         services.AddScoped<SalesCollectionAccountMapService>();
+        services.AddScoped<OtherPaymentAccountMapService>();
         services.AddScoped<CollectionReceiptDocumentService>();
         services.AddScoped<OtherPaymentDocumentService>();
         // 其他付款原子過帳（WU-FI-008a4、ADR-211）：FI/OtherPayment 映射版本依本 scope 正在過帳的費用類別讀取
@@ -126,6 +127,9 @@ public sealed class FinancePermissions : IPermissionDefinitionProvider
         new PermissionDefinition(PurchaseInvoiceAccountMapService.EditPermission, FinanceModuleContracts.ModuleCode),
         new PermissionDefinition(SalesCollectionAccountMapService.ViewPermission, FinanceModuleContracts.ModuleCode),
         new PermissionDefinition(SalesCollectionAccountMapService.EditPermission, FinanceModuleContracts.ModuleCode),
+        // 其他付款費用類別對照（WU-FI-008b3b）：FINANCE 全部；MANAGER／VIEWER 只有 VIEW
+        new PermissionDefinition(OtherPaymentAccountMapService.ViewPermission, FinanceModuleContracts.ModuleCode),
+        new PermissionDefinition(OtherPaymentAccountMapService.EditPermission, FinanceModuleContracts.ModuleCode),
         // 銷售收款單據（WU-FI-005b4a、ADR-129）：FINANCE 全部；MANAGER／VIEWER 只有 VIEW（審批走 SYS.APPROVAL.PROCESS）
         .. new[] { CollectionReceiptDocumentService.ViewPermission, CollectionReceiptDocumentService.CreatePermission,
             CollectionReceiptDocumentService.EditPermission, CollectionReceiptDocumentService.DeletePermission,

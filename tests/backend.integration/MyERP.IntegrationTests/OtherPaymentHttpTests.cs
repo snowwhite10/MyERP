@@ -27,7 +27,7 @@ namespace MyERP.IntegrationTests;
 /// FI-OP-HTTP-001～008（WU-FI-008b3a，REQ_F4116.4.1～4.5，BR-FI-059～065）：其他付款單據 HTTP。真實 SQL＋真實 SYS 授權、
 /// 單號規則與審批引擎：路由與 Swagger、AP.OTHER_PAYMENT.* 分權、建立／修改／刪除的版本與狀態、列表篩選排序分頁與公司隔離、
 /// 送審／撤回、SYS 核准同交易過帳（Posted、借費用／貸銀行、傳票）、駁回回可編輯、零步驟送審即過帳、過帳失敗整筆回滾，
-/// 以及缺少單號規則。費用類別對照（gl_other_payment_account_map）的 HTTP 維護在 008b3b，本檔以 SQL 直接寫入。
+/// 以及缺少單號規則。費用類別對照經 008b3b 的 HTTP API 建立。
 /// </summary>
 public sealed class OtherPaymentHttpTests(TestDatabase database) : IAsyncLifetime
 {
@@ -494,10 +494,9 @@ public sealed class OtherPaymentHttpTests(TestDatabase database) : IAsyncLifetim
         using (var period = await admin.PostAsJsonAsync("/api/v1/gl/periods",
                    new { startDate = "2026-11-01", endDate = "2026-11-30" }, Ct))
             Assert.Equal(HttpStatusCode.Created, period.StatusCode);
-        var courierLedger = accounts["6101"];
-        await using (var raw = database.CreateRawContext())
-            await raw.Database.ExecuteSqlAsync(
-                $"INSERT INTO dbo.gl_other_payment_account_map (company_id, expense_category_id, expense_account_id, created_at, created_by, version) VALUES ({companyId}, {courier}, {courierLedger}, '2026-11-01T00:00:00', 1, 1)", Ct);
+        using (var map = await admin.PutAsJsonAsync($"/api/v1/gl/other-payment-account-map/{courier}",
+                   new { version = 0, expenseAccountCode = "6101" }, Ct))
+            Assert.Equal(HttpStatusCode.OK, map.StatusCode);
         return new(companyId, bank, usdBank, courier, rent, income, accounts["6101"], admin);
     }
 

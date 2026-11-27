@@ -23,11 +23,11 @@ public sealed class FinanceModuleTests
     private static readonly string[] OtherPaymentPermissions = ["AP.OTHER_PAYMENT.VIEW", "AP.OTHER_PAYMENT.CREATE",
         "AP.OTHER_PAYMENT.EDIT", "AP.OTHER_PAYMENT.DELETE", "AP.OTHER_PAYMENT.SUBMIT"];
     private static readonly string[] GlReadPermissions = ["GL.PERIOD.VIEW", "GL.JOURNAL.VIEW", "GL.SALES_MAP.VIEW",
-        "GL.PURCHASE_MAP.VIEW", "GL.COLLECTION_MAP.VIEW"];
+        "GL.PURCHASE_MAP.VIEW", "GL.COLLECTION_MAP.VIEW", "GL.OTHER_PAYMENT_MAP.VIEW"];
     private static readonly string[] SalesReadPermissions = ["AR.SALES_SOURCE.VIEW"];
     private static readonly string[] GlWritePermissions = ["GL.PERIOD.CREATE", "GL.PERIOD.EDIT",
         "GL.PERIOD.CLOSE", "GL.PERIOD.REOPEN", "GL.PERIOD.DELETE", "GL.SALES_MAP.EDIT", "GL.PURCHASE_MAP.EDIT",
-        "GL.COLLECTION_MAP.EDIT"];
+        "GL.COLLECTION_MAP.EDIT", "GL.OTHER_PAYMENT_MAP.EDIT"];
 
     [Fact]
     public void ModuleOwnsCreditContractAndArTables()
@@ -64,6 +64,8 @@ public sealed class FinanceModuleTests
         services.Should().ContainSingle(x => x.ServiceType == typeof(PurchaseInvoiceAccountMapService)
             && x.Lifetime == ServiceLifetime.Scoped);
         services.Should().ContainSingle(x => x.ServiceType == typeof(SalesCollectionAccountMapService)
+            && x.Lifetime == ServiceLifetime.Scoped);
+        services.Should().ContainSingle(x => x.ServiceType == typeof(OtherPaymentAccountMapService)
             && x.Lifetime == ServiceLifetime.Scoped);
     }
 

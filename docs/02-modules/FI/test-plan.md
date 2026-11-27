@@ -2669,3 +2669,18 @@ Partial results, permissions, document states and client errors 400/409/422/500/
 | FI-SRC-UI-006 | State/relation | Only committed FI sources appear. Draft/Pending SD rows have no FI record; linked invoice and return remain traceable after posting. No create, delete or disabled write action exists. | I,E | REQ_F4116.8.3 | Pass: 002c1 API I + FI-SRC-REAL-001 SQL/E |
 | FI-SRC-UI-007 | Error | 400 validation, 403 permission, 404 source, 500 with trace ID, timeout and network each show a translated reason and a retry path; failed read never claims empty. 409/422 write conflicts do not apply to GET. | U,E | REQ_F4116.8.3 | Pass: service/page U, mock E, 002c1 API I |
 | FI-SRC-UI-008 | File | Not applicable: page has no file input or export. | — | REQ_F4116.8.3 | N/A |
+
+## WU-FI-008b3b other payment account map HTTP scenarios
+
+`myerp-test-scenarios` categories: normal (FI-OP-MAP-HTTP-003/004), boundary (005), duplicate/concurrency (004), permission/company (001/002/003/005), state and relation (003/005/006), errors (005), partial/batch/file (N/A: one mapping per request; no file endpoint). HTTP tests assert the returned row and persisted SQL; UI messages and timeout handling belong to WU-FI-008c.
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-OP-MAP-HTTP-001 | Auth/API | Anonymous GET/PUT 401; OpenAPI publishes GET/PUT and no DELETE. | I | REQ_F4116.4.7 | Pass |
+| FI-OP-MAP-HTTP-002 | Permission | VIEW and EDIT are independent; unrelated AP/AR permissions denied; no write. | I | REQ_F4116.4.7 | Pass |
+| FI-OP-MAP-HTTP-003 | Normal/company/state | One current-company row per Expense category, including inactive/unconfigured, current labels, ordered; exclude Income and other company. | I | REQ_F4116.4.7 | Pass |
+| FI-OP-MAP-HTTP-004 | Version/audit | Create v1, identical save unchanged, update v2; stale/duplicate v0 409; inactive category allowed; CREATE/UPDATE audit. | I | REQ_F4116.4.7 | Pass |
+| FI-OP-MAP-HTTP-005 | Boundary/relation/error | Blank/31-char code and negative version 400 by field; foreign/deleted/unknown category 404; Income or missing/inactive/nonpostable/non-Expense/Cost account 422 with reason; zero writes. | I | REQ_F4116.4.7 | Pass |
+| FI-OP-MAP-HTTP-006 | Relation | MD rejects deletion of mapped account, allows unrelated account deletion. | I | REQ_F4116.4.7 | Pass |
+
+The shared ProblemDetails path covers 500 with traceId; there is no front-end page in this work unit. Concurrent race is protected by the unique index and EF version token; explicit two-client collision remains for future focused verification.

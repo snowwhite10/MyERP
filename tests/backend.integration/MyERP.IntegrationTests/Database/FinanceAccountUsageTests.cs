@@ -21,7 +21,8 @@ public sealed class FinanceAccountUsageTests(TestDatabase database)
             new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
                 .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
             [new AccountDbModel(), new GlPeriodDbModel(), new GlJournalDbModel(), new SalesInvoiceAccountMapDbModel(),
-                new PurchaseInvoiceAccountMapDbModel(), new SalesCollectionAccountMapDbModel()], company);
+                new PurchaseInvoiceAccountMapDbModel(), new SalesCollectionAccountMapDbModel(),
+                new OtherPaymentDocumentDbModel(), new OtherPaymentPostingDbModel()], company);
     }
 
     private static long NewCompany() => Random.Shared.NextInt64(96000000, 97000000);
@@ -48,7 +49,7 @@ public sealed class FinanceAccountUsageTests(TestDatabase database)
         var token = TestContext.Current.CancellationToken;
         var companyId = NewCompany();
         await using var db = Context(companyId);
-        var usage = new FinanceAccountUsage(db);
+        var usage = new FinanceAccountUsage(db, new ChartOfAccounts(db));
         var service = new AccountService(db, [usage]);
         var assets = await service.CreateAsync("1", "Assets", null, AccountType.Asset, null, token);
         var cash = await service.CreateAsync("1001", "Cash", assets.Id, null, null, token);
@@ -91,10 +92,10 @@ public sealed class FinanceAccountUsageTests(TestDatabase database)
         var otherId = companyId + 1000000;
         await using var other = Context(otherId);
         await PostAsync(other, otherId, (5, "1001"), (6, "4001"), token);
-        Assert.True(await new FinanceAccountUsage(other).IsInUseAsync("1001", token));
+        Assert.True(await new FinanceAccountUsage(other, new ChartOfAccounts(other)).IsInUseAsync("1001", token));
 
         await using var db = Context(companyId);
-        var usage = new FinanceAccountUsage(db);
+        var usage = new FinanceAccountUsage(db, new ChartOfAccounts(db));
         Assert.False(await usage.IsInUseAsync("1001", token));
         var service = new AccountService(db, [usage]);
         var assets = await service.CreateAsync("1", "Assets", null, AccountType.Asset, null, token);
@@ -112,7 +113,7 @@ public sealed class FinanceAccountUsageTests(TestDatabase database)
         var companyId = NewCompany();
         await using var db = Context(companyId);
         await PostAsync(db, companyId, (5, "1001"), (6, "4001"), token);
-        var usage = new FinanceAccountUsage(db);
+        var usage = new FinanceAccountUsage(db, new ChartOfAccounts(db));
         Assert.False(await usage.IsInUseAsync("", token));
         Assert.False(await usage.IsInUseAsync("   ", token));
         Assert.False(await usage.IsInUseAsync(null!, token));
@@ -148,7 +149,7 @@ public sealed class FinanceAccountUsageTests(TestDatabase database)
         }
 
         await using var db = Context(companyId);
-        var usage = new FinanceAccountUsage(db);
+        var usage = new FinanceAccountUsage(db, new ChartOfAccounts(db));
         Assert.False(await usage.IsInUseAsync("2101", token));
         db.Add(new PurchaseInvoiceAccountMapping
         {
@@ -183,7 +184,7 @@ public sealed class FinanceAccountUsageTests(TestDatabase database)
         }
 
         await using var db = Context(companyId);
-        var usage = new FinanceAccountUsage(db);
+        var usage = new FinanceAccountUsage(db, new ChartOfAccounts(db));
         Assert.False(await usage.IsInUseAsync("2181", token));
         db.Add(new SalesCollectionAccountMapping
         {

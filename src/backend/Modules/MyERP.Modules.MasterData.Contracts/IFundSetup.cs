@@ -17,6 +17,9 @@ public sealed record FundAccountInfo(string Code, string Name, FundAccountType F
 public sealed record IncomeExpenseCategoryInfo(string Code, string Name, IncomeExpenseDirection Direction, string? LedgerAccountCode,
     bool IsActive);
 
+/// <summary>收支類別清單項（含 ID；WU-FI-008b3b：FI 其他付款費用類別對照逐類別列出）。</summary>
+public sealed record IncomeExpenseCategoryItem(long Id, string Code, string Name, IncomeExpenseDirection Direction, bool IsActive);
+
 /// <summary>其他模組讀取目前公司資金帳戶的唯一入口（不得直接讀 md_fund_account，ADR-041）。</summary>
 public interface IFundAccountLookup
 {
@@ -42,6 +45,11 @@ public interface IIncomeExpenseCategoryLookup
     /// 依 ID 找目前公司的收支類別，含停用；不存在、已刪除、ID 非正或屬其他公司回 null（WU-FI-008a3：FI 其他付款只存類別 ID）。
     /// </summary>
     Task<IncomeExpenseCategoryInfo?> FindByIdAsync(long id, CancellationToken token = default);
+
+    /// <summary>
+    /// 目前公司某方向的全部未刪除收支類別（含停用），依代碼排序（WU-FI-008b3b：FI 其他付款費用類別對照逐類別列出）。
+    /// </summary>
+    Task<IReadOnlyList<IncomeExpenseCategoryItem>> ListAsync(IncomeExpenseDirection direction, CancellationToken token = default);
 
     /// <summary>
     /// 新單據選用前驗證：不存在 404 <c>MD.INCOME_EXPENSE_CATEGORY.NOT_FOUND</c>，停用 422 <c>MD.INCOME_EXPENSE_CATEGORY.INACTIVE</c>，

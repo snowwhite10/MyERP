@@ -371,3 +371,7 @@ Errors: 401; 403 `COMMON.PERMISSION.DENIED`; 400 field errors (`lines[i].receiva
 | GET | `/api/v1/ar/collection-settlements/open-receivables` | `AR.SETTLEMENT.VIEW` | `PagedResult<OpenReceivableSummary>` `{receivableId, sourceType, sourceId, postingDate, currency, originalAmount, openAmount}`; `customerId` required; filter `postedOnOrBefore` (inclusive); sort `postingDate` (default ascending) or `openAmount`, one field; paging. Only current-company receivables with open amount > 0. |
 
 Errors: 401; 403 `COMMON.PERMISSION.DENIED`; 400 field errors (`customerId`, `sort`, `pageSize`).
+
+## WU-FI-008b3b other payment expense account map API
+
+`GET /api/v1/gl/other-payment-account-map` (VIEW) lists all current-company MD Expense categories, including inactive and unconfigured, with current account labels and usable status. `PUT /api/v1/gl/other-payment-account-map/{expenseCategoryId}` (EDIT) writes one FI mapping with version 0 for create or saved version for update; same account returns `changed=false`. 400 field errors, 401/403, 404 category, 409 version, and 422 category/account errors have ProblemDetails with traceId. Posted source snapshots are immutable. FI-OP-MAP-HTTP-001～006 exercise the contract with real HTTP/SQL.

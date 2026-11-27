@@ -1,148 +1,148 @@
 {
-    "schemaVersion": 1,
-    "project": "MyERP",
-    "status": "IN_PROGRESS",
-    "phase": "P1",
-    "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-008b3b",
-    "lastCompletedWorkUnit": "WU-FI-008b3a",
-    "nextAction": "做 WU-FI-008b3b（其他付款費用類別對照維護 API）：仿 SalesCollectionAccountMapService／SalesCollectionAccountMapController，在 FI 新增 GL.OTHER_PAYMENT_MAP.VIEW/EDIT 權限（FinanceModule 權限清單＋FINANCE 角色全部、MANAGER／VIEWER VIEW，比照 ADR-212 的角色種子）、`/api/v1/gl/other-payment-account-map` 列表（每個 MD 支出類別一列，含類別／科目代碼名稱、未設定列）與單列新增／版本修改（expenseCategoryId＋expenseAccountCode 或 ID；拒絕收入類別、停用／不存在科目、AP 控制／暫收／預付科目；列版本即映射版本；409 版本衝突），Swagger 401/403/400/404/409/422 traceId；真實 HTTP 測試先紅，並把 OtherPaymentHttpTests 的 SQL 寫入對照改走新 API。只跑一次記憶體守衛，DEFER 就提交可編譯部分並加入 deferredVerifications。不得單獨補驗 FI-007a1／006a1／005c3b2 或 PUR 延後項，也不要挑依賴 007a1／006a1 SQL 驗證的 007a2／006a2。",
-    "modules": {
-        "SYS": "DONE",
-        "MD": "DONE",
-        "INV": "IN_PROGRESS",
-        "PUR": "IN_PROGRESS",
-        "SD": "IN_PROGRESS",
-        "FI": "IN_PROGRESS",
-        "CO": "IN_PROGRESS",
-        "BI": "IN_PROGRESS",
-        "PP": "IN_PROGRESS",
-        "QM": "IN_PROGRESS",
-        "PM": "IN_PROGRESS",
-        "CRM": "IN_PROGRESS",
-        "HR": "IN_PROGRESS",
-        "PS": "IN_PROGRESS",
-        "SCM": "IN_PROGRESS"
-    },
-    "idCounters": {
-        "REQ_DS43": 221,
-        "ADR": 212,
-        "nextSrsModuleNo": 17
-    },
-    "workUnitAttempts": {
-        "WU-SD-001": 3,
-        "WU-P0-015": 3,
-        "WU-PUR-005e3": 3,
-        "WU-PUR-005e4": 0,
-        "WU-PUR-005f2a2": 3,
-        "WU-PUR-005f3e": 3,
-        "WU-PUR-006a": 3,
-        "WU-P0-016": 3,
-        "WU-SD-002a": 3,
-        "WU-FI-001a": 3,
-        "WU-FI-001d": 3,
-        "WU-FI-004a2k": 3,
-        "WU-SD-003a": 3,
-        "WU-P0-E2E-FLAKE-MENU": 3
-    },
-    "blockedWorkUnits": [
-        "WU-P0-015",
-        "WU-PUR-005f2a2",
-        "WU-PUR-005f3e",
-        "WU-PUR-006a",
-        "WU-SD-001",
-        "WU-P0-016",
-        "WU-P0-E2E-FLAKE-MENU"
-    ],
-    "deferredVerifications": [
-        {
-            "workUnit": "WU-FI-007a1",
-            "reason": "2026-11-27 唯一記憶體守衛 DEFER：1.327／1.973／1.886 GiB，低於 2.5 GiB。其他收款 Draft schema（含 custom_fields）與 migration 已產生，建置 0 警告、架構 1/1；8 個真實 SQL 測試已寫未執行。",
-            "commands": [
-                "dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --filter-class '*FinanceOtherCollectionFoundationTests*' --max-threads 2",
-                "dotnet test --solution src/backend/MyERP.sln -c Debug --max-threads 2",
-                "dotnet ef database update -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api"
-            ],
-            "remaining": "FI 模組收尾或人手指定時先跑一次記憶體守衛；PASS 後跑 FinanceOtherCollectionFoundationTests（schema、六個 CHECK 拒絕、參考釋放），驗帶資料 migration Down／Up、全量後端並核對正式 myerp migration。此項不得單獨選為下一輪工作單元。",
-            "branch": "main",
-            "commit": "239635b7",
-            "deferredAt": "2026-11-27T18:47:42+08:00"
-        },
-        {
-            "workUnit": "WU-FI-005c3b2",
-            "reason": "2026-11-27 唯一記憶體守衛 DEFER：1.944／1.891／1.881 GiB，低於 2.5 GiB。FI-COLL-REAL-005 已寫並通過定向 TypeScript 編譯；真實 API／SQL 和畫面截圖未執行。",
-            "commands": [
-                "& ./tools/scripts/Invoke-RealApiE2E.ps1 -Specs specs/real-api-finance-collection.spec.ts",
-                "& ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npm run typecheck"
-            ],
-            "remaining": "FI 模組收尾或人手指定時先跑一次記憶體守衛；PASS 後實跑 FI-COLL-REAL-001～005、確認核銷發票來源與 Draft／Pending／Posted 畫面及 SQL 餘額、檢視截圖並修復；全域 E2E typecheck 的四個既有錯誤另列範圍處理。此項不得單獨選為下一輪工作單元。",
-            "branch": "main",
-            "commit": "7ae2df63",
-            "deferredAt": "2026-11-27T14:50:32+08:00"
-        },
-        {
-            "workUnit": "WU-FI-006a1",
-            "reason": "2026-11-27 唯一記憶體守衛 DEFER：0.904／0.795／0.876 GiB，低於 2.5 GiB。付款 Draft schema 與 migration 已產生，架構測試先紅後綠 1/1；真實 SQL 未執行。",
-            "commands": [
-                "dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --filter-method '*PaymentDraftHasCompanyScopedNumberAndLiveBankReference*' --max-threads 2",
-                "dotnet test --solution src/backend/MyERP.sln -c Debug --max-threads 2",
-                "dotnet ef database update -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api"
-            ],
-            "remaining": "FI 模組收尾或人手指定時先跑一次記憶體守衛；PASS 後驗真實 SQL 表／索引／CHECK 與資料變更拒絕、帶資料 migration Down／Up、全量後端，並核對正式 myerp migration。此項不得單獨選為下一輪工作單元。",
-            "branch": "main",
-            "deferredAt": "2026-11-27T14:43:04+08:00"
-        },
-        {
-            "workUnit": "WU-FI-006a",
-            "reason": "2026-11-27 守衛起始 PASS，但後端全量整合測試執行時可用實體記憶體降至 1.289 GiB；停止全量以免造成 SQL 逾時。已完成資料結構定向真實 SQL 1/1、架構 5/5。",
-            "commands": [
-                "dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --filter-method '*FinancePaymentFoundationTests*' --max-threads 2",
-                "dotnet test --solution src/backend/MyERP.sln -c Debug --max-threads 2",
-                "dotnet ef database update -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api"
-            ],
-            "remaining": "在 FI 模組完成或人手指定時先跑一次記憶體守衛；PASS 後補擴充後的 SQL CHECK／trigger 測試、完整後端全量及 migration Down／Up，並核對正式 myerp migration。此項不得單獨選為下一輪工作單元。",
-            "branch": "main",
-            "commit": "55b07bf6",
-            "deferredAt": "2026-11-27T14:34:48+08:00"
-        },
-        {
-            "workUnit": "WU-PUR-005f3c2",
-            "reason": "2026-11-27 後端全量執行中可用實體記憶體降至 0.94 GiB、整合測試程序佔 2.39 GiB，長時間無結果；依資源不足規則中止。決標快照定向真實 SQL 1/1、前端 1305/1305、模擬 E2E 7/7 已通過。",
-            "commands": [
-                "dotnet test --solution src/backend/MyERP.sln -c Debug --no-build --max-threads 2",
-                "& ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npx playwright test specs/purchasing-comparison.spec.ts"
-            ],
-            "remaining": "在 PUR 模組完成或人手指定時先跑一次記憶體守衛；PASS 後補 005f3c2 test-plan 的理由 1／500 字、400／逾時／斷線及 Closed 畫面情境，重跑後端全量與比價專項；本輪不要單獨重試。",
-            "branch": "main",
-            "commit": "7a1d1547",
-            "deferredAt": "2026-11-27T14:14:38+08:00"
-        },
-        {
-            "workUnit": "WU-PUR-005e4",
-            "reason": "2026-11-27 記憶體守衛 DEFER：1.238／1.169／1.174 GiB，低於 2.5 GiB；CONVERT 服務與初步測試可編譯，真實 SQL 未在本輪執行。",
-            "commands": [
-                "dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --filter-method '*RfqAwardTests*' --max-threads 2",
-                "dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --filter-method '*RequisitionAuthorizedHttpTests*' --max-threads 2",
-                "dotnet test --solution src/backend/MyERP.sln -c Release --max-threads 2",
-                "dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root . --output .tools/docgen-isolated --connection 'Server=localhost\\MSSQLSERVER2022;Database=myerp_test;Integrated Security=true;Encrypt=true;TrustServerCertificate=true;'"
-            ],
-            "remaining": "先補 PUR-RFQ-069 帶資料 Down／Up；再完成 PUR-RFQ-060～066 的真實 SYS 發號、兩行／千行精度、跨公司／資料範圍、雙連線與故障注入回滾；最後 Release 全量及帶 DB DocGen。以 tools/docgen/README.md 核對實際帶 DB 指令。",
-            "branch": "main",
-            "commit": "169fa0da",
-            "deferredAt": "2026-11-27T13:52:44+08:00"
-        }
-    ],
-    "openBranches": [
-        {
-            "name": "feature/p0-e2e-menu-click",
-            "reason": "WU-P0-E2E-FLAKE-MENU 修正已通過模擬 E2E，但後端全量整合測試未通過，禁止合併 main",
-            "remaining": "隔離排查 2 個 SQL 逾時及 OtherReceiptApiTests 回應缺欄位；前後端全量、migration 與 E2E 全通過後合併並刪分支"
-        }
-    ],
-    "ideation": {
-        "rounds": 0,
-        "consecutiveRoundsWithoutIdea": 0
-    },
-    "lastSuccessfulPush": "2026-11-27T21:11:38+08:00",
-    "updatedAt": "2026-11-27T21:11:38+08:00"
+    "schemaVersion":  1,
+    "project":  "MyERP",
+    "status":  "IN_PROGRESS",
+    "phase":  "P1",
+    "currentModule":  "FI",
+    "currentWorkUnit":  "WU-FI-008b3b",
+    "lastCompletedWorkUnit":  "WU-FI-008b3b",
+    "nextAction":  "做 WU-FI-008c 其他付款三語亮暗畫面：先按 90 分鐘邊界拆成列表、表單／明細、Playwright 真實 API 與 UX QA 切片並更新 backlog；本輪只選第一個切片。依 myerp-test-scenarios、myerp-ux-review、web-design-guidelines；分配 REQ_IO_A、先寫畫面測試，列表須接 /api/v1/ap/other-payments 與 /api/v1/gl/other-payment-account-map，呈現缺對照與權限理由。不得單獨補驗 FI/PUR deferredVerifications，也不要挑依賴 007a1／006a1 SQL 驗證的 007a2／006a2。",
+    "modules":  {
+                    "SYS":  "DONE",
+                    "MD":  "DONE",
+                    "INV":  "IN_PROGRESS",
+                    "PUR":  "IN_PROGRESS",
+                    "SD":  "IN_PROGRESS",
+                    "FI":  "IN_PROGRESS",
+                    "CO":  "IN_PROGRESS",
+                    "BI":  "IN_PROGRESS",
+                    "PP":  "IN_PROGRESS",
+                    "QM":  "IN_PROGRESS",
+                    "PM":  "IN_PROGRESS",
+                    "CRM":  "IN_PROGRESS",
+                    "HR":  "IN_PROGRESS",
+                    "PS":  "IN_PROGRESS",
+                    "SCM":  "IN_PROGRESS"
+                },
+    "idCounters":  {
+                       "REQ_DS43":  221,
+                       "ADR":  212,
+                       "nextSrsModuleNo":  17
+                   },
+    "workUnitAttempts":  {
+                             "WU-SD-001":  3,
+                             "WU-P0-015":  3,
+                             "WU-PUR-005e3":  3,
+                             "WU-PUR-005e4":  0,
+                             "WU-PUR-005f2a2":  3,
+                             "WU-PUR-005f3e":  3,
+                             "WU-PUR-006a":  3,
+                             "WU-P0-016":  3,
+                             "WU-SD-002a":  3,
+                             "WU-FI-001a":  3,
+                             "WU-FI-001d":  3,
+                             "WU-FI-004a2k":  3,
+                             "WU-SD-003a":  3,
+                             "WU-P0-E2E-FLAKE-MENU":  3
+                         },
+    "blockedWorkUnits":  [
+                             "WU-P0-015",
+                             "WU-PUR-005f2a2",
+                             "WU-PUR-005f3e",
+                             "WU-PUR-006a",
+                             "WU-SD-001",
+                             "WU-P0-016",
+                             "WU-P0-E2E-FLAKE-MENU"
+                         ],
+    "deferredVerifications":  [
+                                  {
+                                      "workUnit":  "WU-FI-007a1",
+                                      "reason":  "2026-11-27 唯一記憶體守衛 DEFER：1.327／1.973／1.886 GiB，低於 2.5 GiB。其他收款 Draft schema（含 custom_fields）與 migration 已產生，建置 0 警告、架構 1/1；8 個真實 SQL 測試已寫未執行。",
+                                      "commands":  [
+                                                       "dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --filter-class \u0027*FinanceOtherCollectionFoundationTests*\u0027 --max-threads 2",
+                                                       "dotnet test --solution src/backend/MyERP.sln -c Debug --max-threads 2",
+                                                       "dotnet ef database update -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api"
+                                                   ],
+                                      "remaining":  "FI 模組收尾或人手指定時先跑一次記憶體守衛；PASS 後跑 FinanceOtherCollectionFoundationTests（schema、六個 CHECK 拒絕、參考釋放），驗帶資料 migration Down／Up、全量後端並核對正式 myerp migration。此項不得單獨選為下一輪工作單元。",
+                                      "branch":  "main",
+                                      "commit":  "239635b7",
+                                      "deferredAt":  "2026-11-27T18:47:42+08:00"
+                                  },
+                                  {
+                                      "workUnit":  "WU-FI-005c3b2",
+                                      "reason":  "2026-11-27 唯一記憶體守衛 DEFER：1.944／1.891／1.881 GiB，低於 2.5 GiB。FI-COLL-REAL-005 已寫並通過定向 TypeScript 編譯；真實 API／SQL 和畫面截圖未執行。",
+                                      "commands":  [
+                                                       "\u0026 ./tools/scripts/Invoke-RealApiE2E.ps1 -Specs specs/real-api-finance-collection.spec.ts",
+                                                       "\u0026 ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npm run typecheck"
+                                                   ],
+                                      "remaining":  "FI 模組收尾或人手指定時先跑一次記憶體守衛；PASS 後實跑 FI-COLL-REAL-001～005、確認核銷發票來源與 Draft／Pending／Posted 畫面及 SQL 餘額、檢視截圖並修復；全域 E2E typecheck 的四個既有錯誤另列範圍處理。此項不得單獨選為下一輪工作單元。",
+                                      "branch":  "main",
+                                      "commit":  "7ae2df63",
+                                      "deferredAt":  "2026-11-27T14:50:32+08:00"
+                                  },
+                                  {
+                                      "workUnit":  "WU-FI-006a1",
+                                      "reason":  "2026-11-27 唯一記憶體守衛 DEFER：0.904／0.795／0.876 GiB，低於 2.5 GiB。付款 Draft schema 與 migration 已產生，架構測試先紅後綠 1/1；真實 SQL 未執行。",
+                                      "commands":  [
+                                                       "dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --filter-method \u0027*PaymentDraftHasCompanyScopedNumberAndLiveBankReference*\u0027 --max-threads 2",
+                                                       "dotnet test --solution src/backend/MyERP.sln -c Debug --max-threads 2",
+                                                       "dotnet ef database update -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api"
+                                                   ],
+                                      "remaining":  "FI 模組收尾或人手指定時先跑一次記憶體守衛；PASS 後驗真實 SQL 表／索引／CHECK 與資料變更拒絕、帶資料 migration Down／Up、全量後端，並核對正式 myerp migration。此項不得單獨選為下一輪工作單元。",
+                                      "branch":  "main",
+                                      "deferredAt":  "2026-11-27T14:43:04+08:00"
+                                  },
+                                  {
+                                      "workUnit":  "WU-FI-006a",
+                                      "reason":  "2026-11-27 守衛起始 PASS，但後端全量整合測試執行時可用實體記憶體降至 1.289 GiB；停止全量以免造成 SQL 逾時。已完成資料結構定向真實 SQL 1/1、架構 5/5。",
+                                      "commands":  [
+                                                       "dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --filter-method \u0027*FinancePaymentFoundationTests*\u0027 --max-threads 2",
+                                                       "dotnet test --solution src/backend/MyERP.sln -c Debug --max-threads 2",
+                                                       "dotnet ef database update -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api"
+                                                   ],
+                                      "remaining":  "在 FI 模組完成或人手指定時先跑一次記憶體守衛；PASS 後補擴充後的 SQL CHECK／trigger 測試、完整後端全量及 migration Down／Up，並核對正式 myerp migration。此項不得單獨選為下一輪工作單元。",
+                                      "branch":  "main",
+                                      "commit":  "55b07bf6",
+                                      "deferredAt":  "2026-11-27T14:34:48+08:00"
+                                  },
+                                  {
+                                      "workUnit":  "WU-PUR-005f3c2",
+                                      "reason":  "2026-11-27 後端全量執行中可用實體記憶體降至 0.94 GiB、整合測試程序佔 2.39 GiB，長時間無結果；依資源不足規則中止。決標快照定向真實 SQL 1/1、前端 1305/1305、模擬 E2E 7/7 已通過。",
+                                      "commands":  [
+                                                       "dotnet test --solution src/backend/MyERP.sln -c Debug --no-build --max-threads 2",
+                                                       "\u0026 ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npx playwright test specs/purchasing-comparison.spec.ts"
+                                                   ],
+                                      "remaining":  "在 PUR 模組完成或人手指定時先跑一次記憶體守衛；PASS 後補 005f3c2 test-plan 的理由 1／500 字、400／逾時／斷線及 Closed 畫面情境，重跑後端全量與比價專項；本輪不要單獨重試。",
+                                      "branch":  "main",
+                                      "commit":  "7a1d1547",
+                                      "deferredAt":  "2026-11-27T14:14:38+08:00"
+                                  },
+                                  {
+                                      "workUnit":  "WU-PUR-005e4",
+                                      "reason":  "2026-11-27 記憶體守衛 DEFER：1.238／1.169／1.174 GiB，低於 2.5 GiB；CONVERT 服務與初步測試可編譯，真實 SQL 未在本輪執行。",
+                                      "commands":  [
+                                                       "dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --filter-method \u0027*RfqAwardTests*\u0027 --max-threads 2",
+                                                       "dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --filter-method \u0027*RequisitionAuthorizedHttpTests*\u0027 --max-threads 2",
+                                                       "dotnet test --solution src/backend/MyERP.sln -c Release --max-threads 2",
+                                                       "dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root . --output .tools/docgen-isolated --connection \u0027Server=localhost\\MSSQLSERVER2022;Database=myerp_test;Integrated Security=true;Encrypt=true;TrustServerCertificate=true;\u0027"
+                                                   ],
+                                      "remaining":  "先補 PUR-RFQ-069 帶資料 Down／Up；再完成 PUR-RFQ-060～066 的真實 SYS 發號、兩行／千行精度、跨公司／資料範圍、雙連線與故障注入回滾；最後 Release 全量及帶 DB DocGen。以 tools/docgen/README.md 核對實際帶 DB 指令。",
+                                      "branch":  "main",
+                                      "commit":  "169fa0da",
+                                      "deferredAt":  "2026-11-27T13:52:44+08:00"
+                                  }
+                              ],
+    "openBranches":  [
+                         {
+                             "name":  "feature/p0-e2e-menu-click",
+                             "reason":  "WU-P0-E2E-FLAKE-MENU 修正已通過模擬 E2E，但後端全量整合測試未通過，禁止合併 main",
+                             "remaining":  "隔離排查 2 個 SQL 逾時及 OtherReceiptApiTests 回應缺欄位；前後端全量、migration 與 E2E 全通過後合併並刪分支"
+                         }
+                     ],
+    "ideation":  {
+                     "rounds":  0,
+                     "consecutiveRoundsWithoutIdea":  0
+                 },
+    "lastSuccessfulPush":  "2026-11-27T21:11:38+08:00",
+    "updatedAt":  "2026-11-27T21:33:37+08:00"
 }
