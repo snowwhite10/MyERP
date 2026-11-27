@@ -135,6 +135,8 @@ SYS final decision endpoints remain SYS-owned and require the relevant FI APPROV
 
 ## WU-FI-007d planned other collection API
 
+WU-FI-007a1 adds only the Draft persistence model (no endpoint or contract).
+
 No endpoint or C# interface is implemented here. Proposed FI Contracts operation `ApproveOtherCollectionAsync(savedCollectionId, version, fingerprint, transaction)` is callable only from SYS final approval in the caller's transaction. It re-reads the FI-owned saved document, validates MD category/bank and FI mapping, then calls `IGlPostingService`. `FindCommittedOtherCollectionAsync(companyId, collectionId)` resolves unknown timeout by permanent source key in a fresh transaction. Result includes document/source/journal IDs, company, saved category/bank/reference/date, base amount, version/fingerprint and `changed`; it contains no AR allocation or credit delta.
 
 | Method | Proposed route | Permission | Purpose |

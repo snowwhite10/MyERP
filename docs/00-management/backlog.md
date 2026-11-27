@@ -296,7 +296,11 @@
 | WU-FI-006b | FI/AP | 付款／核銷受權 CRUD、SYS 最終審批同交易、Swagger 與真實 SQL／HTTP 驗收 | P1 | TODO | 006a | 獨立 AP.PAYMENT／SETTLEMENT 權限；草稿、駁回、部分核銷、0 變更重放與逐行原因。 |
 | WU-FI-006c | FI/AP | 三語亮暗付款與核銷畫面、Playwright 截圖 QA 與保存資料對帳 | P1 | TODO | 006b | 分配 REQ_IO_A；付款成功提示不可宣稱 AP 已清，核銷訊息與實際餘額一致。 |
 | WU-FI-007d | FI/AR/GL | 定義其他收款的非發票來源、收支類別、GL 過帳與 AR 邊界及完整情境 | P1 | DONE | 004d、005d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4116.2.1～6、BR-FI-051～058、FI-AR-OTHER-001～020；純設計，無表、端點或產品驗收。 |
-| WU-FI-007a | FI/AR/GL | 其他收款真實 SQL 紅燈、來源與收支類別快照 migration、原子 GL 過帳與冪等 | P1 | TODO | 007d、004a、SQL 服務 | 分配 REQ_DS43；雙連線來源重放、類別失效、期間和審批回滾必驗；不得改 AR 餘額。 |
+| WU-FI-007a | FI/AR/GL | 其他收款真實 SQL 紅燈、來源與收支類別快照 migration、原子 GL 過帳與冪等 | P1 | 已拆分／進行中 | 007d、004a、SQL 服務 | 依單輪 90 分鐘邊界拆 007a1 Draft schema、007a2 Posted 來源／類別快照與對照表 schema、007a3 Draft 服務、007a4 原子過帳／競態；父項不計。 |
+| WU-FI-007a1 | FI/AR | 其他收款 Draft `ar_other_collection_doc` 模型、映射與 migration；真實 SQL 驗 schema、約束及帶資料 Down／Up | P1 | IN_PROGRESS（SQL 延後） | 007d | 2026-11-27T18:46:51+08:00：REQ_DS43.218、custom_fields、migration、架構 1/1 與 8 個真實 SQL 測試（未執行）已交付；守衛 1.327–1.973 GiB DEFER，轉 deferredVerifications。 |
+| WU-FI-007a2 | FI/AR/GL | 其他收款 Posted 來源（永久來源鍵、含已刪除歷史的銀行參考鍵、指紋、類別／收入科目快照、journal）與 FI 收入類別對照表 schema；真實 SQL 先紅 | P1 | TODO | 007a1 SQL 驗證 | 仿 006a Posted 來源表與 SalesCollectionAccountMap；不可變觸發器；SQL 延後時不得單獨挑本單元。 |
+| WU-FI-007a3 | FI/AR | 其他收款 Draft 建立／修改／軟刪除服務、MD 類別／資金帳戶公開契約核對、銀行參考衝突；真實 SQL 先紅 | P1 | TODO | 007a2 | 依 006a2／005b1 模式；不得建立 AR 或改信用曝險。 |
+| WU-FI-007a4 | FI/AR/GL | 原子 GL 過帳、來源重放 changed=false、期間鎖、雙連線競態及類別失效／期間／審批回滾 | P1 | TODO | 007a3、SQL 服務 | 完成後結清 007a 父項。 |
 | WU-FI-007b | FI/AR/GL | 其他收款受權草稿／審批 API、Swagger、公司範圍與真實 SQL／HTTP 驗收 | P1 | TODO | 007a | `AR.OTHER_COLLECTION.*` 分權，SYS 最終決定同交易，讀取和提示區分收入與未核銷收款。 |
 | WU-FI-007c | FI/AR | 其他收款三語亮暗列表／表單、錯誤及 Playwright 截圖 QA | P1 | TODO | 007b | 介面 4.4.1.6.4～6；實作時分配 REQ_IO_A，畫面與保存 GL/AR 雙斷言。 |
 | WU-FI-008d | FI/AP/GL | 定義其他付款的非應付費用來源、收支類別、GL 過帳與 AP 邊界及完整情境 | P1 | DONE | 004d、006d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4116.4.1～6、BR-FI-059～066、FI-AP-OTHER-001～020；純設計，無表、端點或產品驗收。 |

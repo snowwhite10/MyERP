@@ -205,7 +205,7 @@ This slice specifies the existing BlueWhale Accounting 6.2 Other Collection. It 
 | REQ_F4116.2.5 | 1.0 | System should allow user to reject other collections. | Developer | Authorised Pending rejection saves reason and workflow history with no GL, AR or cash posting. |
 | REQ_F4116.2.6 | 1.0 | System should allow user to delete other collection records. | Developer | Only unposted Draft/Rejected may be soft deleted. A Posted source key, journal and audit remain permanent; correction needs a separately specified compensating source. |
 
-Acceptance is planned for WU-FI-007a/b/c. This base-currency scope excludes invoice settlement, customer advance, refund, FX, bank reconciliation, batch import and posted reversal. See BR-FI-051–058 and FI-AR-OTHER-001–020.
+Acceptance is planned for WU-FI-007a/b/c. WU-FI-007a1 generated the REQ_F4116.2.2 Draft schema (REQ_DS43.218); its real SQL tests were written but deferred by the memory guard, so create/edit/delete and posting are not yet accepted. This base-currency scope excludes invoice settlement, customer advance, refund, FX, bank reconciliation, batch import and posted reversal. See BR-FI-051–058 and FI-AR-OTHER-001–020.
 
 Change record: 2026-10-24T17:00:28+08:00 WU-FI-007d defines the 6.2 baseline without allocating table/interface IDs or claiming product verification.
 

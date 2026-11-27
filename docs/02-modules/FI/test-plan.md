@@ -924,6 +924,8 @@ The myerp-test-scenarios normal, boundary, duplicate/conflict, partial, permissi
 
 Traceability: REQ_F4116.2.1–6 → BR-FI-051–058 → FI-AR-OTHER-001–020. Real SQL, HTTP and UI tests remain TODO.
 
+WU-FI-007a1 Draft schema checkpoint (2026-11-27T18:46:51+08:00): the architecture registration test was red in the previous partial round and is now green 1/1 after model registration. `FinanceOtherCollectionFoundationTests` adds SQL checks for the table, indexes, all CHECK constraints, `decimal(19,4)` and no cross-module FK (FI-AR-OTHER-019). It also adds six rejected-column inserts (zero amount, lowercase currency, blank payer, zero category, unknown status, invalid JSON; FI-AR-OTHER-004 storage layer). The last test covers live-reference duplicates, document-number reuse, Posted soft delete and reference release after a Draft soft delete (FI-AR-OTHER-006/013 storage layer). These tests compile but have not run because the only memory gate returned DEFER (1.327–1.973 GiB). No SQL success is claimed, and the FI-AR-OTHER statuses stay TODO. The service/API/UI cases and migration Down/Up with data remain open.
+
 ## WU-FI-008d other payment scenarios (design; product tests TODO)
 
 The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories are covered. U=unit, I=real SQL/authorised HTTP, E=Playwright. Every E case compares translated message, style and reason with fresh document, GL and open AP reads. WU-FI-008a/b/c first write failing product tests; this design unit delivers no executable financial product test.

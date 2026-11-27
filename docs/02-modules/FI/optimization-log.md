@@ -967,3 +967,7 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 
 - **Finding:** The generated migration omitted the repository's CA1861 suppression, causing a compile error on EF-generated constant index column arrays. Added the same scoped suppression used by the existing FI migrations; the architecture registration test then passed 1/1.
 - **Boundary:** The draft model does not post GL, reduce AP, or give a filtered live-reference index authority over Posted history. The future service must check `ap_payment_source` and serialize reference use. SQL constraints, company isolation, rollback and migration Down/Up remain unverified because the single memory gate deferred.
+# WU-FI-007a1 review (2026-11-27T18:46:51+08:00)
+
+- **Finding:** The previous round's uncommitted draft model omitted the document-header `custom_fields NVARCHAR(MAX)` + ISJSON check required by MASTER_PROMPT 6.4 (the sibling `ap_purchase_payment_doc` has it). Added the property/check, discarded the unverified migration and regenerated `Finance_OtherCollectionDocument`; added the repository CA1861 suppression for EF-generated arrays. Build 0 warnings/0 errors; architecture 1/1.
+- **Boundary:** The filtered live-reference index does not protect against reuse of a reference held by deleted Posted history; that check belongs to the 007a2 transaction service with the permanent source key. SQL constraints, rollback and Down/Up are unverified (memory gate DEFER).

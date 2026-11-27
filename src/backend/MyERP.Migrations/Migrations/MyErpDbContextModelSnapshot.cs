@@ -1295,6 +1295,145 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.OtherCollectionDocument", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("amount");
+
+                    b.Property<long>("BankAccountId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("bank_account_id");
+
+                    b.Property<string>("BankReference")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("bank_reference");
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("currency")
+                        .IsFixedLength();
+
+                    b.Property<string>("CustomFields")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("custom_fields");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("DocumentNo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("document_no");
+
+                    b.Property<long>("IncomeCategoryId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("income_category_id");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("PayerDescription")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("payer_description");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("remark");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ar_other_collection_doc");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_ar_other_collection_doc_company_id_id");
+
+                    b.HasIndex("CompanyId", "DocumentNo")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ar_other_collection_doc_company_id_document_no");
+
+                    b.HasIndex("CompanyId", "BankAccountId", "BankReference")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ar_other_collection_doc_company_id_bank_account_id_bank_reference")
+                        .HasFilter("[is_deleted] = 0");
+
+                    b.HasIndex("CompanyId", "IncomeCategoryId", "BusinessDate")
+                        .HasDatabaseName("ix_ar_other_collection_doc_company_id_income_category_id_business_date");
+
+                    b.HasIndex("CompanyId", "Status", "BusinessDate", "Id")
+                        .HasDatabaseName("ix_ar_other_collection_doc_company_id_status_business_date_id");
+
+                    b.ToTable("ar_other_collection_doc", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_ar_other_collection_doc_amount", "[amount] > 0");
+
+                            t.HasCheckConstraint("ck_ar_other_collection_doc_currency", "[currency] COLLATE Latin1_General_BIN LIKE '[A-Z][A-Z][A-Z]'");
+
+                            t.HasCheckConstraint("ck_ar_other_collection_doc_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+
+                            t.HasCheckConstraint("ck_ar_other_collection_doc_deleted", "([is_deleted] = 0 AND [deleted_at] IS NULL) OR ([is_deleted] = 1 AND [deleted_at] IS NOT NULL AND [status] IN ('Draft','Rejected'))");
+
+                            t.HasCheckConstraint("ck_ar_other_collection_doc_refs", "[income_category_id] > 0 AND [bank_account_id] > 0 AND LEN(TRIM([document_no])) > 0 AND LEN(TRIM([payer_description])) > 0 AND LEN(TRIM([bank_reference])) > 0");
+
+                            t.HasCheckConstraint("ck_ar_other_collection_doc_status", "[status] IN ('Draft','Pending','Rejected','Approved','Posted')");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.Finance.Domain.PostedPayable", b =>
                 {
                     b.Property<long>("Id")

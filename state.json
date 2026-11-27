@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-005c3b2",
+    "currentWorkUnit": "WU-FI-007a1",
     "lastCompletedWorkUnit": "WU-PUR-005e3",
-    "nextAction": "改做不依賴延後核銷 E2E／AP schema 驗證的 WU-FI-007a：先讀該 backlog 行、BR-FI-051～058 與 007d 情境，把其他收款 SQL 來源／類別快照工作拆成單輪可完成切片，先寫失敗測試後實作。不得單獨補驗 FI-005c3b2／006a1／006a 或 PUR 延後項；FI 收尾或人手指定才依規則跑守衛補驗。",
+    "nextAction": "改做不依賴延後 SQL 驗證的 WU-DOC-P1-MAP（純文件）：讀 reference-notes.md 第 5 節 BlueWhale 功能對照表，按實際 Controller／前端頁面逐項核對並更新狀態與 MyERP 需求 ID，未做項目對應到 backlog 工作單元。不得單獨補驗 FI-007a1／006a1／006a／005c3b2 或 PUR 延後項，也不要挑依賴 007a1 SQL 驗證的 007a2；FI 收尾或人手指定才跑守衛補驗。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -25,7 +25,7 @@
         "SCM": "IN_PROGRESS"
     },
     "idCounters": {
-        "REQ_DS43": 217,
+        "REQ_DS43": 218,
         "ADR": 209,
         "nextSrsModuleNo": 17
     },
@@ -55,6 +55,18 @@
         "WU-P0-E2E-FLAKE-MENU"
     ],
     "deferredVerifications": [
+        {
+            "workUnit": "WU-FI-007a1",
+            "reason": "2026-11-27 唯一記憶體守衛 DEFER：1.327／1.973／1.886 GiB，低於 2.5 GiB。其他收款 Draft schema（含 custom_fields）與 migration 已產生，建置 0 警告、架構 1/1；8 個真實 SQL 測試已寫未執行。",
+            "commands": [
+                "dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --filter-class '*FinanceOtherCollectionFoundationTests*' --max-threads 2",
+                "dotnet test --solution src/backend/MyERP.sln -c Debug --max-threads 2",
+                "dotnet ef database update -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api"
+            ],
+            "remaining": "FI 模組收尾或人手指定時先跑一次記憶體守衛；PASS 後跑 FinanceOtherCollectionFoundationTests（schema、六個 CHECK 拒絕、參考釋放），驗帶資料 migration Down／Up、全量後端並核對正式 myerp migration。此項不得單獨選為下一輪工作單元。",
+            "branch": "main",
+            "deferredAt": "2026-11-27T18:47:42+08:00"
+        },
         {
             "workUnit": "WU-FI-005c3b2",
             "reason": "2026-11-27 唯一記憶體守衛 DEFER：1.944／1.891／1.881 GiB，低於 2.5 GiB。FI-COLL-REAL-005 已寫並通過定向 TypeScript 編譯；真實 API／SQL 和畫面截圖未執行。",
@@ -131,5 +143,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-27T14:51:57+08:00",
-    "updatedAt": "2026-11-27T14:51:57+08:00"
+    "updatedAt": "2026-11-27T18:48:20+08:00"
 }
