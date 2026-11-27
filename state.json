@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005f3e",
-    "lastCompletedWorkUnit":  "WU-PUR-005f3e",
-    "nextAction":  "WU-PUR-005f3e BLOCKED 重試已 DONE（守衛 16 GiB PASS、報價上下文真實 SQL／HTTP 3/3、後端全量 4172/4172、帶 DB DocGen 0 Error／614 Warning；修正 quoteDate=0001-01-01 未回 400）。下一輪按週次 1 次序 3：先跑一次記憶體守衛，PASS 後依 deferredVerifications 補驗 WU-PUR-005e4 與 WU-PUR-005f3c2（各自 commands／remaining 欄），通過後從清單移除並把 backlog 改為 DONE；DEFER 則保留清單，改做 WU-PUR-005f3e2（報價上下文逾時／換公司 E2E 與 0 筆選項原因提示，P2，純前端＋模擬 E2E）。",
+    "currentWorkUnit":  "WU-PUR-005e4",
+    "lastCompletedWorkUnit":  "WU-PUR-005e4",
+    "nextAction":  "WU-PUR-005e4 補驗已 DONE（守衛 PASS、RfqConversionTransactionTests 6/6、帶資料 Down／Up、Release 全量 4178/4178、帶 DB DocGen 0 Error／614 Warning）。下一輪按週次 1 次序 3：先跑一次記憶體守衛，PASS 後補驗 WU-PUR-005f3c2（deferredVerifications 的 commands／remaining：補 test-plan 理由 1／500 字、400／逾時／斷線及 Closed 畫面情境，重跑後端全量與 purchasing-comparison 模擬 E2E），通過後移除並把 backlog 改 DONE；DEFER 則改做 WU-PUR-005f3e2（純前端＋模擬 E2E）。注意：不要在後端全量執行時並行跑整合測試，會重置共用 myerp_test。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -112,20 +112,6 @@
                                       "branch":  "main",
                                       "commit":  "7a1d1547",
                                       "deferredAt":  "2026-11-27T14:14:38+08:00"
-                                  },
-                                  {
-                                      "workUnit":  "WU-PUR-005e4",
-                                      "reason":  "2026-11-27 記憶體守衛 DEFER：1.238／1.169／1.174 GiB，低於 2.5 GiB；CONVERT 服務與初步測試可編譯，真實 SQL 未在本輪執行。",
-                                      "commands":  [
-                                                       "dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --filter-method \u0027*RfqAwardTests*\u0027 --max-threads 2",
-                                                       "dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --filter-method \u0027*RequisitionAuthorizedHttpTests*\u0027 --max-threads 2",
-                                                       "dotnet test --solution src/backend/MyERP.sln -c Release --max-threads 2",
-                                                       "dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root . --output .tools/docgen-isolated --connection \u0027Server=localhost\\MSSQLSERVER2022;Database=myerp_test;Integrated Security=true;Encrypt=true;TrustServerCertificate=true;\u0027"
-                                                   ],
-                                      "remaining":  "先補 PUR-RFQ-069 帶資料 Down／Up；再完成 PUR-RFQ-060～066 的真實 SYS 發號、兩行／千行精度、跨公司／資料範圍、雙連線與故障注入回滾；最後 Release 全量及帶 DB DocGen。以 tools/docgen/README.md 核對實際帶 DB 指令。",
-                                      "branch":  "main",
-                                      "commit":  "169fa0da",
-                                      "deferredAt":  "2026-11-27T13:52:44+08:00"
                                   }
                               ],
     "openBranches":  [
@@ -140,5 +126,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T01:38:51+08:00",
-    "updatedAt":  "2026-11-28T01:38:51+08:00"
+    "updatedAt":  "2026-11-28T02:04:22+08:00"
 }
