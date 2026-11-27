@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-008b3b",
-    "lastCompletedWorkUnit":  "WU-FI-008b3b",
-    "nextAction":  "做 WU-FI-008c 其他付款三語亮暗畫面：先按 90 分鐘邊界拆成列表、表單／明細、Playwright 真實 API 與 UX QA 切片並更新 backlog；本輪只選第一個切片。依 myerp-test-scenarios、myerp-ux-review、web-design-guidelines；分配 REQ_IO_A、先寫畫面測試，列表須接 /api/v1/ap/other-payments 與 /api/v1/gl/other-payment-account-map，呈現缺對照與權限理由。不得單獨補驗 FI/PUR deferredVerifications，也不要挑依賴 007a1／006a1 SQL 驗證的 007a2／006a2。",
+    "currentWorkUnit":  "WU-FI-008c1",
+    "lastCompletedWorkUnit":  "WU-FI-008c1",
+    "nextAction":  "做 WU-FI-008c2 其他付款建立／修改及明細、送審／撤回／刪除與 GL 費用類別對照維護畫面。沿用 008c1 的 /ap/other-payments 只讀列表與 REQ_IO_A6.10.1～8；先按 myerp-test-scenarios 補 FI test-plan，分配 6.11／6.12 REQ_IO_A，寫失敗的前端與模擬 E2E 測試，再實作表單／明細／權限／三語錯誤及結果刷新；按 myerp-ux-review、web-design-guidelines 截圖檢視。真實 API／SQL 畫面聯查屬 008c3，完整 UX QA 屬 008c4；不要單獨挑 deferredVerifications。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -144,5 +144,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-27T21:11:38+08:00",
-    "updatedAt":  "2026-11-27T21:33:37+08:00"
+    "updatedAt":  "2026-11-27T21:59:55+08:00"
 }

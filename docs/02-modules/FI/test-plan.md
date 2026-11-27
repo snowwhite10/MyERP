@@ -2684,3 +2684,17 @@ Partial results, permissions, document states and client errors 400/409/422/500/
 | FI-OP-MAP-HTTP-006 | Relation | MD rejects deletion of mapped account, allows unrelated account deletion. | I | REQ_F4116.4.7 | Pass |
 
 The shared ProblemDetails path covers 500 with traceId; there is no front-end page in this work unit. Concurrent race is protected by the unique index and EF version token; explicit two-client collision remains for future focused verification.
+## WU-FI-008c1 other payment list (REQ_F4116.4.1, REQ_F4116.4.7)
+
+| ID | 類別 | 情境與預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| FI-OP-UI-001 | 正常／邊界 | 公司授權列表傳送分頁、關鍵字、狀態、含端點日期、排序；19,4 金額保留完整精度。 | U | REQ_F4116.4.1 | 通過 |
+| FI-OP-UI-002 | 權限／關聯 | 有對照查看權才載入 GL 對照；無權者只見付款，不將未取得的對照當作未設定。 | U | REQ_F4116.4.1/.7 | 通過 |
+| FI-OP-UI-003 | 正常／狀態 | 列表列顯示非 AP 費用、Draft／Pending／Rejected／Posted、MD 標籤、已過帳傳票；未設定／不可用對照有原因。 | U/E | REQ_F4116.4.1/.7 | 部分通過：Draft／缺對照單元與模擬 E2E；其他狀態留 008c2/3 |
+| FI-OP-UI-004 | 邊界／錯誤 | 反向日期在欄位旁拒絕；空列表、搜尋無結果與載入失敗各有不同訊息；500 含 traceId，可重試。 | U/E | REQ_F4116.4.1 | 通過 |
+| FI-OP-UI-005 | 重複／部分／檔案 | 不適用：此切片只讀單據，沒有寫入、批次或匯入；409／422 與保存結果由 008c2 驗。 | — | REQ_F4116.4.1 | N/A |
+| FI-OP-UI-006 | 權限／跨公司／資料範圍 | 路由以 AP.OTHER_PAYMENT.VIEW 保護；API 由 008b3a 驗證公司隔離，畫面不繞過。 | U/I | REQ_F4116.4.1 | 通過：路由守衛與既有 HTTP；畫面權限截圖留 008c4 |
+
+Playwright 008c3 須同時斷言畫面內容與從同公司 API 重新讀取的資料；本切片的模擬畫面不宣稱真實 SQL 驗收。
+
+2026-11-27T21:47:00+08:00：定向前端 6/6、前端全量 1311/1311、模擬 Playwright 2/2；正常／空／搜尋無結果／反向日期／500 的亮暗截圖已審查。單據沒有寫入，E2E 確認請求皆為 GET；真實資料一致性屬 008c3。

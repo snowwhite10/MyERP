@@ -1,5 +1,12 @@
 # FI optimization log
 
+## WU-FI-008c1 other payment list review — 2026-11-27T21:47:00+08:00
+
+- 首次截圖發現 1280px 視窗下欄名與缺對照原因逐字換行。改為表格內橫向捲動、固定日期與對照欄最小寬度，加入可見捲動提示；頁面本身不溢出，重截三語亮暗正常畫面檢查。
+- 對照 GET 與付款列表權限分開；無 GL 對照查看權或讀取失敗時顯示未知／無權，不猜測為缺設定。公司切換用 generation 避免舊回應覆蓋新列表；金額由原始 JSON 保留四位精度。
+- 故障注入 E2E 的第一次失敗來自共用守衛同時收集預期 500 的 API 及瀏覽器資源錯誤，測試明確白名單該次故障後 2/2 通過；沒有放寬產品錯誤守衛。Web Interface Guidelines 檢查表單標籤、焦點、語意、長字串與暗色對比；修正欄寬，沒有剩餘 P1/P2 發現。測試覆蓋範圍與後續 008c2–c4 見 test-plan。
+- 提交前帶 `myerp_test` 的 DocGen 曾有 6 Error：兩筆 FI 表定義表頭不符讀取器、兩張整合測試專用表被列為未記錄的產品表。修正 FI 兩筆表頭後以正式 `myerp` 唯讀 schema 重跑，0 Error／614 Warning；後端全量 4168/4168，前端全量 1311/1311，模擬 E2E 2/2。
+
 ## WU-FI-005c3b2 real receivable E2E review — 2026-11-27T14:50:32+08:00
 
 - The fixture creates its receivable through MD, INV and SD APIs and the existing FI posting integration. It does not insert an AR row. The test checks Draft and Pending keep both balances, then compares Posted screen values with the immutable allocation and SQL balances.

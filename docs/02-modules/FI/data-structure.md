@@ -608,7 +608,7 @@ erDiagram
 
 ### WU-FI-008a2 Posted other payment source and expense-account map
 
-| Requirement ID | Version | Table | Description | Responsibility | Source requirement |
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
 | REQ_DS43.220 | 1.0 | ap_other_payment_source | This table stores the permanent Posted source of an other payment: source key, version and fingerprint, GL journal, business date, expense category, mapped expense account and mapping version snapshot, bank/withdrawal reference, base currency and amount. | Developer | REQ_F4116.4.1, REQ_F4116.4.4, REQ_F4116.4.6 |
 | REQ_DS43.221 | 1.0 | gl_other_payment_account_map | This table stores each company's FI mapping from an MD expense category to the MD expense account debited by other payments; the row version is the mapping version. | Developer | REQ_F4116.4.4 |

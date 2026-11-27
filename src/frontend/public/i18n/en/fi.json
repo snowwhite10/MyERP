@@ -1,4 +1,15 @@
 {
+  "otherPayment": {
+    "title": "Other payments", "nonAp": "Non-invoice expense paid from a fund account. This does not settle a purchase invoice or reduce accounts payable.",
+    "keyword": "Document number, payee or withdrawal reference", "keywordHint": "Search document, payee or reference…",
+    "status": "Status", "allStatuses": "All statuses", "from": "From", "to": "To", "search": "Search", "reset": "Reset",
+    "rangeInvalid": "End date must be on or after start date.", "retry": "Try again", "scrollHint": "Scroll the table sideways to see the amount, status and journal.", "loadFailed": "Payments could not be loaded. Try again.",
+    "empty": "No other payments yet.", "searchEmpty": "No payments match these filters.",
+    "documentNo": "Document no.", "businessDate": "Business date", "payee": "Payee", "category": "Expense category",
+    "mapping": "Expense account setup", "fundAccount": "Fund account", "bankReference": "Withdrawal reference", "amount": "Base amount", "journal": "GL journal",
+    "state": { "draft": "Draft", "pending": "Pending approval", "rejected": "Rejected", "approved": "Approved", "posted": "Posted" },
+    "map": { "hidden": "Check with a GL map viewer", "unavailable": "Account setup unavailable; reload to check", "loading": "Checking account setup…", "missing": "Missing expense account; ask a GL map editor", "categoryInactive": "Expense category inactive", "accountInvalid": "Mapped account unavailable or not an expense", "ready": "Ready for posting" }
+  },
   "salesSource": {
     "title": "Sales receivable sources", "intro": "Only committed finance sources appear here. Invoice open amounts are current; return credits are traced below.",
     "type": "Source type", "allTypes": "All types", "invoice": "Invoice", "return": "Sales return", "customerId": "Customer ID",

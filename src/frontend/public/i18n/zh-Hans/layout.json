@@ -13,6 +13,7 @@
     "salesCollections": "销售收款",
     "salesSources": "销售应收来源",
     "collectionSettlements": "收款核销",
+    "otherPayments": "其他付款",
     "glPeriods": "会计期间",
     "glJournals": "已过账凭证",
     "salesInvoiceAccountMap": "销售发票科目设置",

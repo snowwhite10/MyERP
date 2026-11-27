@@ -71,6 +71,11 @@ export const routes: Routes = [
         loadChildren: () => import('./modules/fi/fi.routes').then(m => m.FI_ROUTES),
       },
       {
+        path: 'ap',
+        canActivate: [i18nScopeGuard('fi')],
+        loadChildren: () => import('./modules/fi/ap.routes').then(m => m.AP_ROUTES),
+      },
+      {
         path: 'gl',
         canActivate: [i18nScopeGuard('fi')],
         loadChildren: () => import('./modules/fi/gl.routes').then(m => m.GL_ROUTES),

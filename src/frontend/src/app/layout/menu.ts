@@ -48,6 +48,8 @@ export const MAIN_MENU: readonly MenuItem[] = [
       permission: 'AR.COLLECTION.VIEW', testId: 'layout-menu-fi-sales-collections' },
     { labelKey: 'layout.menu.collectionSettlements', route: '/ar/collection-settlements',
       permission: 'AR.SETTLEMENT.VIEW', testId: 'layout-menu-fi-collection-settlements' },
+    { labelKey: 'layout.menu.otherPayments', route: '/ap/other-payments',
+      permission: 'AP.OTHER_PAYMENT.VIEW', testId: 'layout-menu-fi-other-payments' },
     { labelKey: 'layout.menu.glPeriods', route: '/gl/periods',
       permission: 'GL.PERIOD.VIEW', testId: 'layout-menu-fi-gl-periods' },
     { labelKey: 'layout.menu.glJournals', route: '/gl/journals',
