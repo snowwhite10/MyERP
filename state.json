@@ -66,6 +66,7 @@
             ],
             "remaining": "先補 PUR-RFQ-069 帶資料 Down／Up；再完成 PUR-RFQ-060～066 的真實 SYS 發號、兩行／千行精度、跨公司／資料範圍、雙連線與故障注入回滾；最後 Release 全量及帶 DB DocGen。以 tools/docgen/README.md 核對實際帶 DB 指令。",
             "branch": "main",
+            "commit": "169fa0da",
             "deferredAt": "2026-11-27T13:52:44+08:00"
         }
     ],
@@ -80,6 +81,6 @@
         "rounds": 0,
         "consecutiveRoundsWithoutIdea": 0
     },
-    "lastSuccessfulPush": "2026-11-27T09:58:29+08:00",
-    "updatedAt": "2026-11-27T13:52:44+08:00"
+    "lastSuccessfulPush": "2026-11-27T13:53:50+08:00",
+    "updatedAt": "2026-11-27T13:53:50+08:00"
 }
