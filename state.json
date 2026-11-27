@@ -65,6 +65,7 @@
             ],
             "remaining": "在 FI 模組完成或人手指定時先跑一次記憶體守衛；PASS 後補擴充後的 SQL CHECK／trigger 測試、完整後端全量及 migration Down／Up，並核對正式 myerp migration。此項不得單獨選為下一輪工作單元。",
             "branch": "main",
+            "commit": "55b07bf6",
             "deferredAt": "2026-11-27T14:34:48+08:00"
         },
         {
@@ -105,6 +106,6 @@
         "rounds": 0,
         "consecutiveRoundsWithoutIdea": 0
     },
-    "lastSuccessfulPush": "2026-11-27T14:17:10+08:00",
-    "updatedAt": "2026-11-27T14:34:48+08:00"
+    "lastSuccessfulPush": "2026-11-27T14:36:13+08:00",
+    "updatedAt": "2026-11-27T14:36:13+08:00"
 }
