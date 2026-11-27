@@ -73,6 +73,29 @@ public sealed class OtherPaymentHttpTests(TestDatabase database) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task DecimalTextFromBrowserSavesWithoutJavaScriptRounding()
+    {
+        // FI-OP-UI-008: the browser sends the exact decimal text, including a value beyond binary64 integer precision.
+        var setup = await SetupAsync();
+        var writer = await LoginAsync(setup.Company, Writer);
+        var body = new { payeeDescription = "Power", expenseCategoryId = setup.Courier,
+            bankAccountId = setup.Bank, bankReference = "WD-EXACT", businessDate = BusinessDate,
+            amount = "999999999999999.9999", remark = (string?)null };
+        using var created = await writer.PostAsJsonAsync(Root, body, Ct);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var draft = await created.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(999999999999999.9999m, draft.GetProperty("amount").GetDecimal());
+        var id = draft.GetProperty("id").GetInt64();
+        using var replaced = await writer.PutAsJsonAsync($"{Root}/{id}", new { version = 1,
+            body.payeeDescription, body.expenseCategoryId, body.bankAccountId, body.bankReference, body.businessDate,
+            amount = "999999999999998.1234", body.remark }, Ct);
+        Assert.Equal(HttpStatusCode.OK, replaced.StatusCode);
+        using var read = await writer.GetAsync($"{Root}/{id}", Ct);
+        var saved = await read.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(999999999999998.1234m, saved.GetProperty("amount").GetDecimal());
+    }
+
+    [Fact]
     public async Task EachActionNeedsItsOwnPermission()
     {
         // FI-OP-HTTP-002（權限）：VIEW 只可讀；CREATE 不含讀；沒有 SUBMIT 不可送審／撤回；沒有 DELETE 不可刪除；

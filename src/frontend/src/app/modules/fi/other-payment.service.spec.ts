@@ -35,4 +35,37 @@ describe('FI-OP-UI list read contract', () => {
       expenseAccount: null }] });
     expect(configured).toBe(false);
   });
+
+  it('FI-OP-UI-007 creates, replaces, submits, withdraws and deletes with held versions', () => {
+    service.create({ payeeDescription: 'Power', expenseCategoryId: 3, bankAccountId: 9,
+      bankReference: 'WD-1', businessDate: '2026-11-27', amount: '12.3400', remark: null }).subscribe();
+    const create = http.expectOne('/api/v1/ap/other-payments');
+    expect(create.request.method).toBe('POST');
+    expect((create.request.body as { amount: string }).amount).toBe('12.3400');
+    create.flush({ id: 7 });
+    service.detail(7).subscribe(result => expect(result.amount).toBe('999999999999999.9999'));
+    http.expectOne('/api/v1/ap/other-payments/7').flush('{"id":7,"amount":999999999999999.9999}');
+    service.update(7, 2, { payeeDescription: 'Power', expenseCategoryId: 3, bankAccountId: 9,
+      bankReference: 'WD-1', businessDate: '2026-11-27', amount: '12.3400', remark: null }).subscribe();
+    const update = http.expectOne('/api/v1/ap/other-payments/7');
+    expect(update.request.method).toBe('PUT');
+    expect((update.request.body as { version: number }).version).toBe(2);
+    update.flush({ id: 7 });
+    service.submit(7, 3).subscribe();
+    const submit = http.expectOne('/api/v1/ap/other-payments/7/submit');
+    expect(submit.request.body).toEqual({ version: 3 }); submit.flush({ status: 'Pending' });
+    service.withdraw(7, 4).subscribe();
+    http.expectOne('/api/v1/ap/other-payments/7/withdraw').flush({ status: 'Draft' });
+    service.remove(7, 5).subscribe();
+    const remove = http.expectOne(r => r.url === '/api/v1/ap/other-payments/7' && r.method === 'DELETE');
+    expect(remove.request.params.get('version')).toBe('5'); remove.flush(null);
+  });
+
+  it('FI-OP-UI-013 saves one GL category mapping with version and exact changed flag', () => {
+    service.saveMap(3, 0, '6101').subscribe(result => expect(result.changed).toBe(false));
+    const req = http.expectOne('/api/v1/gl/other-payment-account-map/3');
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ version: 0, expenseAccountCode: '6101' });
+    req.flush({ changed: false, row: { expenseCategoryId: 3, version: 0 } });
+  });
 });

@@ -317,9 +317,10 @@
 | WU-FI-008b3b | FI/GL | 其他付款費用類別對照維護 API：`GL.OTHER_PAYMENT_MAP.VIEW/EDIT` 權限登錄與角色、`/api/v1/gl/other-payment-account-map`（列表含 MD 類別／科目標籤、單列新增／版本修改，拒絕 AP 控制／暫收／預付科目、收入類別）、Swagger、真實 HTTP 先紅 | P1 | DONE | 008b3a | 2026-11-27T21:33:13+08:00：真實 HTTP／SQL FI-OP-MAP-HTTP-001～006 6/6；建置 0 警告；`gl_other_payment_account_map` 每公司每類別一列，列版本即映射版本；改映射不影響已過帳來源。OtherPaymentHttpTests 的 SQL 寫入對照可改走此 API。 |
 | WU-FI-008c | FI/AP | 其他付款三語亮暗列表／表單、錯誤及 Playwright 截圖 QA | P1 | SPLIT | 008b | 依 90 分鐘邊界拆為 008c1～c4；父項不計。 |
 | WU-FI-008c1 | FI/AP | 其他付款列表：分頁／篩選、非 AP 提示、費用類別對照狀態、三語與錯誤空狀態 | P1 | DONE | 008b3b | 2026-11-27T21:59:12+08:00：6.10 介面 REQ_IO_A6.10.1～8，前端 1311/1311、模擬 E2E 2/2、後端全量 4168/4168、帶正式 SQL DocGen 0 Error／614 Warning；建立／修改與單據動作留 c2。 |
-| WU-FI-008c2 | FI/AP | 其他付款建立／修改及明細，送審／撤回／刪除與對照維護畫面 | P1 | TODO | 008c1 | 介面 4.4.1.6.11～12；權限、版本、欄位錯誤、資料刷新。 |
+| WU-FI-008c2 | FI/AP | 其他付款建立／修改及明細，送審／撤回／刪除與對照維護畫面 | P1 | DONE | 008c1 | 2026-11-28T00:25:28+08:00：內嵌 6.11 建立、6.12 修改／明細、6.32 費用科目對照（REQ_IO_A6.11.1～5、6.12.1～4、6.32.1～3）；金額全程十進位文字（後端 DTO 接受字串）；前端全量 1321/1321、模擬 E2E 3/3、OtherPayment 真實 HTTP 57/57、後端全量 4169/4169。列表 URL 狀態另列 008c5。 |
 | WU-FI-008c3 | FI/AP | 其他付款 Playwright 真實 API／SQL 斷言 | P1 | TODO | 008c2 | 驗單據與 GL 借貸／AP 不變、權限及錯誤。 |
 | WU-FI-008c4 | FI/AP | 其他付款三語亮暗截圖與 UX QA | P1 | TODO | 008c3 | 覆蓋正常、空、驗證、失敗、成功及深色狀態。 |
+| WU-FI-008c5 | FI/AP | 其他付款列表篩選／頁碼／排序寫入 URL，返回時還原 | P3 | TODO | 008c4 | 008c2 Web Interface Guidelines 審查發現 6.10 仍用本地篩選狀態；供分享與返回保留查詢，單獨列為低優先級列表優化。 |
 | WU-FI-009d | FI/AR/AP | 定義客戶／供應商對帳單的 FI 已過帳來源、截止日餘額、BI 公開契約與完整情境 | P1 | DONE | 002d、003d、005d、006d 設計基線 | REQ_F4116.11.1～3、BR-FI-067～074、FI-STMT-001～020；純設計，BlueWhale 報表 REQ_F4117.5.4～5 與介面 7.20～21 仍屬 BI。 |
 | WU-FI-009a | FI/AR/AP | 先寫真實 SQL 紅燈，實作 FI 對帳單來源唯讀契約與截止日餘額、跨頁一致性 | P1 | TODO | 009d、002a、003a、005a、006a、SQL 服務 | FI 只讀自身 Posted 應收／應付與核銷；驗雙連線寫入、期間邊界、沖銷來源及總額守恆。 |
 | WU-FI-009b | BI/FI | BI 客戶／供應商對帳單受權 HTTP、Swagger、匯出與三語亮暗頁面及 Playwright QA | P1 | TODO | 009a | BI 只能調 FI 公開契約；分配 BI 介面欄位 ID；顯示截點、期初、異動、期末與資料版本，匯出同一快照。 |

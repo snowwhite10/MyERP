@@ -227,6 +227,8 @@ Acceptance is planned for WU-FI-008a/b/c. WU-FI-008a1 delivered the REQ_F4116.4.
 
 WU-FI-008c1 delivers the read-only Other Payment View Interface (6.10, `REQ_IO_A6.10.1–8`) for REQ_F4116.4.1/.7: authorised company-scoped list, exact amount, current mapping reason, distinct empty/error states, three languages and both themes. Create/Edit, detail and workflow actions remain 008c2; true API/SQL screen assertions remain 008c3. This slice has mock API Playwright coverage and does not claim those later acceptance criteria.
 
+Change record: 2026-11-27T22:22:10+08:00 WU-FI-008c2 allocates `REQ_IO_A6.11.1–5`, `REQ_IO_A6.12.1–4` and `REQ_IO_A6.32.1–3` for the inline Other Payment Create, Edit/Detail and GL expense account maintenance interfaces. BlueWhale's reserved 6.11/6.12 interface names remain unchanged. Existing REQ_F4116.4.1–4.7 wording and version remain unchanged. The browser sends decimal(19,4) as text, reads back committed detail after each write, gates actions by permission and status, and reports a mapping `changed=false` as a warning. True API/SQL screen assertions are WU-FI-008c3; full module UX QA is WU-FI-008c4.
+
 Change record: 2026-10-24T17:07:19+08:00 WU-FI-008d defines the 6.4 baseline without allocating table/interface IDs or claiming product verification.
 
 ## WU-FI-009d statement source contract (design only)

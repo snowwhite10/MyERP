@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-008c1",
-    "lastCompletedWorkUnit":  "WU-FI-008c1",
-    "nextAction":  "做 WU-FI-008c2 其他付款建立／修改及明細、送審／撤回／刪除與 GL 費用類別對照維護畫面。沿用 008c1 的 /ap/other-payments 只讀列表與 REQ_IO_A6.10.1～8；先按 myerp-test-scenarios 補 FI test-plan，分配 6.11／6.12 REQ_IO_A，寫失敗的前端與模擬 E2E 測試，再實作表單／明細／權限／三語錯誤及結果刷新；按 myerp-ux-review、web-design-guidelines 截圖檢視。真實 API／SQL 畫面聯查屬 008c3，完整 UX QA 屬 008c4；不要單獨挑 deferredVerifications。",
+    "currentWorkUnit":  "WU-FI-008c2",
+    "lastCompletedWorkUnit":  "WU-FI-008c2",
+    "nextAction":  "做 WU-FI-008c3 其他付款 Playwright 真實 API／SQL 斷言：新增 tests/e2e/specs/real-api-finance-other-payment.spec.ts（經 Invoke-RealApiE2E.ps1 -Specs），種子 FI 費用類別對照（經 PUT /api/v1/gl/other-payment-account-map）後由畫面建立 Draft、修改、送審（零步驟或 SYS 核准）至 Posted，斷言畫面與 API 重讀一致、GL 借費用／貸銀行同額、AP 餘額不變；並覆蓋無權限無按鈕、409 版本、422 缺對照。先跑一次記憶體守衛。不要單獨挑 deferredVerifications。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -144,5 +144,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-27T21:11:38+08:00",
-    "updatedAt":  "2026-11-27T21:59:55+08:00"
+    "updatedAt":  "2026-11-28T00:25:28+08:00"
 }

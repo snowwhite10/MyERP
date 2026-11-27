@@ -7,6 +7,8 @@ import { provideTestTranslations } from '../../../testing/i18n-fixtures';
 import { PermissionService } from '../../core/auth/permission.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { APP_ICONS } from '../../core/icons';
+import { By } from '@angular/platform-browser';
+import { OtherPaymentEditor } from './other-payment-editor';
 import { OtherPaymentPage } from './other-payment-page';
 
 const row = (status = 'Draft') => ({ id: 7, documentNo: 'OP2026110007', payeeDescription: 'Utility', businessDate: '2026-11-27',
@@ -80,5 +82,21 @@ describe('FI-OP-UI other payment list', () => {
     http.expectOne('/api/v1/gl/other-payment-account-map').flush('error', { status: 500, statusText: 'Server Error' });
     fixture.detectChanges();
     expect(element.querySelector('[data-testid="fi-op-map-7"]')?.textContent).toContain('unavailable');
+  });
+
+  it('FI-OP-UI-010 a dirty inline editor survives filter reset and blocks route leave', () => {
+    granted.add('AP.OTHER_PAYMENT.CREATE');
+    const { fixture, http, view, element } = create();
+    view.openCreate(); fixture.detectChanges();
+    http.expectOne(r => r.url === '/api/v1/md/income-expense-categories').flush({ items: [], totalCount: 0 });
+    http.expectOne(r => r.url === '/api/v1/md/fund-accounts').flush({ items: [], totalCount: 0 });
+    const child = fixture.debugElement.query(By.directive(OtherPaymentEditor)).componentInstance as OtherPaymentEditor;
+    child.draft.payeeDescription = 'Power'; fixture.detectChanges();
+    expect(view.hasUnsavedChanges()).toBe(true);
+    view.reset(); http.expectOne(isList).flush(list());
+    http.expectOne('/api/v1/gl/other-payment-account-map').flush({ items: [] });
+    fixture.detectChanges();
+    expect(element.querySelector('[data-testid="fi-op-editor"]')).not.toBeNull();
+    expect(view.hasUnsavedChanges()).toBe(true);
   });
 });

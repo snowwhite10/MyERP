@@ -147,6 +147,8 @@ public sealed class OtherPaymentsController(OtherPaymentQueryService queries, Ot
 
 /// <summary>Replacement other payment fields plus the version last read by the client.</summary>
 public sealed record OtherPaymentUpdateRequest(int Version, string? PayeeDescription, long ExpenseCategoryId,
-    long BankAccountId, string? BankReference, DateOnly BusinessDate, decimal Amount, string? Remark);
+    long BankAccountId, string? BankReference, DateOnly BusinessDate,
+    [property: System.Text.Json.Serialization.JsonNumberHandling(System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString)] decimal Amount,
+    string? Remark);
 
 public sealed record OtherPaymentVersionRequest(int Version);

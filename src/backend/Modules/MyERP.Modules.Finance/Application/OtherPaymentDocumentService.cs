@@ -17,7 +17,9 @@ namespace MyERP.Modules.Finance.Application;
 /// payable target: the document is a non-AP expense.
 /// </summary>
 public sealed record OtherPaymentDocumentInput(string? PayeeDescription, long ExpenseCategoryId, long BankAccountId,
-    string? BankReference, DateOnly BusinessDate, decimal Amount, string? Remark);
+    string? BankReference, DateOnly BusinessDate,
+    [property: System.Text.Json.Serialization.JsonNumberHandling(System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString)] decimal Amount,
+    string? Remark);
 
 /// <summary>
 /// Saved other payment Draft. Category and fund account labels come from MD contracts and are null when MD no longer
