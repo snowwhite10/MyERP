@@ -20,6 +20,8 @@ public sealed class FinanceModuleTests
         "AR.COLLECTION.EDIT", "AR.COLLECTION.DELETE", "AR.COLLECTION.SUBMIT"];
     private static readonly string[] SettlementPermissions = ["AR.SETTLEMENT.VIEW", "AR.SETTLEMENT.CREATE",
         "AR.SETTLEMENT.EDIT", "AR.SETTLEMENT.DELETE", "AR.SETTLEMENT.SUBMIT"];
+    private static readonly string[] OtherPaymentPermissions = ["AP.OTHER_PAYMENT.VIEW", "AP.OTHER_PAYMENT.CREATE",
+        "AP.OTHER_PAYMENT.EDIT", "AP.OTHER_PAYMENT.DELETE", "AP.OTHER_PAYMENT.SUBMIT"];
     private static readonly string[] GlReadPermissions = ["GL.PERIOD.VIEW", "GL.JOURNAL.VIEW", "GL.SALES_MAP.VIEW",
         "GL.PURCHASE_MAP.VIEW", "GL.COLLECTION_MAP.VIEW"];
     private static readonly string[] SalesReadPermissions = ["AR.SALES_SOURCE.VIEW"];
@@ -89,6 +91,18 @@ public sealed class FinanceModuleTests
     }
 
     [Fact]
+    public void ModuleReportsOtherPaymentExpenseCategoryUsageToMasterData()
+    {
+        // FI-OP-USAGE-005 (WU-FI-008b1, ADR-212): MD asks every registered IIncomeExpenseCategoryUsage before deleting a
+        // category; FI contributes exactly one scoped implementation backed by other payment documents, sources and maps.
+        var services = new ServiceCollection();
+        new FinanceModule().AddServices(services, new ConfigurationBuilder().Build());
+        services.Should().ContainSingle(x => x.ServiceType == typeof(IIncomeExpenseCategoryUsage))
+            .Which.Should().Match<ServiceDescriptor>(x => x.ImplementationType == typeof(FinanceIncomeExpenseCategoryUsage)
+                && x.Lifetime == ServiceLifetime.Scoped);
+    }
+
+    [Fact]
     public void ModuleRegistersSeparateCreditPermissionsUnderTheArPrefix()
     {
         // FI-CREDIT-012: VIEW/CREATE/EDIT/DEACTIVATE are separate catalogue entries owned by FI.
@@ -99,7 +113,7 @@ public sealed class FinanceModuleTests
 
         permissions.Should().OnlyContain(x => x.Module == "FI");
         permissions.Select(x => x.Code).Should().BeEquivalentTo([.. CreditPermissions, .. SalesReadPermissions, .. GlReadPermissions,
-            .. GlWritePermissions, .. CollectionPermissions, .. SettlementPermissions]);
+            .. GlWritePermissions, .. CollectionPermissions, .. SettlementPermissions, .. OtherPaymentPermissions]);
         permissions.Should().OnlyContain(x => PermissionCode.IsValid(x.Code));
     }
 
@@ -111,9 +125,9 @@ public sealed class FinanceModuleTests
             [.. permissions.Where(SystemSeedData.Roles.Single(r => r.Code == role).Grants).Select(p => p.Code)];
 
         Granted("FINANCE").Should().BeEquivalentTo([.. CreditPermissions, .. SalesReadPermissions, .. GlReadPermissions,
-            .. GlWritePermissions, .. CollectionPermissions, .. SettlementPermissions]);
-        Granted("MANAGER").Should().BeEquivalentTo(["AR.CREDIT.VIEW", "AR.COLLECTION.VIEW", "AR.SETTLEMENT.VIEW", .. SalesReadPermissions, .. GlReadPermissions]);
-        Granted("VIEWER").Should().BeEquivalentTo(["AR.CREDIT.VIEW", "AR.COLLECTION.VIEW", "AR.SETTLEMENT.VIEW", .. SalesReadPermissions, .. GlReadPermissions]);
+            .. GlWritePermissions, .. CollectionPermissions, .. SettlementPermissions, .. OtherPaymentPermissions]);
+        Granted("MANAGER").Should().BeEquivalentTo(["AR.CREDIT.VIEW", "AR.COLLECTION.VIEW", "AR.SETTLEMENT.VIEW", "AP.OTHER_PAYMENT.VIEW", .. SalesReadPermissions, .. GlReadPermissions]);
+        Granted("VIEWER").Should().BeEquivalentTo(["AR.CREDIT.VIEW", "AR.COLLECTION.VIEW", "AR.SETTLEMENT.VIEW", "AP.OTHER_PAYMENT.VIEW", .. SalesReadPermissions, .. GlReadPermissions]);
         Granted("SALES").Should().BeEmpty();
     }
 }

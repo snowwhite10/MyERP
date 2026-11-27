@@ -64,6 +64,8 @@ public sealed class OtherPaymentDocumentService(MyErpDbContext db, ICurrentCompa
     public const string CreatePermission = "AP.OTHER_PAYMENT.CREATE";
     public const string EditPermission = "AP.OTHER_PAYMENT.EDIT";
     public const string DeletePermission = "AP.OTHER_PAYMENT.DELETE";
+    /// <summary>Submit/withdraw (WU-FI-008b2); registered with the catalogue in 008b1 so roles are seeded once.</summary>
+    public const string SubmitPermission = "AP.OTHER_PAYMENT.SUBMIT";
     public const int PayeeMaxLength = 200;
     public const int RemarkMaxLength = 500;
     /// <summary>SQL error raised by <c>tr_ap_other_payment_doc_posted_reference</c> (WU-FI-008a2).</summary>

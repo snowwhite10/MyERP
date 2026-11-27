@@ -60,9 +60,9 @@ public interface IFundAccountUsage
     Task<bool> IsInUseAsync(long fundAccountId, string fundAccountCode, CancellationToken token = default);
 }
 
-/// <summary>由引用收支類別的模組（FI 其他收入／支出）實作並註冊；MD 刪除前逐一詢問（ADR-041）。</summary>
+/// <summary>由引用收支類別的模組（FI 其他收入／支出）實作並註冊；MD 刪除前逐一詢問（ADR-041）；契約帶 ID 與代碼（ADR-212）。</summary>
 public interface IIncomeExpenseCategoryUsage
 {
-    /// <summary>目前公司是否有資料引用此收支類別代碼。</summary>
-    Task<bool> IsInUseAsync(string categoryCode, CancellationToken token = default);
+    /// <summary>目前公司是否有資料引用此收支類別；保存 ID 的模組（FI 其他付款）以 ID 判斷，保存代碼的模組以代碼判斷。</summary>
+    Task<bool> IsInUseAsync(long categoryId, string categoryCode, CancellationToken token = default);
 }

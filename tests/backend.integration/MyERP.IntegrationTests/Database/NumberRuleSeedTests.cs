@@ -20,7 +20,7 @@ namespace MyERP.IntegrationTests.Database;
 [Collection(SeedDataSerialGroup.Name)]
 public sealed class NumberRuleSeedTests(TestDatabase database) : IAsyncLifetime
 {
-    private static readonly string[] FinanceTypes = ["AR.COLLECTION", "AR.SETTLEMENT"];
+    private static readonly string[] FinanceTypes = ["AP.OTHER_PAYMENT", "AR.COLLECTION", "AR.SETTLEMENT"];
     private static readonly string[] SalesTypes = ["SAL.DELIVERY", "SAL.INVOICE", "SAL.ORDER", "SAL.QUOTATION", "SAL.RETURN"];
     private static readonly string[] SeededTypes = [.. FinanceTypes, .. SalesTypes];
     private WebApplicationFactory<Program> factory = null!;
@@ -66,6 +66,7 @@ public sealed class NumberRuleSeedTests(TestDatabase database) : IAsyncLifetime
                     .ToListAsync(Ct);
                 Assert.Equal(
                     [
+                        ("AP.OTHER_PAYMENT", "其他付款", "OP", NumberDateFormat.YearMonth, 4, NumberResetPeriod.Monthly, true),
                         ("AR.COLLECTION", "銷售收款", "RC", NumberDateFormat.YearMonth, 4, NumberResetPeriod.Monthly, true),
                         ("AR.SETTLEMENT", "收款核銷", "RS", NumberDateFormat.YearMonth, 4, NumberResetPeriod.Monthly, true),
                     ],
@@ -85,6 +86,8 @@ public sealed class NumberRuleSeedTests(TestDatabase database) : IAsyncLifetime
             var settlementNo = await generator.NextAsync("AR.SETTLEMENT", new DateOnly(2026, 11, 15), Ct);
             Assert.Matches("^RC202611[0-9]{4}$", receiptNo);
             Assert.Matches("^RS202611[0-9]{4}$", settlementNo);
+            // WU-FI-008b1：其他付款 OP＋年月＋4 位。
+            Assert.Matches("^OP202611[0-9]{4}$", await generator.NextAsync("AP.OTHER_PAYMENT", new DateOnly(2026, 11, 15), Ct));
             await transaction.RollbackAsync(Ct);
         }
     }
@@ -202,6 +205,7 @@ public sealed class NumberRuleSeedTests(TestDatabase database) : IAsyncLifetime
         var plan = NumberRuleDemoSeeder.BuildPlan([new FinanceNumberRuleSeeds()]);
         Assert.Equal(
             [
+                ("FI", "AP.OTHER_PAYMENT", "OP", NumberDateFormat.YearMonth, 4, NumberResetPeriod.Monthly),
                 ("FI", "AR.COLLECTION", "RC", NumberDateFormat.YearMonth, 4, NumberResetPeriod.Monthly),
                 ("FI", "AR.SETTLEMENT", "RS", NumberDateFormat.YearMonth, 4, NumberResetPeriod.Monthly),
             ],

@@ -1001,6 +1001,21 @@ Result: guard PASS 15.58 GiB; targeted real SQL 16/16 (7 new + same-pattern sibl
 | FI-OP-POST-008 | Error/lock | Held bank-reference or source key → 409 LOCK_TIMEOUT with the caller transaction open, zero rows; after release posts. | I | REQ_F4116.4.4 (FI-AP-OTHER-017) | Pass: 008a4 I |
 
 Not applicable here: batch/partial-success and file (one document per call, FI-AP-OTHER-010/020); HTTP 401/403/500 display and UI messages belong to 008b/008c. Result: guard PASS 16.67 GiB; targeted real SQL 8/8 new, other-payment siblings 52/52.
+
+### WU-FI-008b1 other payment permissions, number rule and MD usage scenarios (2026-11-27T20:32:19+08:00, ADR-212)
+
+`myerp-test-scenarios` categories applied to the catalogue, seed and usage changes. Real SQL `FinancePostingServiceTests.OtherPaymentUsage.cs` and `NumberRuleSeedTests`; catalogue/role/DI checks in `FinanceModuleTests`. The architecture test was red first (CS0246 `FinanceIncomeExpenseCategoryUsage`); a mutation check (usage always false) turned FI-OP-USAGE-001～004 red 4/4, restored → green.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-OP-USAGE-001 | Normal/relation/deleted | Before a Draft, RENT and CASHBOX are unused; a Draft referencing them makes MD delete 409 `MD.INCOME_EXPENSE_CATEGORY.IN_USE` / `MD.FUND_ACCOUNT.IN_USE` with rows kept; deactivating the category is still allowed; unreferenced SALEINC deletes; after the Draft is soft deleted both are released and delete. | I | REQ_F4116.4.6 (BR-FI-064) | Pass: 008b1 I |
+| FI-OP-USAGE-002 | State/history | A category map row alone marks the category in use (map rows are undeletable); a caller-rolled-back posting leaves no source; committed posting keeps category and bank in use; delete 409. | I | REQ_F4116.4.4/4.6 (BR-FI-064) | Pass: 008b1 I |
+| FI-OP-USAGE-003 | Permission/boundary | Usage matches the ID only (renamed code still true; another category with the code false); 0 and negative IDs false; another company asking with the same IDs false. | I | REQ_F4116.4.6 | Pass: 008b1 I |
+| FI-OP-USAGE-004 | State | A Rejected document (still editable) keeps category and fund account in use. | I | REQ_F4116.4.6 (BR-FI-064) | Pass: 008b1 I |
+| FI-OP-USAGE-005 | Registration | FI registers exactly one scoped `IIncomeExpenseCategoryUsage`; catalogue holds `AP.OTHER_PAYMENT.VIEW/CREATE/EDIT/DELETE/SUBMIT` under FI; FINANCE gets all, MANAGER/VIEWER VIEW only, SALES none. | U | REQ_F4116.4.2 (FI-AP-OTHER-012) | Pass: 008b1 U |
+| FI-OP-NRSEED-001 | Normal/duplicate | SYS seed creates `AP.OTHER_PAYMENT` 其他付款 `OP` year-month 4-digit monthly per seed company, idempotent; generator issues `OP202611nnnn`; plan sorted with AR rules. | I | REQ_F4116.4.2 | Pass: 008b1 I |
+
+Not applicable: batch/partial/file (no new input surface); HTTP 401/403 belong to 008b3. Result: guard PASS 16.54 GiB; targeted real SQL 4/4 new + FI posting/number-rule/fund-setup siblings; backend full 4146/4146.
 ## WU-FI-009d statement source scenarios (design; product tests TODO)
 
 The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories follow. U=unit, I=real SQL/authorised HTTP, E=Playwright. Each E case compares the translated screen and export with a fresh FI source read using the same cutoff. WU-FI-009a/b first write failing tests; this design unit has no executable financial product test.

@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-008b",
-    "lastCompletedWorkUnit": "WU-FI-008a4",
-    "nextAction": "做 WU-FI-008b（其他付款受權草稿／審批 API）：008a1～008a4 已真實 SQL 驗證。先寫真實 SQL／HTTP 紅燈。內容：登錄 AP.OTHER_PAYMENT.VIEW/CREATE/EDIT/SUBMIT/DELETE/APPROVE 權限與角色；種子 AP.OTHER_PAYMENT SYS 單號規則；送審／撤回（仿 CollectionReceiptSubmissionService）與 SYS 最終審批處理器（仿 CollectionReceiptApprovalResultHandler）在同交易以已存版本＋OtherPaymentFingerprint 呼叫 IOtherPaymentPostingService（ADR-211），Rejected／Fault 轉 BR-FI-065 HTTP 錯誤；控制器＋Swagger（401/403/404/400/409/422/500 traceId）；FI 實作 IIncomeExpenseCategoryUsage；費用類別對照維護 API（gl_other_payment_account_map）。單輪超過 90 分鐘先在 backlog 拆 008b1（權限／單號／對照 API）、008b2（送審審批過帳）、008b3（HTTP 控制器）。只跑一次記憶體守衛，DEFER 就提交可編譯部分並加入 deferredVerifications。不得單獨補驗 FI-007a1／006a1／005c3b2 或 PUR 延後項，也不要挑依賴 007a1／006a1 SQL 驗證的 007a2／006a2。",
+    "currentWorkUnit": "WU-FI-008b2",
+    "lastCompletedWorkUnit": "WU-FI-008b1",
+    "nextAction": "做 WU-FI-008b2（其他付款送審／撤回與 SYS 最終審批同交易過帳）：008b1 已登錄 AP.OTHER_PAYMENT.VIEW/CREATE/EDIT/DELETE/SUBMIT、OP 單號規則與 MD 使用守衛（ADR-212）。先寫真實 SQL 紅燈。仿 CollectionReceiptSubmissionService／CollectionReceiptApprovalPosting／CollectionReceiptApprovalResultHandler（FinanceModule 註冊方式相同）：OtherPaymentSubmissionService 送審需 OtherPaymentDocumentService.SubmitPermission、Draft／Rejected→Pending（版本檢查、UPDLOCK）、撤回 Pending→Draft；IApprovalResultHandler 以 DocumentType AP.OTHER_PAYMENT 在 SYS 同交易以已存版本＋OtherPaymentFingerprint.Create 呼叫 IOtherPaymentPostingService.PostInCurrentTransactionAsync，Rejected／Fault 依 BR-FI-065 拋具名錯誤讓 SYS 回滾，駁回→Rejected 記原因不過帳。HTTP 控制器與對照維護 API（GL.OTHER_PAYMENT_MAP.VIEW/EDIT）留 008b3。只跑一次記憶體守衛，DEFER 就提交可編譯部分並加入 deferredVerifications。不得單獨補驗 FI-007a1／006a1／005c3b2 或 PUR 延後項，也不要挑依賴 007a1／006a1 SQL 驗證的 007a2／006a2。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 221,
-        "ADR": 211,
+        "ADR": 212,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -144,5 +144,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-27T20:12:14+08:00",
-    "updatedAt": "2026-11-27T20:11:29+08:00"
+    "updatedAt": "2026-11-27T20:33:32+08:00"
 }

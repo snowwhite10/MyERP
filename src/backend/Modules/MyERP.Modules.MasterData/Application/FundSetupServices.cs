@@ -39,9 +39,10 @@ public sealed class IncomeExpenseCategoryService(MyErpDbContext db, IEnumerable<
 
     protected override async Task EnsureNotInUseAsync(long id, CancellationToken token)
     {
-        var code = (await FindAsync(id, token)).Code;
+        var category = await FindAsync(id, token);
         foreach (var usage in usages)
-            if (await usage.IsInUseAsync(code, token)) throw new ConflictException(ErrorPrefix + ".IN_USE", "Category is in use.");
+            if (await usage.IsInUseAsync(category.Id, category.Code, token))
+                throw new ConflictException(ErrorPrefix + ".IN_USE", "Category is in use.");
     }
 
     private async Task ValidateLedgerAsync(long? id, IncomeExpenseDirection direction, CancellationToken token)

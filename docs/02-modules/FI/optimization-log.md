@@ -998,3 +998,11 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - **Design:** The Draft is reloaded tracked only in the write step (after GL), so the joined GL session sees no pending changes and the Posted status and source row are saved by one typed EF SaveChanges (no raw decimal parameters).
 - **Test note:** Implementation preceded the first run; a mutation check (always "new posting", no account-type rule) turned FI-OP-POST-002/004/007 red, proving the tests bite. ADR counter in `state.json` was stale (ADR-210 already existed); this unit uses ADR-211.
 - **Boundary:** Account-role exclusion relies on MD account type (Expense/Cost only); a prepaid expense booked under an Expense-type account is not detectable without an MD role flag. `InconsistentState` (GL key without FI row) is covered by the shared pattern, not by a dedicated test here.
+
+# WU-FI-008b1 review (2026-11-27T20:32:19+08:00)
+
+- **Finding:** MD asked category usage by code while FI stores category IDs (same gap as ADR-124 for fund accounts). Changed the contract to pass ID and code (ADR-212) instead of adding a code→ID lookup that could race a rename; the only other implementer was an MD test double.
+- **Finding:** `FinanceFundAccountUsage` only knew posted collection receipts; other payment Drafts and sources also hold bank account IDs, so MD could delete a bank still referenced by an unposted payment. Added both clauses.
+- **Test fix:** The first FI-OP-USAGE-002 draft removed the category map row to isolate the source clause; the SQL trigger forbids map deletes (by design), so the test now asserts the map alone marks usage and the committed posting keeps it. A version that disabled table triggers was discarded because it would race parallel tests on the shared table.
+- **Test note:** A duplicate `FundIdAsync` helper (already in the receipt partial) caused CS0111; reused the existing one. During the targeted class run `TwoReturnsRacingForTheLastLineRemainderCreditOnceAndTheWaiterIsRejectedWithTheLine` failed once and passed alone and in the full run (4146/4146) — a pre-existing timing-sensitive race test, not touched here.
+- **Boundary:** Other collection (WU-FI-007) income categories are not yet reported; added in 007a2 after the deferred 007a1 SQL verification.

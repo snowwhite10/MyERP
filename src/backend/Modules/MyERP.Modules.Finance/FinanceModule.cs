@@ -71,6 +71,8 @@ public sealed class FinanceModule : IErpModule
         services.AddScoped<ICollectionWriteOffPostingService, CollectionWriteOffPostingService>();
         services.AddScoped<IAccountUsage, FinanceAccountUsage>();
         services.AddScoped<IFundAccountUsage, FinanceFundAccountUsage>();
+        // 其他付款費用類別使用守衛（WU-FI-008b1、ADR-212）：MD 刪除收支類別前詢問
+        services.AddScoped<IIncomeExpenseCategoryUsage, FinanceIncomeExpenseCategoryUsage>();
         services.AddScoped<CreditLimitCommandService>();
         services.AddScoped<CreditLimitQueryService>();
         services.AddScoped<GlReadService>();
@@ -128,6 +130,11 @@ public sealed class FinancePermissions : IPermissionDefinitionProvider
         .. new[] { CollectionSettlementDocumentService.ViewPermission, CollectionSettlementDocumentService.CreatePermission,
             CollectionSettlementDocumentService.EditPermission, CollectionSettlementDocumentService.DeletePermission,
             CollectionSettlementSubmissionService.SubmitPermission }
+            .Select(code => new PermissionDefinition(code, FinanceModuleContracts.ModuleCode)),
+        // 其他付款單據（WU-FI-008b1、ADR-212）：FINANCE 全部；MANAGER／VIEWER 只有 VIEW（審批走 SYS.APPROVAL.PROCESS）
+        .. new[] { OtherPaymentDocumentService.ViewPermission, OtherPaymentDocumentService.CreatePermission,
+            OtherPaymentDocumentService.EditPermission, OtherPaymentDocumentService.DeletePermission,
+            OtherPaymentDocumentService.SubmitPermission }
             .Select(code => new PermissionDefinition(code, FinanceModuleContracts.ModuleCode))
     ];
 }
