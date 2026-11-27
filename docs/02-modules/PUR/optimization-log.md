@@ -1,5 +1,12 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-28T07:35:31+08:00 — WU-PUR-006c2 採購單 CANCEL
+
+- 審查：`CancelAsync` 與 SUBMIT／SYS 決策同樣先鎖訂單，再按請購行 ID 升冪鎖來源；狀態、版本、資料範圍及未軟刪收貨均在交易內檢查。`PurchaseOrderRequisitionRelease` 抽取原 SYS 駁回的聚合與逐行釋回，兩條路徑共用不足量 409 規則，避免日後規則漂移；不直接讀 INV 表。
+- 發現：原受權 HTTP 取消案例缺少已登入但未獲公司授權的 403 驗收。補上該斷言；DELETE／EDIT／SUBMIT 仍不能代替 CANCEL 權限。
+- 原因欄使用可逆 migration，`nvarchar(500)` 與 CHECK 限非 Cancelled 不可帶原因；審計、版本由共用 SaveChanges interceptor 更新。狀態與請購量同一 SQL 交易保存，UPDATE 注入故障後可原版本重試。前端取消操作及完整三語提示留在 006f。
+- 驗證：定向真實 SQL 35/35、受權 HTTP 4/4；首次後端全量 4235/4236（既有 DELETE HTTP 測試預期 404 卻一次回 500），該案例隔離重跑 1/1，第二次全量 4236/4236。首跑 500 未能穩定重現，未據此改產品代碼；若再發生須從該次 traceId 與 SQL 超時記錄收窄。`myerp_test` migration Down 至 `Purchasing_OrderDraftFoundation`、Up 回 `Purchasing_OrderCancelReason` 均成功。
+
 ## 2026-11-28T07:08:03+08:00 — WU-PUR-006c1 採購單 DELETE 軟刪切片
 
 - 新增 `PurchaseOrderLifecycleService.DeleteAsync`（CANCEL 於 006c2 加入同一服務）：READ COMMITTED 先 UPDLOCK／HOLDLOCK 訂單（與 SUBMIT、SYS 決策處理器同一首鎖），再按 DELETE 動作範圍載入；版本 409、Draft／Rejected 且無消耗才可刪，否則 422 `PUR.ORDER.NOT_DELETABLE`。

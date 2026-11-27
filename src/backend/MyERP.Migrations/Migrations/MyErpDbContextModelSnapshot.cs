@@ -8590,6 +8590,11 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnType("date")
                         .HasColumnName("business_date");
 
+                    b.Property<string>("CancelReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("cancel_reason");
+
                     b.Property<long>("CompanyId")
                         .HasColumnType("bigint")
                         .HasColumnName("company_id");
@@ -8696,6 +8701,8 @@ namespace MyERP.Migrations.Migrations
 
                     b.ToTable("pur_purchase_order", null, t =>
                         {
+                            t.HasCheckConstraint("ck_pur_order_cancel_reason", "[cancel_reason] IS NULL OR [status] = 'Cancelled'");
+
                             t.HasCheckConstraint("ck_pur_order_consumption_state", "[requisition_consumption_active] = 0 OR ([is_deleted] = 0 AND [status] IN ('PendingApproval','Approved'))");
 
                             t.HasCheckConstraint("ck_pur_order_conversion_amount", "([base_net] IS NULL AND [base_tax] IS NULL AND [base_gross] IS NULL) OR ([base_net] >= 0 AND [base_tax] >= 0 AND [base_gross] = [base_net] + [base_tax])");

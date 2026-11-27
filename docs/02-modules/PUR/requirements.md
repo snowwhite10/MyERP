@@ -140,9 +140,11 @@ BlueWhale 的 4.1 採購單六項需求沿用原編號。人工建立與 ADR-070
 | REQ_F4114.1.3 | 1.0 | System should enable user to edit purchase orders. | Developer | EDIT 只可帶目前版本修改草稿或駁回單的可編輯表頭與人工行；決標轉單行的來源、供應商、數量與價格快照不可改。駁回的純轉單訂單可只修訂備註後回草稿。修訂後重新驗人工行 MD 與請購引用並重算金額；待審、已核准、已取消不可修改；舊版本 409。 |
 | REQ_F4114.1.4 | 1.0 | System should enable user to approve purchase orders. | Developer | SUBMIT 只接受草稿及目前版本，按請購行鎖定並檢查全部來源的累計已轉量不超核准量，在同一交易增加已轉量與建立 SYS 審批實例；零步驟立即核准。人工最終核准只經 SYS 審批 API，同交易更新訂單狀態；重複提交／決定不重複消耗。核准不寫 INV，採購入庫另行過帳。 |
 | REQ_F4114.1.5 | 1.0 | System should enable user to reject purchase orders. | Developer | SYS 核准人可帶意見駁回待審訂單；審批決定、訂單狀態與全部請購預占量的釋回同交易完成。保留歷史，修訂後可重送；重複駁回或已核准不得再釋回。 |
-| REQ_F4114.1.6 | 1.0 | System should enable user to delete purchase orders. | Developer | DELETE 只可按版本軟刪未提交草稿；已提交、已核准、已有入庫引用均不可刪。核准且未入庫訂單以獨立 CANCEL 動作取消並原子釋回請購量；已入庫不得取消，須走後續退貨流程。刪除或取消後永久保留單號與決標來源連結，不允許重轉同一決標行。 |
+| REQ_F4114.1.6 | 1.1 | System should enable user to delete or cancel purchase orders. | Developer | DELETE 按版本軟刪未消耗的 Draft／Rejected；CANCEL 須獨立權限、版本與 1～500 字原因，只能取消消耗旗標有效且未有未軟刪收貨引用的 Approved 單；按保存行聚合、同交易釋回一次請購已轉量、清旗標、存原因。已收貨須走退貨。狀態／版本／範圍不符分別回 422／409／404，釋回不一致 409，故障全回滾。永久保留單號、審批與決標來源連結，不允許重轉同一決標行。 |
 
 變更記錄：2026-10-24 WU-PUR-006d 首次固定 4.1.1～6 的驗收條件。取消作為 4.1.6 的明確受權延伸動作，不新增 BlueWhale 功能編號；正式操作須在後續子單元驗收。
+
+變更記錄：2026-11-28T07:35:31+08:00 WU-PUR-006c2 將 REQ_F4114.1.6 由 1.0 升至 1.1，明確 DELETE／CANCEL 獨立動作、原因上限、收貨引用、原子釋回及錯誤驗收；不改需求 ID。
 
 WU-PUR-005f3e 將 REQ_F4114.5.2 由 1.0 升至 1.1：表單讀取改用 QUOTE 專屬最小保存上下文及目前公司／報價日主檔選項，消除對 RFQ.VIEW／MD.VIEW 的額外角色依賴；保存時仍重新驗引用。其餘需求 ID 不變。
 

@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-006c2",
-    "lastCompletedWorkUnit":  "WU-PUR-006c1",
-    "nextAction":  "做 WU-PUR-006c2（006c 依 ADR-215 拆 c1／c2，c1 DELETE 已完成）：POST /api/v1/pur/purchase-orders/{id}/cancel body {version,reason}，新權限 PUR.ORDER.CANCEL（加入 PurchasingPermissions 與 PurchasingModuleTests 清單），在 PurchaseOrderLifecycleService 新增 CancelAsync：READ COMMITTED 先 UPDLOCK 訂單、套 CANCEL 動作範圍（404）、版本 409；只有 Approved 且消耗旗標 true、且 PUR 自有 pur_purchase_receipt（PurchaseReceiptSource）無未軟刪收貨引用才可取消，否則 422（PUR.ORDER.NOT_CANCELLABLE／PUR.ORDER.HAS_RECEIPTS）；同交易按請購行 ID 升冪逐行 UPDLOCK 後聚合釋回 ordered_quantity（不足扣回整筆 409 REQUISITION_RELEASE_INVALID）、清旗標、狀態 Cancelled、保存 reason（如表無欄位需加可逆 migration，或寫 ADR 改記稽核）；保留 SYS 審批、單號、決標來源。可抽 PurchaseOrderApprovalResultHandler 的釋回邏輯共用，並視重複程度抽共用動作範圍查詢。測試：PurchaseOrderSubmissionTests 新 partial（零步驟核准後取消釋回一次、重複取消 422 不二次釋回、PendingApproval／Draft／Rejected 422、有收貨 422、三種 UPDATE 故障回滾後只釋回一次）＋ PurchaseOrderHttpTests 受權 CANCEL。勿與後端全量並行跑定向整合測試；勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
+    "currentWorkUnit":  "WU-PUR-006e",
+    "lastCompletedWorkUnit":  "WU-PUR-006c2",
+    "nextAction":  "做 WU-PUR-006e：採購單 VIEW 列表／詳情（含保存行、請購／決標來源與 SYS 審批歷史）、CSV 匯出及列印，先核對 PUR requirements.md、api.md、ui-spec.md 與 test-plan.md，再按第 14 節測試先行完成後端與三語前端、亮暗 QA；依 myerp-test-scenarios、myerp-ux-review、web-design-guidelines 執行。006c1／006c2 已完成，006c 父項結清；勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -45,7 +45,8 @@
                              "WU-P0-E2E-FLAKE-MENU":  3,
                              "WU-PUR-006b2":  0,
                              "WU-PUR-006b3":  0,
-                             "WU-PUR-006c1":  0
+                             "WU-PUR-006c1":  0,
+                             "WU-PUR-006c2":  0
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -117,5 +118,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T07:15:17+08:00",
-    "updatedAt":  "2026-11-28T07:15:17+08:00"
+    "updatedAt":  "2026-11-28T07:51:08+08:00"
 }

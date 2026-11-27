@@ -20,6 +20,7 @@ public sealed class PurchaseInvoiceSourceDbModel : IModuleDbModel
                     "([base_currency_code] IS NULL AND [exchange_rate] IS NULL) OR ([base_currency_code] IS NOT NULL AND [exchange_rate] IS NOT NULL AND [exchange_rate] > 0 AND ([currency] <> [base_currency_code] OR [exchange_rate] = 1))");
                 t.HasCheckConstraint("ck_pur_order_conversion_amount", "([base_net] IS NULL AND [base_tax] IS NULL AND [base_gross] IS NULL) OR ([base_net] >= 0 AND [base_tax] >= 0 AND [base_gross] = [base_net] + [base_tax])");
                 t.HasCheckConstraint("ck_pur_order_consumption_state", "[requisition_consumption_active] = 0 OR ([is_deleted] = 0 AND [status] IN ('PendingApproval','Approved'))");
+                t.HasCheckConstraint("ck_pur_order_cancel_reason", "[cancel_reason] IS NULL OR [status] = 'Cancelled'");
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();
@@ -32,6 +33,7 @@ public sealed class PurchaseInvoiceSourceDbModel : IModuleDbModel
             e.Property(x => x.BaseTax).HasPrecision(19, 4);
             e.Property(x => x.BaseGross).HasPrecision(19, 4);
             e.Property(x => x.Remark).HasMaxLength(500);
+            e.Property(x => x.CancelReason).HasMaxLength(500);
             e.HasAlternateKey(x => new { x.CompanyId, x.Id }).HasName("ak_pur_purchase_order_company_id_id");
             e.HasIndex(x => new { x.CompanyId, x.SupplierId, x.Status, x.Id });
             e.HasIndex(x => new { x.CompanyId, x.DocumentNo }).IsUnique();

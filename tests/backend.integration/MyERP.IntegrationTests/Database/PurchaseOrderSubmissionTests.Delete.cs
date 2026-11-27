@@ -181,10 +181,10 @@ public sealed partial class PurchaseOrderSubmissionTests
     }
 
     private static PurchaseOrderLifecycleService Lifecycle(MyErpDbContext db, Seeded s, long? userId = null,
-        DataScope? scope = DataScope.Company, long branchId = 10)
+        DataScope? scope = DataScope.Company, long branchId = 10, string permission = PurchasingPermissions.OrderDelete)
     {
         var grants = new Dictionary<string, DataScope>();
-        if (scope is { } granted) grants[PurchasingPermissions.OrderDelete] = granted;
+        if (scope is { } granted) grants[permission] = granted;
         var authorization = new Mock<ICurrentAuthorization>();
         authorization.Setup(x => x.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(
             new UserCompanyAuthorization(userId ?? s.UserId, s.CompanyId, branchId, 20, false, grants));

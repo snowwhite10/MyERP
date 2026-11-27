@@ -16,6 +16,8 @@ public sealed class PurchaseOrderSource : BusinessEntity, ISoftDeletable
     public decimal? BaseGross { get; set; }
     public string? Remark { get; set; }
     public bool RequisitionConsumptionActive { get; set; }
+    /// <summary>CANCEL reason (BR-PUR-025); only a Cancelled order may carry one (ck_pur_order_cancel_reason).</summary>
+    public string? CancelReason { get; set; }
     public long SupplierId { get; set; }
     public required string Currency { get; set; }
     /// <summary>Company base currency captured with the order rate (BR-PUR-043b); null only for pre-006a source rows.</summary>

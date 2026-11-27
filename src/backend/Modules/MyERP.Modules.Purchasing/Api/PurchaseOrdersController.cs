@@ -101,6 +101,24 @@ public sealed class PurchaseOrdersController(PurchaseOrderDraftService drafts,
         await lifecycle.DeleteAsync(id, version, token);
         return NoContent();
     }
+
+    /// <summary>
+    /// 以 body 的 <c>version</c> 取消 CANCEL 範圍內、尚無收貨的已核准訂單，必填 <c>reason</c>（1～500 字）：同一交易釋回
+    /// 一次請購已轉量、狀態改 Cancelled 並保存原因；SYS 審批、單號、保存行與決標來源保留，決標行不可重轉。原因無效 400；
+    /// 版本不符 409；非已核准 422 <c>PUR.ORDER.NOT_CANCELLABLE</c>；已有收貨 422 <c>PUR.ORDER.HAS_RECEIPTS</c>；
+    /// 範圍外、他公司或已刪 404。
+    /// </summary>
+    [HttpPost("{id:long}/cancel")]
+    [RequirePermission(PurchasingPermissions.OrderCancel)]
+    [ProducesResponseType<PurchaseOrderCancelResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public Task<PurchaseOrderCancelResult> Cancel(long id, [FromBody] PurchaseOrderCancelInput input,
+        CancellationToken token) => lifecycle.CancelAsync(id, input, token);
 }
 
 /// <summary>SUBMIT 請求：目前保存版本。</summary>

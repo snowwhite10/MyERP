@@ -158,6 +158,60 @@ public sealed class PurchaseOrderHttpTests(TestDatabase database) : IAsyncLifeti
         Assert.Equal(1, await db.Set<PurchaseOrderSourceLine>().CountAsync(x => x.PurchaseOrderId == draftId, Ct));
     }
 
+    /// <summary>WU-PUR-006c2（PUR-PO-012／016）：CANCEL 需獨立權限，經真實 JWT 與 SQL 回 200 並保存原因。</summary>
+    [Fact]
+    public async Task CancelRequiresOwnPermissionAndCancelsOnlyCurrentApprovedOrder()
+    {
+        var company = await NewCompanyAsync("PO cancel");
+        var other = await NewCompanyAsync("PO cancel other");
+        using var http = factory.CreateClient();
+        var (userId, token) = await CreateUserAsync(http);
+        var (approvedId, approvedVersion) = await SeedOrderAsync(company, userId, "Approved", consumed: true);
+        var (draftId, draftVersion) = await SeedOrderAsync(company, userId, "Draft");
+        string Path(long id) => $"{Route}/{id}/cancel";
+        object CancelBody(int version, string? reason = "Supplier closed") => new { version, reason };
+
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await http.PostAsJsonAsync(Path(approvedId), CancelBody(approvedVersion), Ct)).StatusCode);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Post, Path(approvedId), CancelBody(approvedVersion),
+            token, company), HttpStatusCode.Forbidden, "COMMON.COMPANY.ACCESS_DENIED");
+        // DELETE, EDIT and SUBMIT do not imply CANCEL.
+        string[] others = [PurchasingPermissions.OrderView, PurchasingPermissions.OrderEdit,
+            PurchasingPermissions.OrderSubmit, PurchasingPermissions.OrderDelete];
+        await GrantAsync(userId, company, DataScope.Company, others);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Post, Path(approvedId), CancelBody(approvedVersion),
+            token, company), HttpStatusCode.Forbidden, "COMMON.PERMISSION.DENIED");
+
+        await GrantAsync(userId, company, DataScope.Company, [.. others, PurchasingPermissions.OrderCancel]);
+        await GrantAsync(userId, other, DataScope.Company, PurchasingPermissions.OrderCancel);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Post, Path(approvedId), CancelBody(approvedVersion),
+            token, other), HttpStatusCode.NotFound, "PUR.ORDER.NOT_FOUND");
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Post, Path(approvedId), CancelBody(approvedVersion, "  "),
+            token, company), HttpStatusCode.BadRequest, "COMMON.REQUEST.VALIDATION_FAILED");
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Post, Path(approvedId), CancelBody(approvedVersion + 1),
+            token, company), HttpStatusCode.Conflict, "COMMON.CONCURRENCY.CONFLICT");
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Post, Path(draftId), CancelBody(draftVersion),
+            token, company), HttpStatusCode.UnprocessableEntity, "PUR.ORDER.NOT_CANCELLABLE");
+        await AssertUnchangedAsync(company, approvedId, approvedVersion);
+        await AssertUnchangedAsync(company, draftId, draftVersion);
+
+        var cancelled = await SendAsync(http, HttpMethod.Post, Path(approvedId), CancelBody(approvedVersion), token, company);
+        Assert.Equal(HttpStatusCode.OK, cancelled.StatusCode);
+        var result = await cancelled.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal("Cancelled", result.GetProperty("status").GetString());
+        Assert.Equal(approvedId, result.GetProperty("id").GetInt64());
+        var newVersion = result.GetProperty("version").GetInt32();
+        Assert.True(newVersion > approvedVersion);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Post, Path(approvedId), CancelBody(newVersion),
+            token, company), HttpStatusCode.UnprocessableEntity, "PUR.ORDER.NOT_CANCELLABLE");
+        await using var db = Context(company, 7);
+        var saved = await db.Set<PurchaseOrderSource>().AsNoTracking().SingleAsync(x => x.Id == approvedId, Ct);
+        Assert.Equal("Cancelled", saved.Status);
+        Assert.False(saved.RequisitionConsumptionActive);
+        Assert.Equal("Supplier closed", saved.CancelReason);
+        Assert.Equal(newVersion, saved.Version);
+    }
+
     private static async Task AssertProblemAsync(HttpResponseMessage response, HttpStatusCode status, string errorCode)
     {
         Assert.Equal(status, response.StatusCode);
@@ -176,14 +230,16 @@ public sealed class PurchaseOrderHttpTests(TestDatabase database) : IAsyncLifeti
             .SingleAsync(x => x.PurchaseOrderId == orderId, Ct)).Quantity);
     }
 
-    private async Task<(long Id, int Version)> SeedOrderAsync(long company, long ownerId, string status)
+    private async Task<(long Id, int Version)> SeedOrderAsync(long company, long ownerId, string status,
+        bool consumed = false)
     {
         await using var db = Context(company, ownerId);
         var order = new PurchaseOrderSource
         {
             CompanyId = company, SupplierId = 101, DocumentNo = $"PO-H-{Guid.NewGuid():N}"[..20],
             BusinessDate = new DateOnly(2028, 2, 29), Currency = "TWD", BaseCurrencyCode = "TWD", ExchangeRate = 1m,
-            Status = status, OwnerId = ownerId, Remark = "seed", BaseNet = 10m, BaseTax = 0.5m, BaseGross = 10.5m
+            Status = status, OwnerId = ownerId, Remark = "seed", BaseNet = 10m, BaseTax = 0.5m, BaseGross = 10.5m,
+            RequisitionConsumptionActive = consumed
         };
         db.Add(order);
         await db.SaveChangesAsync(Ct);

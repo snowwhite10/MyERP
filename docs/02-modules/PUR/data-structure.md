@@ -245,7 +245,7 @@ erDiagram
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
-| REQ_DS43.186 | 1.2 | pur_purchase_order | This table stores company-scoped purchase order supplier, currency, number, totals, remark and requisition consumption state. | Developer | REQ_F4114.1.2, REQ_F4114.6.3, REQ_F4114.8.2 |
+| REQ_DS43.186 | 1.3 | pur_purchase_order | This table stores company-scoped purchase order supplier, currency, number, totals, remark, requisition consumption state and cancellation reason. | Developer | REQ_F4114.1.2, REQ_F4114.1.6, REQ_F4114.6.3, REQ_F4114.8.2 |
 | REQ_DS43.187 | 1.2 | pur_purchase_order_line | This table stores order line price, tax, exchange, original and base amounts, and company-scoped requisition source. | Developer | REQ_F4114.1.2, REQ_F4114.6.3, REQ_F4114.8.3 |
 | REQ_DS43.188 | 1.0 | pur_purchase_receipt | This table stores purchase receipt order, supplier, currency and posting identity. | Developer | REQ_F4114.2.2, REQ_F4114.8.2 |
 | REQ_DS43.211 | 1.0 | pur_purchase_receipt_line | This table stores receipt line order references and committed quantity counters. | Developer | REQ_F4114.2.2, REQ_F4114.8.2 |
@@ -253,6 +253,8 @@ erDiagram
 Change record (2026-11-25T21:44:40+08:00, WU-P0-043): the receipt-line source row originally reused REQ_DS43.189, which ADR-106 assigns to FI `ar_sales_source`. The row now has the next unallocated ID, REQ_DS43.211; table identity, schema and related functional requirements are unchanged. The duplicate historical ID is not reused for another table.
 
 Change record (2026-11-27T09:49:20+08:00, WU-PUR-005e4): REQ_DS43.186／187 move to 1.1 for nullable conversion fields and amount checks. Existing invoice-source rows retain their columns and values. The new award link has its own ID below.
+
+Change record (2026-11-28T07:35:31+08:00, WU-PUR-006c2): REQ_DS43.186 moves to 1.3 for nullable `cancel_reason nvarchar(500)` and `ck_pur_order_cancel_reason` (a reason is only valid on a Cancelled order). Reversible migration `Purchasing_OrderCancelReason` preserves existing order rows; no new table ID.
 
 ```mermaid
 erDiagram

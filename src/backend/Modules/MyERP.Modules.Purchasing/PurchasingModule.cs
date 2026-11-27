@@ -83,6 +83,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
     public const string OrderEdit = "PUR.ORDER.EDIT";
     public const string OrderSubmit = "PUR.ORDER.SUBMIT";
     public const string OrderDelete = "PUR.ORDER.DELETE";
+    public const string OrderCancel = "PUR.ORDER.CANCEL";
     public const string InvoiceCreate = "PUR.INVOICE.CREATE";
     public const string InvoiceEdit = "PUR.INVOICE.EDIT";
     public const string InvoiceMatch = "PUR.INVOICE.MATCH";
@@ -116,6 +117,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
         new(OrderEdit, PurchasingModuleContracts.ModuleCode),
         new(OrderSubmit, PurchasingModuleContracts.ModuleCode),
         new(OrderDelete, PurchasingModuleContracts.ModuleCode),
+        new(OrderCancel, PurchasingModuleContracts.ModuleCode),
         new(InvoiceCreate, PurchasingModuleContracts.ModuleCode),
         new(InvoiceEdit, PurchasingModuleContracts.ModuleCode),
         new(InvoiceMatch, PurchasingModuleContracts.ModuleCode),
