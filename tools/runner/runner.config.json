@@ -60,5 +60,13 @@
     "maxConsecutiveFailuresBeforeLongWait":  6,
     "longWaitMinutes":  60,
     "quotaScanTailLines":  25,
+    "memoryGate":  {
+                       "_comment":  "開輪前取樣可用記憶體（與 tools/scripts/MemoryGate.Core.ps1 同一門檻）；不達標時提示代理本輪只做不需 SQL 的工作",
+                       "enabled":  true,
+                       "minFreeGiB":  2.5,
+                       "samples":  3,
+                       "sampleIntervalSeconds":  2
+                   },
+    "maxResourceSkipsPerWorkUnit":  2,
     "keepLastOutput":  true
 }

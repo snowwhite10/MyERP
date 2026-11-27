@@ -184,7 +184,75 @@ function Test-ShouldHold($AgentCfg, $ResetAt) {
     return (([datetime]$ResetAt - (Get-Date)).TotalMinutes -le $h)
 }
 
-function Build-Prompt([string]$AgentName, [int]$DirtyCount, [string]$LastResult) {
+# ---------------------------------------------------------------- 資源預檢（不消耗額度）
+# runner.config.json 的 memoryGate：開輪前取樣可用記憶體；不達標時在提示詞告訴代理本輪只做不需 SQL／整合／E2E 的工作，
+# 避免代理每輪讀完文件、跑一次守衛就 DEFER 結束而白白消耗額度。
+function Get-MemoryGateConfig($Cfg) {
+    if ($Cfg.PSObject.Properties['memoryGate'] -and $Cfg.memoryGate -and $Cfg.memoryGate.enabled) { return $Cfg.memoryGate }
+    return $null
+}
+
+function Test-HostMemory($Cfg) {
+    $g = Get-MemoryGateConfig $Cfg
+    if (-not $g) { return $null }
+    $samples = 3; $interval = 2
+    if ($g.PSObject.Properties['samples'] -and $g.samples) { $samples = [int]$g.samples }
+    if ($g.PSObject.Properties['sampleIntervalSeconds'] -and $null -ne $g.sampleIntervalSeconds) { $interval = [int]$g.sampleIntervalSeconds }
+    $values = @()
+    for ($i = 0; $i -lt $samples; $i++) {
+        if ($i -gt 0) { Start-Sleep -Seconds $interval }
+        try { $values += [Math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1MB, 3) } catch { }
+    }
+    if ($values.Count -eq 0) { return $null }
+    $min = ($values | Measure-Object -Minimum).Minimum
+    return [pscustomobject]@{ Ok = ($min -ge [double]$g.minFreeGiB); MinGiB = $min; Threshold = [double]$g.minFreeGiB; Text = ($values -join '／') }
+}
+
+# 讀取本輪期間寫入的日誌行（本輪可能跨日）
+function Get-RoundLogLines([datetime]$Since) {
+    $since = $Since.Date.AddHours($Since.Hour).AddMinutes($Since.Minute)
+    $lines = @()
+    $d = $Since.Date
+    while ($d -le (Get-Date).Date) {
+        $p = Join-Path (Join-Path $paths.Root 'logs\ai-run') (Join-Path $d.ToString('yyyy-MM') ($d.ToString('yyyy-MM-dd') + '.log'))
+        if (Test-Path $p) {
+            foreach ($l in [System.IO.File]::ReadAllLines($p, [System.Text.Encoding]::UTF8)) {
+                if ($l.Length -lt 16) { continue }
+                $t = [datetime]::MinValue
+                if ([datetime]::TryParseExact($l.Substring(0, 16), 'yyyy-MM-dd HH:mm', [Globalization.CultureInfo]::InvariantCulture, 'None', [ref]$t) -and $t -ge $since) { $lines += $l }
+            }
+        }
+        $d = $d.AddDays(1)
+    }
+    return $lines
+}
+
+# 本輪是否因資源不足（記憶體守衛 DEFER）而延後；回傳涉及的工作單元，沒有則回傳 $null
+function Get-ResourceSkipWorkUnit([string[]]$Lines) {
+    $hit = @($Lines | Where-Object { $_ -match '\|\s*(SKIP|FAIL|BLOCKED)\s*\|' -and $_ -match 'DEFER|記憶體守衛|資源不足' })
+    if ($hit.Count -eq 0) { return $null }
+    foreach ($l in $hit) {
+        if ($l -match '(WU-[A-Z0-9]+(?:-[A-Za-z0-9]+)+)') { return $Matches[1] }
+    }
+    $s = Get-ProjectState
+    if ($s -and $s.PSObject.Properties['currentWorkUnit'] -and $s.currentWorkUnit) { return [string]$s.currentWorkUnit }
+    return '(未知工作單元)'
+}
+
+function Get-ResourceNote($MemCheck, [string[]]$BannedWorkUnits) {
+    if (-not $MemCheck -or $MemCheck.Ok) { return '' }
+    $note = "`n`n## Runner 資源預檢（本輪開始前，不需再自行重測）`n`n"
+    $note += ('- 可用記憶體三次取樣 {0} GiB，最低 {1} GiB，低於門檻 {2} GiB；記憶體守衛必然 DEFER。' -f $MemCheck.Text, $MemCheck.MinGiB, $MemCheck.Threshold) + "`n"
+    $note += '- 本輪**不得**選擇需要真實 SQL、HTTP 整合、後端全量或 E2E 全量驗證的工作；不要執行記憶體守衛或 SQL 測試。' + "`n"
+    $note += '- 改做可離線完成並驗證的工作單元（需求／設計文件、單元測試、Architecture 測試、前端單元測試、程式碼整理），把需要 SQL 的待驗項目寫入 `state.json.deferredVerifications`。' + "`n"
+    if ($BannedWorkUnits -and $BannedWorkUnits.Count -gt 0) {
+        $note += ('- 以下工作單元已連續多輪因資源不足延後，本輪**禁止**再挑：{0}。如 `nextAction` 指向它們，先移入 `deferredVerifications`，再改做下一個不依賴它們的工作單元。' -f ($BannedWorkUnits -join '、')) + "`n"
+    }
+    $note += '- 如找不到任何不需 SQL 的工作，寫一行 SKIP 日誌說明後立即結束本輪，不要讀取大量文件。' + "`n"
+    return $note
+}
+
+function Build-Prompt([string]$AgentName, [int]$DirtyCount, [string]$LastResult, [string]$ResourceNote = '') {
     $tpl = [System.IO.File]::ReadAllText($paths.PromptTpl, [System.Text.Encoding]::UTF8)
     $dirtyNote = '工作目錄乾淨。'
     if ($DirtyCount -lt 0) {
@@ -197,6 +265,7 @@ function Build-Prompt([string]$AgentName, [int]$DirtyCount, [string]$LastResult)
     $text = $text.Replace('{{NOW}}', (Get-Date).ToString('yyyy-MM-dd HH:mm'))
     $text = $text.Replace('{{DIRTY_NOTE}}', $dirtyNote)
     $text = $text.Replace('{{LAST_RESULT}}', $LastResult)
+    if ($ResourceNote) { $text += $ResourceNote }
     return $text
 }
 
@@ -214,6 +283,8 @@ $agentProbeOk = @{}         # 代理名稱 -> 用量查詢已確認可用
 $agentHold = @{}            # 代理名稱 -> $true：短期上限，等待它 reset，不改用其他代理
 $holdWaitLogged = $false
 $lastResult = '（本次 Runner 啟動後第一輪）'
+$resourceSkipStreak = @{}  # 工作單元 -> 連續因資源不足延後的輪數
+$lowMemLogged = $false
 $script:lastStartDate = $null
 $doneLogged = $false
 
@@ -357,7 +428,22 @@ try {
 
         # 執行一輪
         $dirty = Get-GitDirtyCount $root
-        $prompt = Build-Prompt -AgentName $chosen.name -DirtyCount $dirty -LastResult $lastResult
+        $memCheck = Test-HostMemory $cfg
+        $banned = @()
+        $maxSkip = 2
+        if ($cfg.PSObject.Properties['maxResourceSkipsPerWorkUnit'] -and $cfg.maxResourceSkipsPerWorkUnit) { $maxSkip = [int]$cfg.maxResourceSkipsPerWorkUnit }
+        foreach ($k in @($resourceSkipStreak.Keys)) { if ($resourceSkipStreak[$k] -ge $maxSkip) { $banned += $k } }
+        if ($memCheck -and -not $memCheck.Ok) {
+            if (-not $lowMemLogged) {
+                Write-AiRunLog -Stage '資源' -Status 'WAIT' -Message ('Runner 預檢可用記憶體最低 {0} GiB（門檻 {1}），本輪起限做不需 SQL 的工作{2}' -f $memCheck.MinGiB, $memCheck.Threshold, $(if ($banned.Count) { '；禁止 ' + ($banned -join '、') } else { '' }))
+                $lowMemLogged = $true
+            }
+        } elseif ($memCheck -and $lowMemLogged) {
+            Write-AiRunLog -Stage '資源' -Status 'OK' -Message ('Runner 預檢可用記憶體恢復至最低 {0} GiB，可補做延後的 SQL 驗證' -f $memCheck.MinGiB)
+            $lowMemLogged = $false
+        }
+        $resourceNote = Get-ResourceNote -MemCheck $memCheck -BannedWorkUnits $banned
+        $prompt = Build-Prompt -AgentName $chosen.name -DirtyCount $dirty -LastResult $lastResult -ResourceNote $resourceNote
         Update-Status -State 'running' -AgentName $chosen.name -Note '執行中'
         $roundStart = Get-Date
         $r = Invoke-AgentRound -Agent $chosen -Prompt $prompt -TimeoutMinutes $cfg.roundTimeoutMinutes -WorkingDirectory $root
@@ -426,6 +512,17 @@ try {
         else {
             $agentFailures[$chosen.name] = 0
             $lastResult = "上一輪 $($chosen.name) 正常結束（約 $minutes 分鐘）。"
+        }
+
+        # 統計同一工作單元連續因資源不足延後的輪數（額度中斷的輪不計）
+        if (-not $r.Missing -and $agentReason[$chosen.name] -ne 'quota') {
+            $skipWu = Get-ResourceSkipWorkUnit -Lines (Get-RoundLogLines $roundStart)
+            if ($skipWu) {
+                $resourceSkipStreak[$skipWu] = 1 + [int]$resourceSkipStreak[$skipWu]
+                foreach ($k in @($resourceSkipStreak.Keys)) { if ($k -ne $skipWu) { $resourceSkipStreak.Remove($k) } }
+            } elseif (-not $roundFailed) {
+                $resourceSkipStreak.Clear()
+            }
         }
 
         # 檢查未提交變更
