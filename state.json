@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-006b3",
-    "lastCompletedWorkUnit":  "WU-PUR-006b2",
-    "nextAction":  "做 WU-PUR-006b3（006b 拆 b1～b3，ADR-214；b1 SUBMIT、b2 SYS 決策處理器 PurchaseOrderApprovalResultHandler 已完成）：受權 HTTP 驗收 POST /api/v1/pur/purchase-orders/{id}/submit（401 匿名、403 缺 PUR.ORDER.SUBMIT／公司閘道、404 範圍外／他公司、409 舊版本、422 ProblemDetails 含 shortages／lineNos／traceId），MD 供應商／物料失效整單 422 零變更；經 SYS POST /api/v1/sys/approvals/{id}/approve|reject 真實 HTTP 驗收 PUR.ORDER 最終核准／駁回釋回與 409 PUR.ORDER.APPROVAL_STATE_CHANGED／REQUISITION_RELEASE_INVALID、決策故障回滾。參考 PurchaseOrderHttpTests（006a4）與 PurchaseOrderSubmissionTests(.Approval)。之後 006c（CANCEL／軟刪）。勿與後端全量並行跑定向整合測試；勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
+    "currentWorkUnit":  "WU-PUR-006c",
+    "lastCompletedWorkUnit":  "WU-PUR-006b3",
+    "nextAction":  "做 WU-PUR-006c（006b 拆 b1～b3 全部完成；SYS 最終核准／駁回釋回已由 006b2／006b3 交付，006c 只剩 CANCEL 與草稿軟刪）：先評估是否超過 90 分鐘，必要時拆 c1（DELETE /api/v1/pur/purchase-orders/{id}?version= 軟刪 Draft／Rejected 未消耗草稿，新權限 PUR.ORDER.DELETE，舊版本 409、非草稿 422、範圍外 404，單號不重用）與 c2（POST /{id}/cancel {version,reason}：Approved 且無入庫引用才在同一交易按請購行 ID 升冪鎖定後原子釋回並清旗標，不重複釋回、保留決標來源，PendingApproval 不可取消、與 WU-PUR-007 入庫公開契約銜接）。參考 PurchaseOrderApprovalResultHandler 的釋回邏輯（可抽共用）、PurchaseOrderSubmissionTests(.Approval) 與 PurchaseOrderSubmitHttpTests。勿與後端全量並行跑定向整合測試；勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -43,7 +43,8 @@
                              "WU-FI-004a2k":  3,
                              "WU-SD-003a":  3,
                              "WU-P0-E2E-FLAKE-MENU":  3,
-                             "WU-PUR-006b2":  0
+                             "WU-PUR-006b2":  0,
+                             "WU-PUR-006b3":  0
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -115,5 +116,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T06:38:29+08:00",
-    "updatedAt":  "2026-11-28T06:38:29+08:00"
+    "updatedAt":  "2026-11-28T06:57:39+08:00"
 }

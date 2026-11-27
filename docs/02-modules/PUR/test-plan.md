@@ -1,5 +1,15 @@
 # PUR 測試計劃
 
+## WU-PUR-006b3 SUBMIT／SYS 決策受權 HTTP 切片（2026-11-28T06:57:39+08:00）
+
+依 `myerp-test-scenarios` 逐類核對：正常（一步流程核准保留、駁回釋回、零步驟立即核准）、邊界（最小精度超量 3＋3.000001 對 6）、重複衝突（舊版本 409、已送審再送 422、完成實例再駁回 422 不二次釋回）、部分結果（不足／無效來源／MD 失效皆整單零變更，無部分成功）、權限（匿名 401、未指派公司 403 `COMMON.COMPANY.ACCESS_DENIED`、只有 VIEW／CREATE／EDIT 無 SUBMIT 403、送審人無 SYS.APPROVAL.PROCESS 不能自審 403、他公司／本人範圍外／不存在 404）、狀態（Draft 才可送審）、關聯（MD 供應商未核准、物料停用、請購 Draft）、錯誤（ProblemDetails 均含 errorCode／traceId，422 帶 `shortages`／`lineNos`；決策 409 時 SYS 實例仍 Pending、PUR 不變）；檔案不適用。真實 JWT／角色／MD／SYS 引擎 `PurchaseOrderSubmitHttpTests` 3/3；略過供應商核准檢查的變異使 SUB-HTTP-002 轉紅。HTTP 層故障注入不另做：SYS 決策三種 UPDATE 故障回滾已由 006b2 PUR-PO-DEC-005 在同一服務驗收，HTTP 以資料漂移／旗標不符 409 驗證整筆回滾。
+
+| ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-PO-SUB-HTTP-001 | 權限／衝突 | 匿名 401；未指派公司 403 `COMMON.COMPANY.ACCESS_DENIED`；只有 VIEW／CREATE／EDIT 403 `COMMON.PERMISSION.DENIED`；SUBMIT 本人範圍送他人訂單 404、他公司標頭 404、不存在 404；舊版本 409 `COMMON.CONCURRENCY.CONFLICT`；兩單皆仍 Draft、版本不變、已轉量 0、無 SYS 實例。 | I | REQ_F4114.1.4 | PASS 1/1 |
+| PUR-PO-SUB-HTTP-002 | 部分結果／關聯／錯誤 | 3＋3.000001 對可用 6：422 `PUR.ORDER.REQUISITION_INSUFFICIENT`＋`shortages[{requisitionLineId,orderLineNos:[1,2],requested:6.000001,available:6}]`；引用 Draft 請購 422 `INVALID_REQUISITION_SOURCE`＋`lineNos:[2]`；供應商改待審 422 `MD.SUPPLIER.NOT_APPROVED`；物料停用 422 `MD.ITEM.INACTIVE`；皆零變更。修正後同版本送審 200 零步驟 `Approved`（stepCount 0、已轉量 2），再送 422 `NOT_SUBMITTABLE` 不二次消耗。 | I | REQ_F4114.1.4 | PASS 1/1 |
+| PUR-PO-SUB-HTTP-003 | 正常／狀態／錯誤 | 一步流程四單送審皆 PendingApproval（已轉量 18）；送審人自審 403；審批人 HTTP 核准→Approved 保留 18；駁回→Rejected 釋回 4（14），重複駁回 422 `SYS.APPROVAL.NOT_PENDING` 不再釋回；已轉量漂移至 3 後駁回 409 `PUR.ORDER.REQUISITION_RELEASE_INVALID`、清旗標後核准 409 `PUR.ORDER.APPROVAL_STATE_CHANGED`，SYS 實例 ID／版本／Pending 不變、訂單與已轉量不變。 | I | REQ_F4114.1.4, REQ_F4114.1.5 | PASS 1/1 |
+
 ## WU-PUR-006b2 SYS 最終決定處理器切片（2026-11-28T06:37:51+08:00）
 
 依 `myerp-test-scenarios` 逐類核對：正常（多級核准、駁回釋回）、邊界（中間核准、人工行無來源不釋回、兩請購行聚合）、重複衝突（完成後再決定、訂單狀態／旗標不符 409）、部分結果（任何一行釋回不一致整筆 409、無部分釋回）、權限（審批人資格由 SYS 引擎守衛；受權 HTTP 留 006b3）、狀態（Draft／Approved／Rejected／旗標 false 均拒絕）、關聯（請購行讀取忽略軟刪過濾，釋回不受來源後續狀態影響）、錯誤交易（三種 UPDATE 故障整筆回滾）；檔案不適用（無匯入匯出）。`PurchaseOrderSubmissionTests`（含 `.Approval`）18/18，處理器經 `PurchasingModule` 註冊解析；未註冊時 6 案例紅，略過釋回的變異使 5 案例紅。
@@ -893,12 +903,12 @@ U=單元、I=真實 SQL／HTTP 整合、E=Playwright 畫面與保存資料雙斷
 | PUR-PO-007 | 邊界 | 同一訂單多行引用同一請購行須先聚合；剛好等於餘量成功，超過最小精度一單位整單 422。 | U,I | REQ_F4114.1.4 | I PASS（006b1 PUR-PO-SUB-002／003） |
 | PUR-PO-008 | 重複／衝突 | 雙連線建立單號唯一；已軟刪／已取消號碼及決標來源不重用；舊版 EDIT／DELETE／SUBMIT／CANCEL 回 409，保存資料不變。 | I | REQ_F4114.1.2, REQ_F4114.1.3, REQ_F4114.1.4, REQ_F4114.1.6 | 建立雙連線單號唯一 PASS（006a4 PUR-PO-TXN-002）；舊版 EDIT 409 PASS（006a3／006a4 HTTP）；DELETE／SUBMIT／CANCEL 待 006b／006c |
 | PUR-PO-009 | 重複／衝突 | 兩個連線同時提交對同一請購剩餘量的競爭訂單，最多一個成功；量不超核准量，失敗訂單仍為草稿且無 SYS 實例。 | I | REQ_F4114.1.4 | PASS（006b1 PUR-PO-SUB-006） |
-| PUR-PO-010 | 部分結果 | 任一行來源不足、MD 失效或 SYS 建流程故障，整單零消耗、零審批、零狀態變化；無逐行成功、靜默略過或部分成功。 | I,E | REQ_F4114.1.4 | I：來源不足／失效、請購量與 SYS 實例故障整單零變更 PASS（006b1）；MD 失效 HTTP 與 E 待 006b3／006f |
+| PUR-PO-010 | 部分結果 | 任一行來源不足、MD 失效或 SYS 建流程故障，整單零消耗、零審批、零狀態變化；無逐行成功、靜默略過或部分成功。 | I,E | REQ_F4114.1.4 | I：來源不足／失效、請購量與 SYS 實例故障整單零變更 PASS（006b1）；MD 供應商／物料失效 HTTP 422 零變更 PASS（006b3 SUB-HTTP-002）；E 待 006f |
 | PUR-PO-011 | 部分結果 | 0 行提交為 400；全部來源不足回 422 並列每個衝突行與可用量；成功才顯示實際變更筆數，全部失敗顯示警告及原因。 | I,E | REQ_F4114.1.4 | TODO（006） |
-| PUR-PO-012 | 權限 | 匿名 401，缺各動作權限 403；只有 CREATE／EDIT 無 VIEW／MD.VIEW 仍可取得專用選項／詳情；跨公司與本人／部門／分店範圍外 404。 | I,E | REQ_F4114.1.1, REQ_F4114.1.2, REQ_F4114.1.3 | CREATE／EDIT／VIEW 匿名 401、缺權 403、跨公司及範圍外 404 PASS（006a2～006a4）；選項端點待 006e |
+| PUR-PO-012 | 權限 | 匿名 401，缺各動作權限 403；只有 CREATE／EDIT 無 VIEW／MD.VIEW 仍可取得專用選項／詳情；跨公司與本人／部門／分店範圍外 404。 | I,E | REQ_F4114.1.1, REQ_F4114.1.2, REQ_F4114.1.3 | CREATE／EDIT／VIEW／SUBMIT 匿名 401、缺權 403、跨公司及範圍外 404 PASS（006a2～006a4、006b3）；選項端點待 006e |
 | PUR-PO-013 | 權限 | 偽造公司、擁有人、單號、金額及決標來源欄位不得改變持久資料；來源選項與已保存引用不能洩漏其他公司資料。 | I | REQ_F4114.1.2, REQ_F4114.1.3 | TODO（006） |
 | PUR-PO-014 | 狀態 | Draft 可編輯／刪除／提交；PendingApproval 只能 SYS 決定；Approved 不可修改／刪除／重送；Rejected 修訂後回 Draft；Cancelled 不可再操作。每種非法操作 422。 | I,E | REQ_F4114.1.3, REQ_F4114.1.4, REQ_F4114.1.5, REQ_F4114.1.6 | TODO（006） |
-| PUR-PO-015 | 狀態 | 重複提交／核准／駁回／取消均不得二次消耗或釋回；審批過時決定 409 且 SYS 實例與 PUR 狀態一同回滾。 | I | REQ_F4114.1.4, REQ_F4114.1.5, REQ_F4114.1.6 | 提交／核准／駁回 PASS（006b1、006b2 PUR-PO-DEC-001／003）；取消待 006c |
+| PUR-PO-015 | 狀態 | 重複提交／核准／駁回／取消均不得二次消耗或釋回；審批過時決定 409 且 SYS 實例與 PUR 狀態一同回滾。 | I | REQ_F4114.1.4, REQ_F4114.1.5, REQ_F4114.1.6 | 提交／核准／駁回 PASS（006b1、006b2 PUR-PO-DEC-001／003；HTTP 006b3 SUB-HTTP-002／003）；取消待 006c |
 | PUR-PO-016 | 關聯 | 未核准、軟刪、跨公司、物料不符或已無餘量請購行拒絕；保存後 MD 停用仍能讀歷史，修改或提交重新驗引用並列具體行。 | I,E | REQ_F4114.1.1, REQ_F4114.1.2, REQ_F4114.1.4 | TODO（006） |
 | PUR-PO-017 | 關聯 | 未提交草稿軟刪不釋回；核准且無入庫引用可取消並只釋回一次；已有入庫引用不得取消／刪除，INV 異動不受採購單取消直接修改。 | I,E | REQ_F4114.1.6 | TODO（006、007） |
 | PUR-PO-018 | 錯誤／交易 | 注入 SYS 發號後、第二行保存後、請購量更新後或 SYS 實例寫入後故障，表頭／行／單號流水號／請購量／審批全回滾；修復後原版本可重試。 | I | REQ_F4114.1.2, REQ_F4114.1.4 | CREATE 發號後兩種 INSERT 故障全回滾 PASS（006a4）；請購量／SYS 實例故障待 006b |
