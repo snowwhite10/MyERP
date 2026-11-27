@@ -33,5 +33,10 @@ public sealed class RequisitionHttpTests(WebApplicationFactory<Program> factory)
         using var submit = await client.PostAsJsonAsync("/api/v1/pur/requisitions/1/submit",
             new { version = 1 }, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Unauthorized, submit.StatusCode);
+        using var order = await client.PostAsJsonAsync("/api/v1/pur/purchase-orders",
+            new { supplierId = 101, businessDate = "2028-02-29", lines = new[] {
+                new { lineNo = 1, itemId = 11, quantity = 1m, unitPrice = 10m,
+                    currencyCode = "TWD", taxRateId = 51 } } }, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Unauthorized, order.StatusCode);
     }
 }

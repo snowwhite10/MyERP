@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-006a",
-    "lastCompletedWorkUnit":  "WU-PUR-005f3d",
-    "nextAction":  "續做 WU-PUR-006a，仍為進行中而非 DONE。已交 ADR-213／Purchasing_OrderDraftFoundation schema（正式 myerp 已套用）、真實 SQL 1/1、後端全量 4180/4180、帶 DB DocGen 0 Error；請購已轉量沿用 ordered_quantity，草稿不可改它。下一輪先按 PUR-PO-001～024 寫人工 CREATE 真實 SQL／受權 HTTP 紅燈，再接 MD 公開契約重驗供應商、物料、幣別、匯率、進項稅與請購來源，Serializable 交易內 SYS 發號並保存完整原幣／本位幣行及表頭；之後 EDIT（版本、狀態、決標行不可變）與 VIEW／EDIT 詳情和資料範圍。補雙連線、失敗回滾及帶資料 migration Down／Up；按 90 分鐘邊界可再交編譯與全量通過切片。006b 才在 SUBMIT／拒絕／取消更新 ordered_quantity 與消耗旗標。勿與後端全量並行跑定向整合測試；勿跨單元修改既有 WU-P0-E2E-FLAKE-MENU。",
+    "currentWorkUnit":  "WU-PUR-006a3",
+    "lastCompletedWorkUnit":  "WU-PUR-006a2",
+    "nextAction":  "做 WU-PUR-006a3（006a 已拆 a1～a4，a1 schema、a2 人工 CREATE／READ 已完成）：先寫真實 SQL 紅燈，再實作 PUT /api/v1/pur/purchase-orders/{id}?version= 整組修訂 Draft（PurchaseOrderDraftService 新增 UpdateAsync，沿用 CreateAsync 的 MD 重驗、混幣檢查、PurchaseOrderAmounts 計算）；版本不符 409；非 Draft 422；決標來源行（pur_purchase_order_award_source 有連結者）的物料／數量／單價不可改；EDIT 資料範圍外 404；請購 ordered_quantity 仍不可改。之後 006a4：受權 HTTP（缺 CREATE／EDIT 403、跨公司 404）、發號後 SQL 故障整單回滾、雙連線唯一號、帶資料 migration Down／Up，完成後結清 006a 父項。勿與後端全量並行跑定向整合測試；勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -113,5 +113,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T03:32:12+08:00",
-    "updatedAt":  "2026-11-28T03:32:12+08:00"
+    "updatedAt":  "2026-11-28T05:26:24+08:00"
 }

@@ -1,5 +1,19 @@
 # PUR 測試計劃
 
+## WU-PUR-006a2 人工 CREATE／READ 切片（2026-11-28T05:20:00+08:00）
+
+依 `myerp-test-scenarios` 逐類核對 PUR-PO-001～024；本切片是單張整單保存，沒有批次部分成功或檔案上傳。無權限、跨公司、MD 停用／生效日、來源狀態、發號後故障、雙連線與 EDIT／VIEW 尚待 006a 後續真實 HTTP／SQL 驗收；前端錯誤顯示與 CSV 留 006e／006f。
+
+| ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-PO-CREATE-001 | 正常／關聯 | 兩行人工草稿在交易內保存，原幣／本位幣價稅逐行與表頭一致，來源請購 `ordered_quantity` 不變。 | I | REQ_F4114.1.2 | PASS 1/1 |
+| PUR-PO-CREATE-002 | 狀態／關聯／全部失敗 | 不存在請購來源整單 422；沒有表頭或行保存。 | I | REQ_F4114.1.2 | PASS 1/1 |
+| PUR-PO-CREATE-003 | 權限 | 匿名 POST 401；缺 CREATE、跨公司及資料範圍由後續受權 HTTP 驗。 | I | REQ_F4114.1.2 | 匿名 401 PASS；缺 CREATE／跨公司 HTTP 留 006a4 |
+| PUR-PO-CREATE-004 | 邊界／重複／錯誤 | 0／1001 行、混幣、重複行號、精度及非法 MD 引用須在發號前拒絕；發號後 SQL 故障及雙連線唯一號須整單回滾。 | U,I | REQ_F4114.1.2 | 部分：U 21/21、混幣 I PASS；發號後故障與雙連線留 006a4 |
+| PUR-PO-CREATE-005 | 狀態／全部失敗 | 一行無來源＋一行引用 Draft 請購整單 422 `PUR.ORDER.INVALID_REQUISITION_SOURCE`；混幣 400；表頭與行均零筆。 | I | REQ_F4114.1.2 | PASS 1/1 |
+| PUR-PO-READ-001 | 權限／資料範圍 | VIEW 本人範圍：他人建立 404（不洩漏存在）；只有 VIEW 讀 `/edit` 403；本人 VIEW 200。 | I | REQ_F4114.1.1 | PASS 1/1 |
+| PUR-PO-CREATE-NA | 部分結果／檔案 | POST 是單張整單保存，任何一行錯誤整單失敗，無逐行略過；沒有上傳或下載。 | I | REQ_F4114.1.2 | 按契約不適用 |
+
 ## WU-PUR-006a 採購單草稿結構切片（2026-11-28T03:16:01+08:00）
 
 依 `myerp-test-scenarios` 核對 PUR-PO-001～024：本切片只驗持久化結構；人工 CREATE／EDIT／READ、MD 有效期、版本／權限／狀態、交易回滾及畫面仍由後續 006a 實作與原情境逐項驗收。無檔案上傳，PUR-PO-020 已註明 CSV 將於 VIEW 前端驗證。
