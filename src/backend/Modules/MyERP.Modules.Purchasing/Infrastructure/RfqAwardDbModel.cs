@@ -19,6 +19,7 @@ public sealed class RfqAwardDbModel : IModuleDbModel
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.HasAlternateKey(x => new { x.CompanyId, x.Id }).HasName("ak_pur_rfq_award_company_id_id");
             e.Property(x => x.Reason).HasMaxLength(500);
             e.Property(x => x.Quantity).HasPrecision(19, 6);
             e.Property(x => x.UnitPrice).HasPrecision(19, 6);

@@ -99,7 +99,7 @@ WU-PUR-005f3e 只增加按 QUOTE 權限投影既有 `pur_rfq` 保存行／邀請
 
 WU-PUR-005f2c 的 CSV／列印只讀現有 `pur_rfq`、行及邀請快照；沒有新增欄位、索引、migration 或跨模組資料表存取。
 
-## WU-PUR-005e4 轉單草稿設計（待 migration）
+## WU-PUR-005e4 轉單草稿設計（資料結構 migration 已建，CONVERT 待實作）
 
 既有 `pur_purchase_order`、`pur_purchase_order_line` 分別已配 REQ_DS43.186／187 並供三單比對、發票過帳使用，005e4 只擴充兩表；新建 `pur_order_source` 一表並為其分配下一個 REQ_DS43 ID。表頭需補 SYS 永久唯一單號、詢價 ID、業務日、擁有人／分店／部門、原幣與本位幣總額；保留已有的 `supplier_id`、`currency`、`base_currency_code`、`exchange_rate`、狀態、審計及版本，不更名或移除。單據只能來自同一詢價的一個供應商；不同決標行若原幣不同則拒絕同單轉換。行保留既有 `purchase_order_id`、`material_id`、數量、單價、稅率，補可空請購行 ID 及決標稅率／匯率、逐行金額快照。新欄對既有來源夾具須可平滑遷移，避免破壞發票流程。來源連結保存訂單行 ID 與決標 ID，`(company_id,award_id)` 永久唯一，不因日後取消訂單而刪除。
 
@@ -172,7 +172,7 @@ erDiagram
 
 ## WU-PUR-005a 詢價至轉單資料模型預案（尚未建表）
 
-此段是 WU-PUR-005b／d／e 的建模契約；詢價三表已在 005b 落地，報價三表在 005d 落地，決標表在 005e3 落地；採購單表待 005e4 migration 與 REQ_DS43 ID。詢價表頭保存公司、單號、業務日期、回覆期限、負責人／分店／部門、狀態、版本及審計；詢價行保存 MD 物料 ID、請購行 ID（可空）、基本單位數量與需求日期；邀請表保存供應商 ID 及發送快照。報價表頭保存詢價及供應商、有效期、目前修訂號與狀態；報價版本與行保存不可變的價格、幣別、稅別及原始商務條件。決標行保存詢價行／報價版本行與換算快照、理由；轉單狀態由 005e4 的獨立來源連結表示。採購單草稿與來源連結於 005e4 建立，完整欄位由 006 補足。
+此段是 WU-PUR-005b／d／e 的建模契約；詢價三表已在 005b 落地，報價三表在 005d 落地，決標表在 005e3 落地；採購單既有兩表已擴充，005e4 新增來源連結表與 REQ_DS43.213，CONVERT 寫入流程待實作。詢價表頭保存公司、單號、業務日期、回覆期限、負責人／分店／部門、狀態、版本及審計；詢價行保存 MD 物料 ID、請購行 ID（可空）、基本單位數量與需求日期；邀請表保存供應商 ID 及發送快照。報價表頭保存詢價及供應商、有效期、目前修訂號與狀態；報價版本與行保存不可變的價格、幣別、稅別及原始商務條件。決標行保存詢價行／報價版本行與換算快照、理由；轉單狀態由 005e4 的獨立來源連結表示。採購單完整工作流程由 006 補足。
 
 同模組子表使用 `(company_id,parent_id)` 複合 FK 與索引；公司單號永久唯一，邀請名單 `(company_id,rfq_id,supplier_id)` 唯一，報價同一詢價／供應商只有一筆目前有效表頭，修訂版本以 `(company_id,quotation_id,revision_no)` 唯一；決標來源行及轉單來源以唯一約束防重。所有 FK 欄位另有查詢索引。MD／SYS ID 僅存 ID，透過其公開契約驗證，不建立跨模組 FK。金額 `decimal(19,4)`、單價 `decimal(19,6)`、數量 `decimal(19,6)`、匯率 `decimal(19,8)`，業務日期 `date`，建立／修訂時間 `datetime2(6)`；具體 SQL CHECK、可逆 migration 與索引效能在建表切片驗證。
 
@@ -243,12 +243,27 @@ erDiagram
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
-| REQ_DS43.186 | 1.0 | pur_purchase_order | This table stores company-scoped purchase order supplier, currency and approval identity. | Developer | REQ_F4114.1.2, REQ_F4114.8.2 |
-| REQ_DS43.187 | 1.0 | pur_purchase_order_line | This table stores saved order line price and tax snapshots used by invoice matching. | Developer | REQ_F4114.1.2, REQ_F4114.8.3 |
+| REQ_DS43.186 | 1.1 | pur_purchase_order | This table stores company-scoped purchase order supplier, currency, number, totals and approval identity. | Developer | REQ_F4114.1.2, REQ_F4114.6.3, REQ_F4114.8.2 |
+| REQ_DS43.187 | 1.1 | pur_purchase_order_line | This table stores saved order line price, tax, exchange and amount snapshots used by conversion and invoice matching. | Developer | REQ_F4114.1.2, REQ_F4114.6.3, REQ_F4114.8.3 |
 | REQ_DS43.188 | 1.0 | pur_purchase_receipt | This table stores purchase receipt order, supplier, currency and posting identity. | Developer | REQ_F4114.2.2, REQ_F4114.8.2 |
 | REQ_DS43.211 | 1.0 | pur_purchase_receipt_line | This table stores receipt line order references and committed quantity counters. | Developer | REQ_F4114.2.2, REQ_F4114.8.2 |
 
 Change record (2026-11-25T21:44:40+08:00, WU-P0-043): the receipt-line source row originally reused REQ_DS43.189, which ADR-106 assigns to FI `ar_sales_source`. The row now has the next unallocated ID, REQ_DS43.211; table identity, schema and related functional requirements are unchanged. The duplicate historical ID is not reused for another table.
+
+Change record (2026-11-27T09:49:20+08:00, WU-PUR-005e4): REQ_DS43.186／187 move to 1.1 for nullable conversion fields and amount checks. Existing invoice-source rows retain their columns and values. The new award link has its own ID below.
+
+```mermaid
+erDiagram
+    pur_purchase_order ||--o{ pur_purchase_order_line : contains
+    pur_purchase_order_line ||--o| pur_order_source : awarded_from
+    pur_rfq_award ||--o| pur_order_source : converted_to
+```
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.213 | 1.0 | pur_order_source | This table keeps a permanent company-scoped link between a purchase order line and its selected RFQ award. | Developer | REQ_F4114.6.3 |
+
+`Purchasing_OrderConversionSource` extends the two existing order tables and creates only `pur_order_source`. The link has unique `(company_id, award_id)` and `(company_id, purchase_order_line_id)` indexes, same-company foreign keys to line and award, and an UPDATE／DELETE rejection trigger. New order fields are nullable for pre-existing invoice-source rows. The migration Down removes only the new link and fields; it does not drop either existing order table. Conversion writing and full Up／Down preservation verification remain pending.
 
 ## WU-PUR-008a54 — Invoice difference resolution history
 

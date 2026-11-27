@@ -6,7 +6,7 @@
     "currentModule": "PUR",
     "currentWorkUnit": "WU-PUR-005e4",
     "lastCompletedWorkUnit": "WU-PUR-005e3",
-    "nextAction": "續做 WU-PUR-005e4（第一階段衝刺次序 2，已重新開啟）：先讀 PUR data-structure.md 005e4 修訂與 PUR-RFQ-060～069。重要發現：pur_purchase_order／pur_purchase_order_line 已由 008a 建表（REQ_DS43.186／187），EF 類別 PurchaseOrderSource／PurchaseOrderSourceLine 已供發票使用；不可重建或雙重映射。先寫真實 SQL 升級／還原及受權 HTTP 紅燈；擴充既有兩表與同一 EF 類別，新增 pur_order_source（單獨分配下一個 REQ_DS43 ID），保護既有發票夾具與匯率快照；再實作 SYS 同交易單號與 CONVERT 原子端點，驗唯一性、回滾、權限、Release 全量及帶 DB DocGen。005e4 完成後依序 005f2a2／005f3e。既有外部 Runner 兩檔未提交變更禁止代理修改或納入提交。",
+    "nextAction": "續做 WU-PUR-005e4：資料結構切片已提交（既有訂單兩表擴充＋pur_order_source、REQ_DS43.213、Debug 後端 4073/4073）。先以 myerp_test 既有訂單／發票夾具驗 migration Down→Up 保留原值、來源連結跨公司／重複／UPDATE／DELETE 拒絕；再按 PUR-RFQ-060～066 寫真實 SQL 與受權 HTTP 紅燈，實作 SYS 同交易單號和 CONVERT 原子端點，驗競態、回滾、Release 全量及帶 DB DocGen。005e4 完成後依序重試 005f2a2／005f3e。外部 Runner 兩檔未提交變更禁止代理修改或納入提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -25,7 +25,7 @@
         "SCM": "IN_PROGRESS"
     },
     "idCounters": {
-        "REQ_DS43": 212,
+        "REQ_DS43": 213,
         "ADR": 209,
         "nextSrsModuleNo": 17
     },
@@ -66,5 +66,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-27T09:39:49+08:00",
-    "updatedAt": "2026-11-27T09:39:49+08:00"
+    "updatedAt": "2026-11-27T09:56:33+08:00"
 }

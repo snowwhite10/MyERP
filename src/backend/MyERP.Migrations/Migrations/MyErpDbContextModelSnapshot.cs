@@ -7525,6 +7525,65 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseOrderAwardSource", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("AwardId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("award_id");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("PurchaseOrderLineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("purchase_order_line_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pur_order_source");
+
+                    b.HasIndex("CompanyId", "AwardId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pur_order_source_company_id_award_id");
+
+                    b.HasIndex("CompanyId", "PurchaseOrderLineId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pur_order_source_company_id_purchase_order_line_id");
+
+                    b.ToTable("pur_order_source", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_pur_order_source_refs", "[purchase_order_line_id] > 0 AND [award_id] > 0");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseOrderSource", b =>
                 {
                     b.Property<long>("Id")
@@ -7540,6 +7599,29 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnType("char(3)")
                         .HasColumnName("base_currency_code")
                         .IsFixedLength();
+
+                    b.Property<decimal?>("BaseGross")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_gross");
+
+                    b.Property<decimal?>("BaseNet")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_net");
+
+                    b.Property<decimal?>("BaseTax")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_tax");
+
+                    b.Property<long?>("BranchId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("branch_id");
+
+                    b.Property<DateOnly?>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
 
                     b.Property<long>("CompanyId")
                         .HasColumnType("bigint")
@@ -7565,6 +7647,16 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnType("datetime2(6)")
                         .HasColumnName("deleted_at");
 
+                    b.Property<long?>("DepartmentId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("department_id");
+
+                    b.Property<string>("DocumentNo")
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("document_no");
+
                     b.Property<decimal?>("ExchangeRate")
                         .HasPrecision(19, 8)
                         .HasColumnType("decimal(19,8)")
@@ -7573,6 +7665,14 @@ namespace MyERP.Migrations.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit")
                         .HasColumnName("is_deleted");
+
+                    b.Property<long?>("OwnerId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("owner_id");
+
+                    b.Property<long?>("RfqId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("rfq_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -7604,11 +7704,21 @@ namespace MyERP.Migrations.Migrations
                     b.HasAlternateKey("CompanyId", "Id")
                         .HasName("ak_pur_purchase_order_company_id_id");
 
+                    b.HasIndex("CompanyId", "DocumentNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pur_purchase_order_company_id_document_no")
+                        .HasFilter("[document_no] IS NOT NULL");
+
+                    b.HasIndex("CompanyId", "RfqId")
+                        .HasDatabaseName("ix_pur_purchase_order_company_id_rfq_id");
+
                     b.HasIndex("CompanyId", "SupplierId", "Status", "Id")
                         .HasDatabaseName("ix_pur_purchase_order_company_id_supplier_id_status_id");
 
                     b.ToTable("pur_purchase_order", null, t =>
                         {
+                            t.HasCheckConstraint("ck_pur_order_conversion_amount", "([base_net] IS NULL AND [base_tax] IS NULL AND [base_gross] IS NULL) OR ([base_net] >= 0 AND [base_tax] >= 0 AND [base_gross] = [base_net] + [base_tax])");
+
                             t.HasCheckConstraint("ck_pur_order_rate_snapshot", "([base_currency_code] IS NULL AND [exchange_rate] IS NULL) OR ([base_currency_code] IS NOT NULL AND [exchange_rate] IS NOT NULL AND [exchange_rate] > 0 AND ([currency] <> [base_currency_code] OR [exchange_rate] = 1))");
 
                             t.HasCheckConstraint("ck_pur_order_status", "[status] IN ('Draft','PendingApproval','Approved','Rejected','Cancelled')");
@@ -7626,6 +7736,21 @@ namespace MyERP.Migrations.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
+                    b.Property<decimal?>("BaseGross")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_gross");
+
+                    b.Property<decimal?>("BaseNet")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_net");
+
+                    b.Property<decimal?>("BaseTax")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_tax");
+
                     b.Property<long>("CompanyId")
                         .HasColumnType("bigint")
                         .HasColumnName("company_id");
@@ -7637,6 +7762,11 @@ namespace MyERP.Migrations.Migrations
                     b.Property<long>("CreatedBy")
                         .HasColumnType("bigint")
                         .HasColumnName("created_by");
+
+                    b.Property<decimal?>("ExchangeRate")
+                        .HasPrecision(19, 8)
+                        .HasColumnType("decimal(19,8)")
+                        .HasColumnName("exchange_rate");
 
                     b.Property<int>("LineNo")
                         .HasColumnType("int")
@@ -7654,6 +7784,14 @@ namespace MyERP.Migrations.Migrations
                         .HasPrecision(19, 6)
                         .HasColumnType("decimal(19,6)")
                         .HasColumnName("quantity");
+
+                    b.Property<long?>("RequisitionLineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("requisition_line_id");
+
+                    b.Property<long?>("TaxRateId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tax_rate_id");
 
                     b.Property<decimal>("TaxRatePercent")
                         .HasPrecision(9, 4)
@@ -7687,12 +7825,20 @@ namespace MyERP.Migrations.Migrations
                     b.HasIndex("CompanyId", "MaterialId")
                         .HasDatabaseName("ix_pur_purchase_order_line_company_id_material_id");
 
+                    b.HasIndex("CompanyId", "RequisitionLineId")
+                        .HasDatabaseName("ix_pur_purchase_order_line_company_id_requisition_line_id");
+
+                    b.HasIndex("CompanyId", "TaxRateId")
+                        .HasDatabaseName("ix_pur_purchase_order_line_company_id_tax_rate_id");
+
                     b.HasIndex("CompanyId", "PurchaseOrderId", "LineNo")
                         .IsUnique()
                         .HasDatabaseName("ix_pur_purchase_order_line_company_id_purchase_order_id_line_no");
 
                     b.ToTable("pur_purchase_order_line", null, t =>
                         {
+                            t.HasCheckConstraint("ck_pur_order_line_conversion_amount", "([base_net] IS NULL AND [base_tax] IS NULL AND [base_gross] IS NULL) OR ([base_net] >= 0 AND [base_tax] >= 0 AND [base_gross] = [base_net] + [base_tax])");
+
                             t.HasCheckConstraint("ck_pur_order_line_refs", "[purchase_order_id] > 0 AND [line_no] > 0 AND [material_id] > 0");
 
                             t.HasCheckConstraint("ck_pur_order_line_values", "[quantity] > 0 AND [unit_price] >= 0 AND [tax_rate_percent] BETWEEN 0 AND 100");
@@ -8515,6 +8661,9 @@ namespace MyERP.Migrations.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_pur_rfq_award");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_pur_rfq_award_company_id_id");
 
                     b.HasIndex("CompanyId", "ExchangeRateId")
                         .HasDatabaseName("ix_pur_rfq_award_company_id_exchange_rate_id");
@@ -13260,6 +13409,25 @@ namespace MyERP.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_pur_purchase_invoice_resolution_invoice");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseOrderAwardSource", b =>
+                {
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.RfqAward", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "AwardId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_order_source_pur_rfq_award_company_id_award_id");
+
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.PurchaseOrderSourceLine", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "PurchaseOrderLineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_order_source_pur_purchase_order_line_company_id_purchase_order_line_id");
                 });
 
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseOrderSourceLine", b =>

@@ -18,6 +18,7 @@ public sealed class PurchaseInvoiceSourceDbModel : IModuleDbModel
                 // Every comparison is guarded by IS NOT NULL: a CHECK that evaluates to UNKNOWN passes.
                 t.HasCheckConstraint("ck_pur_order_rate_snapshot",
                     "([base_currency_code] IS NULL AND [exchange_rate] IS NULL) OR ([base_currency_code] IS NOT NULL AND [exchange_rate] IS NOT NULL AND [exchange_rate] > 0 AND ([currency] <> [base_currency_code] OR [exchange_rate] = 1))");
+                t.HasCheckConstraint("ck_pur_order_conversion_amount", "([base_net] IS NULL AND [base_tax] IS NULL AND [base_gross] IS NULL) OR ([base_net] >= 0 AND [base_tax] >= 0 AND [base_gross] = [base_net] + [base_tax])");
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();
@@ -25,8 +26,14 @@ public sealed class PurchaseInvoiceSourceDbModel : IModuleDbModel
             e.Property(x => x.BaseCurrencyCode).HasMaxLength(3).IsUnicode(false).IsFixedLength();
             e.Property(x => x.ExchangeRate).HasPrecision(19, 8);
             e.Property(x => x.Status).HasMaxLength(30).IsUnicode(false);
+            e.Property(x => x.DocumentNo).HasMaxLength(50).IsUnicode(false);
+            e.Property(x => x.BaseNet).HasPrecision(19, 4);
+            e.Property(x => x.BaseTax).HasPrecision(19, 4);
+            e.Property(x => x.BaseGross).HasPrecision(19, 4);
             e.HasAlternateKey(x => new { x.CompanyId, x.Id }).HasName("ak_pur_purchase_order_company_id_id");
             e.HasIndex(x => new { x.CompanyId, x.SupplierId, x.Status, x.Id });
+            e.HasIndex(x => new { x.CompanyId, x.DocumentNo }).IsUnique();
+            e.HasIndex(x => new { x.CompanyId, x.RfqId });
         });
         modelBuilder.Entity<PurchaseOrderSourceLine>(e =>
         {
@@ -34,17 +41,39 @@ public sealed class PurchaseInvoiceSourceDbModel : IModuleDbModel
             {
                 t.HasCheckConstraint("ck_pur_order_line_refs", "[purchase_order_id] > 0 AND [line_no] > 0 AND [material_id] > 0");
                 t.HasCheckConstraint("ck_pur_order_line_values", "[quantity] > 0 AND [unit_price] >= 0 AND [tax_rate_percent] BETWEEN 0 AND 100");
+                t.HasCheckConstraint("ck_pur_order_line_conversion_amount", "([base_net] IS NULL AND [base_tax] IS NULL AND [base_gross] IS NULL) OR ([base_net] >= 0 AND [base_tax] >= 0 AND [base_gross] = [base_net] + [base_tax])");
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();
             e.Property(x => x.Quantity).HasPrecision(19, 6);
             e.Property(x => x.UnitPrice).HasPrecision(19, 6);
             e.Property(x => x.TaxRatePercent).HasPrecision(9, 4);
+            e.Property(x => x.ExchangeRate).HasPrecision(19, 8);
+            e.Property(x => x.BaseNet).HasPrecision(19, 4);
+            e.Property(x => x.BaseTax).HasPrecision(19, 4);
+            e.Property(x => x.BaseGross).HasPrecision(19, 4);
             e.HasAlternateKey(x => new { x.CompanyId, x.Id }).HasName("ak_pur_purchase_order_line_company_id_id");
             e.HasIndex(x => new { x.CompanyId, x.PurchaseOrderId, x.LineNo }).IsUnique();
             e.HasIndex(x => new { x.CompanyId, x.MaterialId });
+            e.HasIndex(x => new { x.CompanyId, x.RequisitionLineId });
+            e.HasIndex(x => new { x.CompanyId, x.TaxRateId });
             e.HasOne<PurchaseOrderSource>().WithMany()
                 .HasForeignKey(x => new { x.CompanyId, x.PurchaseOrderId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id }).OnDelete(DeleteBehavior.Restrict);
+        });
+        modelBuilder.Entity<PurchaseOrderAwardSource>(e =>
+        {
+            e.ToTable("pur_order_source", t => t.HasCheckConstraint("ck_pur_order_source_refs",
+                "[purchase_order_line_id] > 0 AND [award_id] > 0"));
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.HasIndex(x => new { x.CompanyId, x.AwardId }).IsUnique();
+            e.HasIndex(x => new { x.CompanyId, x.PurchaseOrderLineId }).IsUnique();
+            e.HasOne<PurchaseOrderSourceLine>().WithMany()
+                .HasForeignKey(x => new { x.CompanyId, x.PurchaseOrderLineId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id }).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<RfqAward>().WithMany()
+                .HasForeignKey(x => new { x.CompanyId, x.AwardId })
                 .HasPrincipalKey(x => new { x.CompanyId, x.Id }).OnDelete(DeleteBehavior.Restrict);
         });
         modelBuilder.Entity<PurchaseReceiptSource>(e =>
