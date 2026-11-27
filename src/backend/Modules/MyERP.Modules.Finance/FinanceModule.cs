@@ -80,6 +80,7 @@ public sealed class FinanceModule : IErpModule
         services.AddScoped<PurchaseInvoiceAccountMapService>();
         services.AddScoped<SalesCollectionAccountMapService>();
         services.AddScoped<CollectionReceiptDocumentService>();
+        services.AddScoped<OtherPaymentDocumentService>();
         services.AddScoped<CollectionReceiptQueryService>();
         services.AddScoped<CollectionSettlementDocumentService>();
         services.AddScoped<CollectionSettlementQueryService>();

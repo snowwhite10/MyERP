@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-008a3",
-    "lastCompletedWorkUnit": "WU-FI-008a2",
-    "nextAction": "做 WU-FI-008a3（其他付款 Draft 建立／修改／軟刪除服務），只依賴已真實 SQL 驗證的 008a1／008a2：仿 006a2／005b1 Draft 服務模式，經 MD 公開契約核對同公司有效費用類別與資金帳戶，公司範圍發號、版本 409、Draft／Rejected 才可修改或軟刪除；提款參考衝突（含 ap_other_payment_source 保留的已過帳參考，SQL 51039 及唯一索引）轉為具名 409；金額以型別化 EF 屬性寫入（勿用原始插值 decimal，會被當 decimal(18,2)）；不得建立 AP 或改應付餘額。先寫真實 SQL 紅燈測試。只跑一次記憶體守衛，DEFER 就提交可編譯部分並加入 deferredVerifications。不得單獨補驗 FI-007a1／006a1／006a／005c3b2 或 PUR 延後項，也不要挑依賴 007a1／006a1 SQL 驗證的 007a2／006a2；FI 收尾或人手指定才跑守衛補驗。",
+    "currentWorkUnit": "WU-FI-008a4",
+    "lastCompletedWorkUnit": "WU-FI-008a3",
+    "nextAction": "做 WU-FI-008a4（其他付款原子 GL 過帳）：只依賴已真實 SQL 驗證的 008a1～008a3。仿 005b2／005b3 收款過帳模式（CollectionReceiptPostingService、CollectionReceiptDocumentSource）：FI 在呼叫者交易內重讀已存 Draft／Pending 與版本、指紋；經 MD 契約核對有效類別與資金帳戶及對應科目；讀 gl_other_payment_account_map（無對照 422）並經 MD 核對費用科目可過帳、排除應付控制／暫付／預付科目；固定順序鎖公司＋銀行＋參考、來源鍵、GL 期間；保存日期須落在唯一 Open 期間；經 IGlPostingService 借費用貸銀行同額；寫 ap_other_payment_source（金額以型別化 EF 屬性寫入）、Draft 轉 Posted；相同版本／指紋重放 changed=false 且無額外 GL／稽核；變更指紋、舊版本、參考衝突 409；類別失效／期間關閉／對照缺失／注入失敗全部回滾。含雙連線競態測試。先寫真實 SQL 紅燈。只跑一次記憶體守衛，DEFER 就提交可編譯部分並加入 deferredVerifications。不得單獨補驗 FI-007a1／006a1／006a／005c3b2 或 PUR 延後項，也不要挑依賴 007a1／006a1 SQL 驗證的 007a2／006a2；008a3 留給 008b 的權限登錄、AP.OTHER_PAYMENT 單號規則種子與 IIncomeExpenseCategoryUsage 見 backlog。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -144,5 +144,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-27T19:27:59+08:00",
-    "updatedAt": "2026-11-27T19:27:59+08:00"
+    "updatedAt": "2026-11-27T19:47:10+08:00"
 }

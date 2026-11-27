@@ -39,6 +39,11 @@ public interface IIncomeExpenseCategoryLookup
     Task<IncomeExpenseCategoryInfo?> FindAsync(string code, CancellationToken token = default);
 
     /// <summary>
+    /// 依 ID 找目前公司的收支類別，含停用；不存在、已刪除、ID 非正或屬其他公司回 null（WU-FI-008a3：FI 其他付款只存類別 ID）。
+    /// </summary>
+    Task<IncomeExpenseCategoryInfo?> FindByIdAsync(long id, CancellationToken token = default);
+
+    /// <summary>
     /// 新單據選用前驗證：不存在 404 <c>MD.INCOME_EXPENSE_CATEGORY.NOT_FOUND</c>，停用 422 <c>MD.INCOME_EXPENSE_CATEGORY.INACTIVE</c>，
     /// 方向與單據不符 422 <c>MD.INCOME_EXPENSE_CATEGORY.DIRECTION_MISMATCH</c>。
     /// </summary>

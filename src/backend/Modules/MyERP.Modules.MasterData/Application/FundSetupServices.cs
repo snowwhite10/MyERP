@@ -181,7 +181,19 @@ public sealed class IncomeExpenseCategoryLookup(MyErpDbContext db) : IIncomeExpe
         MasterDataQueries.RequireCompany(db);
         var normalized = code?.Trim().ToUpperInvariant();
         var item = await db.Set<IncomeExpenseCategory>().AsNoTracking().SingleOrDefaultAsync(x => x.Code == normalized, token);
-        if (item is null) return null;
+        return item is null ? null : await ToInfoAsync(item, token);
+    }
+
+    public async Task<IncomeExpenseCategoryInfo?> FindByIdAsync(long id, CancellationToken token = default)
+    {
+        MasterDataQueries.RequireCompany(db);
+        if (id <= 0) return null;
+        var item = await db.Set<IncomeExpenseCategory>().AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, token);
+        return item is null ? null : await ToInfoAsync(item, token);
+    }
+
+    private async Task<IncomeExpenseCategoryInfo> ToInfoAsync(IncomeExpenseCategory item, CancellationToken token)
+    {
         var ledger = item.LedgerAccountId is null ? null : await db.Set<Account>().Where(x => x.Id == item.LedgerAccountId).Select(x => x.Code).SingleAsync(token);
         return new(item.Code, item.Name, Enum.Parse<IncomeExpenseDirection>(item.Direction), ledger, item.IsActive);
     }

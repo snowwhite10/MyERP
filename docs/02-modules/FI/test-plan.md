@@ -967,6 +967,23 @@ WU-FI-008a2 Posted source and expense-account map schema (2026-11-27T19:20:38+08
 - Relation: amount, reference (binary), bank, category, date or currency differing from the saved Draft gets 51039; the map is unique per company/category, cannot be deleted, change company/category or keep/reduce its version (FI-AP-OTHER-015).
 - Error / File: not applicable to schema; HTTP/UI errors belong to 008b/008c.
 A real `myerp` Down to `Finance_OtherPaymentDocument` with a Draft row and a map row, then Up, preserved the Draft amount `12.3456` and dropped/recreated all three triggers. Helper note: EF raw `decimal` parameters default to `decimal(18,2)`; tests cast literal strings to `decimal(19,4)`.
+
+### WU-FI-008a3 other payment Draft service scenarios (2026-11-27T19:41:01+08:00)
+
+`myerp-test-scenarios` applied to `OtherPaymentDocumentService` (create, versioned replace, soft delete, detail). Real SQL `FinancePostingServiceTests.OtherPaymentDocument.cs`; MD category, fund account and accounts are real seeds read through MD public contracts, SYS numbering and authorization are test doubles. Red first: CS0246 `OtherPaymentDocumentInput`/`OtherPaymentDocumentService`.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-OP-DOC-001 | Normal | Draft version 1, SYS number in the transaction, MD base currency, trimmed payee/reference/remark (blank remark → null), MD category and fund labels; a category without ledger can still be saved; zero GL key/journal/line and zero `ap_other_payment_source` rows. | I | REQ_F4116.4.2 (FI-AP-OTHER-001) | Pass: 008a3 I |
+| FI-OP-DOC-002 | Boundary | All seven invalid fields reported together; negative, fifth-decimal, overflow amount, 201-char/null payee, 51-char/control/null reference each one field 400; no number taken, zero rows. Max `999999999999999.9999`, 200-char payee and 50-char reference stored exactly. | I | REQ_F4116.4.2 (FI-AP-OTHER-004) | Pass: 008a3 I |
+| FI-OP-DOC-003 | Relation | Category missing / other company → 422 EXPENSE_CATEGORY_NOT_FOUND; Income category → 422 EXPENSE_CATEGORY_NOT_EXPENSE; inactive → 422 EXPENSE_CATEGORY_INACTIVE; fund missing / other company → 422 FUND_ACCOUNT_NOT_FOUND; USD → 422 CURRENCY_MISMATCH; inactive → 422 FUND_ACCOUNT_INACTIVE; zero rows. | I | REQ_F4116.4.2 (FI-AP-OTHER-015) | Pass: 008a3 I |
+| FI-OP-DOC-004 | Duplicate/deleted | Same company/bank live reference (other case) 409 BANK_REFERENCE_DUPLICATE on create and on edit; another bank or company may reuse it; self edit keeps its reference; after soft delete the reference is reusable. | I | REQ_F4116.4.2/4.3 (FI-AP-OTHER-006) | Pass: 008a3 I |
+| FI-OP-DOC-005 | Duplicate/deleted history | A Posted source keeps the reference after its Draft row is released: create and edit 409. Concurrent writes bypassing the pre-check get SQL 51039 (trigger) or 2601 (filtered index) and both translate to the same named 409; concurrency exception → plain 409. | I | REQ_F4116.4.2 (FI-AP-OTHER-006/019) | Pass: 008a3 I |
+| FI-OP-DOC-006 | State/conflict | Stale version 409 (edit/delete); Pending/Approved/Posted edit and delete 422 INVALID_STATUS; Rejected edit returns to Draft with version +1; zero-change save still increments version; Rejected soft delete; deleted read/edit 404 while the row keeps `deleted_at`. | I | REQ_F4116.4.3/4.6 (FI-AP-OTHER-008/013) | Pass: 008a3 I |
+| FI-OP-DOC-007 | Permission | VIEW only → create/edit/delete 403; no VIEW → read 403; another company's document is 404 for read/edit/delete. | I | REQ_F4116.4.1–6 (FI-AP-OTHER-011/012) | Pass: 008a3 I (service layer; HTTP 401 in 008b) |
+| FI-OP-DOC-008 | Partial / Error / File | Not applicable at service layer: one document per call, no batch or file; HTTP 400/500/timeout display belongs to 008b/008c. | — | REQ_F4116.4.2 (FI-AP-OTHER-010/017/020) | N/A |
+
+Result: guard PASS 15.58 GiB; targeted real SQL 16/16 (7 new + same-pattern siblings). FI-AP-OTHER-* statuses stay TODO until HTTP/UI acceptance.
 ## WU-FI-009d statement source scenarios (design; product tests TODO)
 
 The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories follow. U=unit, I=real SQL/authorised HTTP, E=Playwright. Each E case compares the translated screen and export with a fresh FI source read using the same cutoff. WU-FI-009a/b first write failing tests; this design unit has no executable financial product test.
