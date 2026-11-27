@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-008b2",
-    "lastCompletedWorkUnit": "WU-FI-008b1",
-    "nextAction": "做 WU-FI-008b2（其他付款送審／撤回與 SYS 最終審批同交易過帳）：008b1 已登錄 AP.OTHER_PAYMENT.VIEW/CREATE/EDIT/DELETE/SUBMIT、OP 單號規則與 MD 使用守衛（ADR-212）。先寫真實 SQL 紅燈。仿 CollectionReceiptSubmissionService／CollectionReceiptApprovalPosting／CollectionReceiptApprovalResultHandler（FinanceModule 註冊方式相同）：OtherPaymentSubmissionService 送審需 OtherPaymentDocumentService.SubmitPermission、Draft／Rejected→Pending（版本檢查、UPDLOCK）、撤回 Pending→Draft；IApprovalResultHandler 以 DocumentType AP.OTHER_PAYMENT 在 SYS 同交易以已存版本＋OtherPaymentFingerprint.Create 呼叫 IOtherPaymentPostingService.PostInCurrentTransactionAsync，Rejected／Fault 依 BR-FI-065 拋具名錯誤讓 SYS 回滾，駁回→Rejected 記原因不過帳。HTTP 控制器與對照維護 API（GL.OTHER_PAYMENT_MAP.VIEW/EDIT）留 008b3。只跑一次記憶體守衛，DEFER 就提交可編譯部分並加入 deferredVerifications。不得單獨補驗 FI-007a1／006a1／005c3b2 或 PUR 延後項，也不要挑依賴 007a1／006a1 SQL 驗證的 007a2／006a2。",
+    "currentWorkUnit": "WU-FI-008b3",
+    "lastCompletedWorkUnit": "WU-FI-008b2",
+    "nextAction": "做 WU-FI-008b3（其他付款 HTTP 控制器與費用類別對照維護 API）：仿 SalesCollectionsController 的收款單據路由，在 FI Api 新增 `/api/v1/ap/other-payments` 列表（需新增 OtherPaymentQueryService：狀態／日期／類別／資金帳戶篩選、分頁排序）、明細、建立、修改、刪除、`/{id}/submit`、`/{id}/withdraw`（呼叫 008b2 OtherPaymentSubmissionService），以及 GL.OTHER_PAYMENT_MAP.VIEW/EDIT 對照維護 API（gl_other_payment_account_map，仿 SalesCollectionAccountMapService；需登錄權限與角色）；Swagger 說明、401/403/404/400/409/422/500 traceId；真實 HTTP 測試先紅。如超過 90 分鐘先拆 b3a（單據 API）／b3b（對照 API）。只跑一次記憶體守衛，DEFER 就提交可編譯部分並加入 deferredVerifications。不得單獨補驗 FI-007a1／006a1／005c3b2 或 PUR 延後項，也不要挑依賴 007a1／006a1 SQL 驗證的 007a2／006a2。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -144,5 +144,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-27T20:34:10+08:00",
-    "updatedAt": "2026-11-27T20:34:10+08:00"
+    "updatedAt": "2026-11-27T20:52:08+08:00"
 }

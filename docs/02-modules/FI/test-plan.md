@@ -1016,6 +1016,24 @@ Not applicable here: batch/partial-success and file (one document per call, FI-A
 | FI-OP-NRSEED-001 | Normal/duplicate | SYS seed creates `AP.OTHER_PAYMENT` 其他付款 `OP` year-month 4-digit monthly per seed company, idempotent; generator issues `OP202611nnnn`; plan sorted with AR rules. | I | REQ_F4116.4.2 | Pass: 008b1 I |
 
 Not applicable: batch/partial/file (no new input surface); HTTP 401/403 belong to 008b3. Result: guard PASS 16.54 GiB; targeted real SQL 4/4 new + FI posting/number-rule/fund-setup siblings; backend full 4146/4146.
+
+### WU-FI-008b2 other payment submission and SYS final approval scenarios (2026-11-27T20:52:08+08:00)
+
+`myerp-test-scenarios` categories applied to submit/withdraw and the SYS result handler. Real SQL `FinancePostingServiceTests.OtherPaymentWorkflow.cs` with the shared SYS engine double (submission saved on the caller DbContext, one pending round per document; decisions delivered inside a transaction before SaveChanges); registration in `FinanceModuleTests`. Red first: `OtherPaymentSubmissionService` not registered (2/2 red); a mutation (Rejected not resubmittable, rejection → Draft) turned FI-OP-WF-003 red, restored → green.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-OP-WF-001 | Normal | Submit Draft v1 → Pending v2; SYS receives `AP.OTHER_PAYMENT`, number, amount and remark cut to 200; no source, journal or key. | I | REQ_F4116.4.3 (BR-FI-064) | Pass: 008b2 I |
+| FI-OP-WF-002 | Normal/relation | Final approval posts in the SYS transaction: Approved saved (v3 = source version), Dr 6101 / Cr 1102, source fingerprint `FI-OTHER-PAYMENT-v1:`, document Posted v4, detail shows journal. | I | REQ_F4116.4.4 (BR-FI-060/061) | Pass: 008b2 I |
+| FI-OP-WF-003 | State/rejection | Rejection → Rejected v3, no ledger rows; Rejected can be resubmitted directly (new round) or edited back to Draft then resubmitted with the new amount. | I | REQ_F4116.4.3/4.6 (BR-FI-064) | Pass: 008b2 I |
+| FI-OP-WF-004 | Boundary (zero-step) | SYS approves at submit → posted in the submit transaction; result Posted v4 with receipt (source version 3, category). | I | REQ_F4116.4.4 | Pass: 008b2 I |
+| FI-OP-WF-005 | Error/rollback | Missing category map → handler throws 422 `FI.OTHER_PAYMENT_POSTING.MAPPING_MISSING`; document stays Pending v2, no rows; zero-step failure leaves Draft v1; after adding the map the same round approves and posts. | I | REQ_F4116.4.4 (BR-FI-065) | Pass: 008b2 I |
+| FI-OP-WF-006 | State/version | Withdraw Draft 422; stale version 409 without SYS call; Pending withdraw cancels the round → Draft v3; edit and resubmit allowed. | I | REQ_F4116.4.3 | Pass: 008b2 I |
+| FI-OP-WF-007 | Permission/relation/deleted | Missing SUBMIT 403 (submit and withdraw); other company 404; stale 409; foreign SYS state 409 with rollback; inactive category 422 before SYS; Pending resubmit 422; soft-deleted 404; Posted submit/withdraw 422. | I | REQ_F4116.4.3 (BR-FI-065) | Pass: 008b2 I |
+| FI-OP-WF-008 | State | Handler acts only on Pending: Draft or already Posted → 409 `APPROVAL_STATE_CHANGED` unchanged; missing 404; no transaction InvalidOperation; non-final status ArgumentOutOfRange. | I | REQ_F4116.4.4 | Pass: 008b2 I |
+| FI-OP-WF-009 | Registration | Exactly one scoped `IApprovalResultHandler` for `AP.OTHER_PAYMENT`; submission and approval posting scoped. | U | REQ_F4116.4.3 | Pass: 008b2 U |
+
+Not applicable: batch/partial/file (single-document actions); duplicate reference at approval is covered by FI-OP-POST (posting service). HTTP 401/Swagger belong to 008b3.
 ## WU-FI-009d statement source scenarios (design; product tests TODO)
 
 The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories follow. U=unit, I=real SQL/authorised HTTP, E=Playwright. Each E case compares the translated screen and export with a fresh FI source read using the same cutoff. WU-FI-009a/b first write failing tests; this design unit has no executable financial product test.

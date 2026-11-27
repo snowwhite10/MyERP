@@ -103,6 +103,23 @@ public sealed class FinanceModuleTests
     }
 
     [Fact]
+    public void ModuleRegistersOneScopedOtherPaymentApprovalHandlerAndSubmissionService()
+    {
+        // FI-OP-WF-009 (WU-FI-008b2): SYS dispatches the AP.OTHER_PAYMENT final decision to exactly one scoped FI
+        // handler (same DbContext and transaction as SYS); submission and approval posting are scoped too.
+        var services = new ServiceCollection();
+        new FinanceModule().AddServices(services, new ConfigurationBuilder().Build());
+        services.Should().ContainSingle(x => x.ServiceType == typeof(MyERP.Shared.Approvals.IApprovalResultHandler)
+                && x.ImplementationType == typeof(OtherPaymentApprovalResultHandler))
+            .Which.Lifetime.Should().Be(ServiceLifetime.Scoped);
+        services.Should().ContainSingle(x => x.ServiceType == typeof(OtherPaymentSubmissionService))
+            .Which.Lifetime.Should().Be(ServiceLifetime.Scoped);
+        services.Should().ContainSingle(x => x.ServiceType == typeof(OtherPaymentApprovalPosting))
+            .Which.Lifetime.Should().Be(ServiceLifetime.Scoped);
+        new OtherPaymentApprovalResultHandler(null!, null!).DocumentType.Should().Be("AP.OTHER_PAYMENT");
+    }
+
+    [Fact]
     public void ModuleRegistersSeparateCreditPermissionsUnderTheArPrefix()
     {
         // FI-CREDIT-012: VIEW/CREATE/EDIT/DEACTIVATE are separate catalogue entries owned by FI.

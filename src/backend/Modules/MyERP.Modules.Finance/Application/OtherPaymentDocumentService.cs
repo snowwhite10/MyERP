@@ -64,7 +64,7 @@ public sealed class OtherPaymentDocumentService(MyErpDbContext db, ICurrentCompa
     public const string CreatePermission = "AP.OTHER_PAYMENT.CREATE";
     public const string EditPermission = "AP.OTHER_PAYMENT.EDIT";
     public const string DeletePermission = "AP.OTHER_PAYMENT.DELETE";
-    /// <summary>Submit/withdraw (WU-FI-008b2); registered with the catalogue in 008b1 so roles are seeded once.</summary>
+    /// <summary>Submit/withdraw (<see cref="OtherPaymentSubmissionService"/>, WU-FI-008b2); registered in 008b1.</summary>
     public const string SubmitPermission = "AP.OTHER_PAYMENT.SUBMIT";
     public const int PayeeMaxLength = 200;
     public const int RemarkMaxLength = 500;
@@ -192,7 +192,7 @@ public sealed class OtherPaymentDocumentService(MyErpDbContext db, ICurrentCompa
     /// MD checks through public contracts (ADR-041): base currency, active Expense category and active base-currency
     /// fund account of the current company. Foreign-company IDs look missing (422, not a leak of existence).
     /// </summary>
-    private async Task<string> PrepareAsync(OtherPaymentDocumentInput input, CancellationToken token)
+    internal async Task<string> PrepareAsync(OtherPaymentDocumentInput input, CancellationToken token)
     {
         var baseCurrency = (await currencies.GetBaseCurrencyAsync(token))?.Code
             ?? throw new BusinessRuleException(OtherPaymentDocumentErrors.BaseCurrencyMissing,

@@ -87,6 +87,10 @@ public sealed class FinanceModule : IErpModule
         services.AddScoped<OtherPaymentPostingScope>();
         services.AddScoped<IGlPostingMappingVersionSource, OtherPaymentMappingVersionSource>();
         services.AddScoped<IOtherPaymentPostingService, OtherPaymentPostingService>();
+        // 其他付款送審／撤回與 SYS 最終審批同交易過帳（WU-FI-008b2）
+        services.AddScoped<OtherPaymentApprovalPosting>();
+        services.AddScoped<OtherPaymentSubmissionService>();
+        services.AddScoped<IApprovalResultHandler, OtherPaymentApprovalResultHandler>();
         services.AddScoped<CollectionReceiptQueryService>();
         services.AddScoped<CollectionSettlementDocumentService>();
         services.AddScoped<CollectionSettlementQueryService>();
