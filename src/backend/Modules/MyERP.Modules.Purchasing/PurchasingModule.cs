@@ -31,6 +31,7 @@ public sealed class PurchasingModule : IErpModule
         services.AddScoped<PurchaseOrderSubmissionService>();
         services.AddScoped<PurchaseOrderLifecycleService>();
         services.AddScoped<PurchaseReceiptDraftService>();
+        services.AddScoped<PurchaseReceiptSubmissionService>();
         services.AddScoped<QuotationMutationService>();
         services.AddScoped<RfqDraftService>();
         services.AddScoped<RequisitionCreateService>();
@@ -38,6 +39,7 @@ public sealed class PurchasingModule : IErpModule
         services.AddScoped<RequisitionSubmissionService>();
         services.AddScoped<IApprovalResultHandler, RequisitionApprovalResultHandler>();
         services.AddScoped<IApprovalResultHandler, PurchaseOrderApprovalResultHandler>();
+        services.AddScoped<IApprovalResultHandler, PurchaseReceiptApprovalResultHandler>();
         services.AddSingleton<IModuleDbModel, RequisitionDbModel>();
         services.AddSingleton<IModuleDbModel, RfqDbModel>();
         services.AddSingleton<IModuleDbModel, QuotationDbModel>();
@@ -90,6 +92,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
     public const string ReceiptCreate = "PUR.RECEIPT.CREATE";
     public const string ReceiptEdit = "PUR.RECEIPT.EDIT";
     public const string ReceiptView = "PUR.RECEIPT.VIEW";
+    public const string ReceiptSubmit = "PUR.RECEIPT.SUBMIT";
     public const string InvoiceCreate = "PUR.INVOICE.CREATE";
     public const string InvoiceEdit = "PUR.INVOICE.EDIT";
     public const string InvoiceMatch = "PUR.INVOICE.MATCH";
@@ -128,6 +131,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
         new(ReceiptCreate, PurchasingModuleContracts.ModuleCode),
         new(ReceiptEdit, PurchasingModuleContracts.ModuleCode),
         new(ReceiptView, PurchasingModuleContracts.ModuleCode),
+        new(ReceiptSubmit, PurchasingModuleContracts.ModuleCode),
         new(InvoiceCreate, PurchasingModuleContracts.ModuleCode),
         new(InvoiceEdit, PurchasingModuleContracts.ModuleCode),
         new(InvoiceMatch, PurchasingModuleContracts.ModuleCode),

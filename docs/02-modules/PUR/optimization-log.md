@@ -1,5 +1,12 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-28T15:43:06+08:00 — WU-PUR-007a9 收貨 SUBMIT 預留與 SYS 駁回釋回
+
+- 測試先行證據：以變異確認測試有效——略過 SUBMIT 預留寫入時 PurchaseReceiptSubmissionTests 6/8 紅；略過駁回釋回時駁回案例 1/8 紅；還原後 8/8 綠、HTTP 1/1 綠。駁回測試首次因 SYS 駁回必填意見而 400，修正測試夾具（非產品問題）。
+- 設計決定（ADR-219）：本單預留由狀態＋保存行推得，不另加逐行預留欄；SYS 零步驟自動核准不會呼叫結果處理器，若照常接受會留下「已核准卻未入庫」，因此 007b 前拒絕零步驟與最終核准並整筆回滾。
+- 審查／優化：草稿服務的字串分派 `LockAsync(table,…)` 與 SUBMIT 鎖語句重複，且字串分派在錯字時才於執行期失敗。抽出 `PurchaseReceiptLocks`（訂單 → 收貨 → 訂單行升冪）由 CREATE／EDIT／SUBMIT／駁回共用，保證同一鎖序、刪除未用分支；行為不變，草稿測試重跑保護。
+- 檢查：駁回時若訂單已非 Approved，計畫會回 INVALID_SOURCE 阻止釋回；已核對 `PurchaseOrderLifecycleService` CANCEL 對任何已存在收貨（含草稿）一律拒絕，故待審收貨所在訂單不會被取消，無需改動。
+
 ## 2026-11-28T15:19:42+08:00 — WU-PUR-007a8 授權收貨草稿 CREATE／EDIT／READ
 
 - 接手：上一輪（codex）額度中斷時已寫服務、控制器、migration 及 5 個真實 SQL／1 個 HTTP 測試但未提交；本輪檢查後建置 0 警告、定向測試綠燈，依 myerp-test-scenarios 補 2 個情境（他公司訂單／行、非 Approved、缺成本整單零保存；Rejected 回 Draft、跨年、等量、舊發票來源列 404）。

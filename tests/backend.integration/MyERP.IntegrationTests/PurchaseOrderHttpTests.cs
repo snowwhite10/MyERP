@@ -65,6 +65,15 @@ public sealed class PurchaseOrderHttpTests(TestDatabase database) : IAsyncLifeti
         await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.ReceiptEdit);
         await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, receipts + "/999999/edit", null, token, company),
             HttpStatusCode.NotFound, "PUR.RECEIPT.NOT_FOUND");
+
+        // WU-PUR-007a9 PUR-RECV-SUB-004／009: SUBMIT needs its own permission; EDIT/VIEW do not substitute.
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await http.PostAsJsonAsync(receipts + "/999999/submit", new { version = 1 }, Ct)).StatusCode);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Post, receipts + "/999999/submit",
+            new { version = 1 }, token, company), HttpStatusCode.Forbidden, "COMMON.PERMISSION.DENIED");
+        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.ReceiptSubmit);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Post, receipts + "/999999/submit",
+            new { version = 1 }, token, company), HttpStatusCode.NotFound, "PUR.RECEIPT.NOT_FOUND");
     }
 
     [Fact]

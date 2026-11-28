@@ -1,5 +1,6 @@
 # PUR API
 
+WU-PUR-007a9（2026-11-28T15:43:06+08:00，ADR-219）：新增 `POST /api/v1/pur/purchase-receipts/{id}/submit`（PUR.RECEIPT.SUBMIT，body `{version}`），回應 `{id,documentNo,status,version,approval}`。範圍外／他公司 404 `PUR.RECEIPT.NOT_FOUND`；舊版 409；422 代碼：NOT_SUBMITTABLE、QUANTITY_EXCEEDED、INVALID_SOURCE、APPROVAL_FLOW_REQUIRED（無有效審批流程，007b 前）。SYS 決策處理器 `PUR.RECEIPT`：駁回釋回、最終核准於 007b 前回 422 POSTING_NOT_AVAILABLE、重複決定 409 APPROVAL_STATE_CHANGED。
 WU-PUR-007a8（2026-11-28T15:19:42+08:00，ADR-218）：新增 `PurchaseReceiptsController`（Swagger `/api/v1/pur/purchase-receipts`）。`POST`（PUR.RECEIPT.CREATE，201）以 `{purchaseOrderId,businessDate,lines:[{lineNumber,purchaseOrderLineId,quantity,warehouseId}]}` 建 Draft；`GET /{id}`（PUR.RECEIPT.VIEW）與 `GET /{id}/edit`（PUR.RECEIPT.EDIT）各按該動作 SYS 資料範圍讀取，範圍外／他公司／舊發票專用來源列 404 `PUR.RECEIPT.NOT_FOUND`；`PUT /{id}?version=`（PUR.RECEIPT.EDIT）整組替換 Draft／Rejected 行，舊版 409。回應 `{id,documentNo,status,version,purchaseOrderId,supplierId,currency,businessDate,lines:[{id,lineNumber,purchaseOrderLineId,materialId,quantity,warehouseId,unitCost}]}`。422 代碼：INVALID_SOURCE、QUANTITY_EXCEEDED、COST_UNAVAILABLE、SOURCE_LOCKED、STATUS_NOT_EDITABLE、INVALID_LINES／INVALID_HEADER。LIST、CSV、DELETE、SUBMIT 未交付。
 
 WU-PUR-007a7（2026-11-28T13:01:04+08:00，ADR-218）只交付收貨草稿資料庫基礎，沒有新增路由或 Swagger；`/api/v1/pur/purchase-receipts` 的 CREATE／EDIT／READ 留 007a8，SUBMIT 留 007a9。前端 4.4～4.6 留 007e。

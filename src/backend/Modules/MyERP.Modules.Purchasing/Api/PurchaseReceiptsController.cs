@@ -8,7 +8,8 @@ namespace MyERP.Modules.Purchasing.Api;
 /// <summary>Saved purchase receipt drafts; stock is posted only after SYS final approval.</summary>
 [ApiController]
 [Route("api/v1/pur/purchase-receipts")]
-public sealed class PurchaseReceiptsController(PurchaseReceiptDraftService drafts) : ControllerBase
+public sealed class PurchaseReceiptsController(PurchaseReceiptDraftService drafts,
+    PurchaseReceiptSubmissionService submissions) : ControllerBase
 {
     /// <summary>Creates a receipt draft from one approved order, with saved warehouse and base cost snapshots.</summary>
     [HttpPost]
@@ -54,4 +55,23 @@ public sealed class PurchaseReceiptsController(PurchaseReceiptDraftService draft
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public Task<PurchaseReceiptReadDetail> Update(long id, [FromQuery] int version,
         PurchaseReceiptSaveInput input, CancellationToken token) => drafts.UpdateAsync(id, version, input, token);
+
+    /// <summary>
+    /// Submits a saved Draft with body <c>version</c>: one transaction reserves purchase order line capacity from saved
+    /// lines and creates the SYS approval instance. Stock is not posted until final approval (WU-PUR-007b).
+    /// </summary>
+    [HttpPost("{id:long}/submit")]
+    [RequirePermission(PurchasingPermissions.ReceiptSubmit)]
+    [ProducesResponseType<PurchaseReceiptSubmissionResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public Task<PurchaseReceiptSubmissionResult> Submit(long id, [FromBody] PurchaseReceiptSubmitInput input,
+        CancellationToken token) => submissions.SubmitAsync(id, input.Version, token);
 }
+
+/// <summary>SUBMIT request: the currently saved receipt version.</summary>
+public sealed record PurchaseReceiptSubmitInput(int Version);

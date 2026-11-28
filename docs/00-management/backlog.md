@@ -760,10 +760,11 @@
 | WU-PUR-006f4 | PUR | 4.2／4.3 逐態 Playwright 與三語亮暗 UX QA（正常、驗證、409、422、500、成功） | P1 | DONE | 006f3 | 2026-11-28T12:49:42+08:00 E09～E16 8/8、E11 詳情修改鈕 1/1；新 20 張截圖逐張檢視。建立 409 誤導提示先紅後綠，P1／P2 清零。 |
 | WU-PUR-007 | PUR | 收貨／採購入庫與 INV 原子過帳、批序號、退貨 | P1 | 已拆分 | 006 | 007d 設計、007a 收貨後端、007b 入庫與審批、007c 退貨後端、007e 前端；父項待全部驗收。 |
 | WU-PUR-007d | PUR | 收貨／採購入庫／退貨需求、INV 契約、交易邊界及完整測試情境設計 | P1 | DONE | 006d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4114.2.1～6、4.7.1～3、BR-PUR-028～035、PUR-RECV-001～028；無表、端點或畫面。 |
-| WU-PUR-007a | PUR | 收貨表與行、採購單已收／待審量、草稿 CRUD 與雙連線餘量驗收 | P1 | 已拆分 | 007d、006a～c、SQL 服務 | ADR-218 拆 007a7 資料庫基礎、007a8 草稿 API、007a9 SUBMIT 與競態；父項待全部驗收。 |
+| WU-PUR-007a | PUR | 收貨表與行、採購單已收／待審量、草稿 CRUD 與雙連線餘量驗收 | P1 | DONE（父項結清） | 007d、006a～c、SQL 服務 | ADR-218 拆 007a7～a9，皆 DONE；DELETE／LIST／CSV 另列 007a10。 |
 | WU-PUR-007a7 | PUR | 擴充既有收貨來源表與訂單行：草稿欄、收貨計數、唯一單號、SQL 容量約束及可逆 migration | P1 | DONE | 007d、既有發票來源表 | 2026-11-28T13:01:04+08:00 真實 SQL 先紅後綠；保留舊 Posted 來源列。 |
 | WU-PUR-007a8 | PUR | 授權收貨草稿 CREATE／EDIT／READ，來源鎖內重讀、保存成本與倉儲快照，真實 SQL／HTTP 驗收 | P1 | DONE | 007a7 | 2026-11-28T15:30:03+08:00 真實 SQL 8/8＋受權 HTTP 1/1、後端全量 4255/4255、migration Down／Up；草稿不佔量、不寫 INV。 |
-| WU-PUR-007a9 | PUR | 收貨 SUBMIT 同交易預留訂單行餘量，雙連線競態與 SYS 失敗回滾驗收 | P1 | TODO | 007a8 | 按來源行升冪鎖、聚合，同交易建立審批；不足 422。 |
+| WU-PUR-007a9 | PUR | 收貨 SUBMIT 同交易預留訂單行餘量，雙連線競態與 SYS 失敗回滾驗收 | P1 | DONE | 007a8 | 2026-11-28T15:43:06+08:00 ADR-219：真實 SQL＋真實 SYS 8/8（變異 6 紅／1 紅）、受權 HTTP 1/1；駁回精確釋回；007b 前零步驟與最終核准 422 回滾。 |
+| WU-PUR-007a10 | PUR | 收貨 Draft 實體刪除（DELETE，帶版本）、LIST（篩選／分頁／資料範圍）與伺服器 CSV 後端 API，真實 SQL／HTTP | P1 | TODO | 007a9 | 007a9 拆出；007e 畫面前置。刪除只限 Draft、整單回滾；CSV 沿用採購單 CSV 模式。 |
 | WU-PUR-007a1 | PUR | 收貨草稿離線輸入形狀與 Draft／Rejected 修訂狀態契約 | P1 | DONE | 007d；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T01:22:59+08:00：先 CS0246 紅燈；補邊界後 Architecture 1785/1785、PUR Debug 零警告。真實 SQL／HTTP、Posted 收貨及 INV 接線仍屬 007a～c。 |
 | WU-PUR-007a2 | PUR | Approved 訂單行身份及整單可收量離線預檢 | P1 | DONE | 007a1；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T01:30:04+08:00：缺型別編譯紅燈後定向 9/9、Architecture 1794/1794、PUR Debug 零警告；SQL 鎖內權威與 HTTP 仍屬 007a。 |
 | WU-PUR-007a3 | PUR | 收貨 SUBMIT 預留量與駁回釋回的離線轉移計畫 | P1 | DONE | 007a2；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T01:37:01+08:00：缺型別 CS0246 紅燈後定向及補測、Architecture 1803/1803，PUR Debug 零警告。SQL 更新、SYS 審批與交易仍屬 007a／007b。 |
@@ -772,7 +773,7 @@
 | WU-PUR-007a6 | PUR | SUBMIT／駁回保存快照與逐來源證據的離線組裝 | P1 | DONE | 007a3；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T01:55:56+08:00：CS0103 紅燈後組裝保存身份、行與本單預留證據；定向 4/4、Architecture 1824/1824、PUR Debug 零警告。權威 SQL 鎖、SYS 交易與 HTTP 留 007a／007b。 |
 | WU-PUR-007b | PUR/INV | SYS 最終核准／駁回與 INV PostPurchaseInboundAsync 同交易；批序號、成本、重放／回滾驗收 | P1 | TODO | 007a、SQL 服務 | 同交易驗 PUR、SYS、INV、稽核；完成 INV-015b 的 PUR 來源驗收。 |
 | WU-PUR-007c | PUR/INV | 退貨專用 INV 出庫來源契約、退貨表與行、草稿／審批／原成本出庫真實驗收 | P1 | TODO | 007b、SQL 服務 | 先擴充 INV 專用 PostPurchaseReturnAsync；不可借用銷售出庫或直接讀寫 INV 表。 |
-| WU-PUR-007e | PUR | 收貨與退貨列表／表單、三語亮暗、CSV／列印及 Playwright QA | P1 | TODO | 007b、007c | 介面 4.4～4.6、4.16～4.18；前端 skills 必用。 |
+| WU-PUR-007e | PUR | 收貨與退貨列表／表單、三語亮暗、CSV／列印及 Playwright QA | P1 | TODO | 007a10、007b、007c | 介面 4.4～4.6、4.16～4.18；前端 skills 必用。 |
 | WU-PUR-008 | PUR | 發票與訂單／收貨三單比對、差異處理 | P1 | 已拆分 | 007 | 008d 設計、008a PUR 發票與比對、008b FI 應付同交易、008c 前端；父項待全部驗收。 |
 | WU-PUR-008d | PUR/FI | 固定三單比對、差異覆核、退貨與 FI 應付公開契約及完整情境 | P1 | DONE | 006d、007d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4114.8.1～6、BR-PUR-036～043、PUR-MATCH-001～028；沒有表、端點、畫面或產品測試。 |
 | WU-PUR-008a0 | PUR | 三單比對收貨行可開票量離線規則：淨收貨扣退貨、待審退貨、已開票與其他發票預留；本單重驗只排除本單預留 | P1 | DONE | 008d；SQL 守衛 DEFER 時可離線驗收 | 2026-11-11T15:39:06+08:00：新增 `PurchaseInvoiceAvailability`，缺型別紅燈後定向 11/11、Architecture 1602/1602、Purchasing Debug 建置 0 警告／錯誤；SQL／HTTP、鎖與來源權威仍屬 008a。 |

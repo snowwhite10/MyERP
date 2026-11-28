@@ -1,5 +1,22 @@
 # PUR 測試計劃
 
+## WU-PUR-007a9 收貨 SUBMIT 預留與 SYS 駁回釋回（2026-11-28T15:33:15+08:00）
+
+依 `myerp-test-scenarios` 逐類檢查。I＝真實 SQL＋真實 SYS 審批引擎；H＝受權 HTTP。最終核准過帳 INV 留 007b；DELETE／LIST／CSV 另列；畫面留 007e。
+
+| ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-RECV-SUB-001 | 正常 | Draft 兩行同訂單行 1＋2 送審：PendingApproval、版本遞增、訂單行 pending_receipt_reserved 0→3、SYS 待審實例金額＝Σ 行量×單位成本（本位幣 4 位）；已收量仍 0，不寫 INV。 | I | REQ_F4114.2.4 | PASS |
+| PUR-RECV-SUB-002 | 邊界／部分結果 | 他單已待審 2、本單 3 恰等訂單量 5 成功；本單 3.000001 → 422 QUANTITY_EXCEEDED；多來源時後一來源不足整單零變更（狀態、版本、預留、SYS 實例皆不變）。整單原子，部分成功不適用。 | I | REQ_F4114.2.4 | PASS |
+| PUR-RECV-SUB-003 | 重複與衝突 | 舊版本／版本 0 → 409 零變更；兩連線各送 3 爭同一訂單行（量 5），最多一單成功，輸家仍 Draft、無 SYS 實例，預留恰 3。 | I | REQ_F4114.2.4 | PASS |
+| PUR-RECV-SUB-004 | 權限 | 無 SUBMIT → 403；本人範圍他人單、他公司 → 404；HTTP 匿名 401、只有 EDIT → 403、有 SUBMIT 不存在 → 404。 | I,H | REQ_F4114.2.4 | PASS |
+| PUR-RECV-SUB-005 | 狀態 | PendingApproval／Rejected／Posted 送審 → 422 NOT_SUBMITTABLE（Rejected 須先修訂回 Draft）；訂單已非 Approved（Cancelled）→ 422 INVALID_SOURCE；皆零變更。 | I | REQ_F4114.2.3～4 | PASS |
+| PUR-RECV-SUB-006 | 關聯 | 無啟用審批流程（SYS 零步驟立即核准）時，因最終核准過帳 INV 尚未交付（007b），回 422 APPROVAL_FLOW_REQUIRED 並整筆回滾（ADR-219）。 | I | REQ_F4114.2.4 | PASS |
+| PUR-RECV-SUB-007 | 錯誤 | 注入 UPDATE 訂單行或 INSERT SYS 實例失敗 → 整筆回滾（預留、狀態、實例皆無），重試成功。 | I | REQ_F4114.2.4 | PASS |
+| PUR-RECV-SUB-008 | 狀態／關聯 | SYS 駁回：收貨 Rejected，只釋回本單 3、保留他單 2；重複駁回處理 → 409 不二次釋回；SYS 核准在 007a9 回 422 POSTING_NOT_AVAILABLE，審批動作整筆回滾、實例仍待審、預留不變。 | I | REQ_F4114.2.4～5 | PASS |
+| PUR-RECV-SUB-009 | 錯誤 | 400／409／422 經既有例外中介軟體回 ProblemDetails；畫面提示與重讀留 007e。 | H | REQ_F4114.2.4 | PASS（403／404 ProblemDetails）；畫面 TODO（007e） |
+| PUR-RECV-SUB-010 | 檔案 | 送審與駁回無檔案輸入，不適用。 | — | — | N/A |
+
 ## WU-PUR-007a8 授權收貨草稿 CREATE／EDIT／READ（2026-11-28T15:19:42+08:00）
 
 依 `myerp-test-scenarios` 逐類檢查。I＝真實 SQL（服務層，真實交易與鎖）；H＝受權 HTTP。SUBMIT 預留、雙連線競態、DELETE 留 007a9／後續；畫面 4.4～4.6 留 007e。

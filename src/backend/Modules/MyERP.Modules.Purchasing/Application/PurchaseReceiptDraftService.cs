@@ -67,8 +67,8 @@ public sealed class PurchaseReceiptDraftService(MyErpDbContext db, RequisitionCo
         try
         {
             // Lock order first, matching cancellation and future SUBMIT. The receipt is then locked and re-read.
-            await LockAsync("pur_purchase_order", validated.PurchaseOrderId, companyId, token);
-            await LockAsync("pur_purchase_receipt", id, companyId, token);
+            await PurchaseReceiptLocks.LockOrderAsync(db, validated.PurchaseOrderId, companyId, token);
+            await PurchaseReceiptLocks.LockReceiptAsync(db, id, companyId, token);
             var receipt = await ApplyScope(db.Set<PurchaseReceiptSource>()
                     .Where(x => x.CompanyId == companyId), user, PurchasingPermissions.ReceiptEdit)
                 .SingleOrDefaultAsync(x => x.Id == id, token)
@@ -131,12 +131,12 @@ public sealed class PurchaseReceiptDraftService(MyErpDbContext db, RequisitionCo
         Dictionary<long, decimal> Costs)> ReadSourcesAsync(long companyId,
         PurchaseReceiptValidatedInput validated, CancellationToken token, bool orderLocked = false)
     {
-        if (!orderLocked) await LockAsync("pur_purchase_order", validated.PurchaseOrderId, companyId, token);
+        if (!orderLocked) await PurchaseReceiptLocks.LockOrderAsync(db, validated.PurchaseOrderId, companyId, token);
         var order = await db.Set<PurchaseOrderSource>().AsNoTracking()
             .SingleOrDefaultAsync(x => x.CompanyId == companyId && x.Id == validated.PurchaseOrderId, token);
         if (order is null) throw new BusinessRuleException("PUR.RECEIPT.INVALID_SOURCE", "Purchase order does not exist.");
         var ids = validated.Lines.Select(x => x.PurchaseOrderLineId).Distinct().Order().ToArray();
-        foreach (var sourceId in ids) await LockAsync("pur_purchase_order_line", sourceId, companyId, token);
+        foreach (var sourceId in ids) await PurchaseReceiptLocks.LockOrderLineAsync(db, sourceId, companyId, token);
         var sourceLines = await db.Set<PurchaseOrderSourceLine>().AsNoTracking()
             .Where(x => x.CompanyId == companyId && ids.Contains(x.Id)).ToArrayAsync(token);
         PurchaseReceiptAvailability.Check(companyId, validated,
@@ -219,17 +219,6 @@ public sealed class PurchaseReceiptDraftService(MyErpDbContext db, RequisitionCo
             DataScope.Department => query.Where(x => x.DepartmentId == scope.DepartmentId),
             _ => query.Where(x => x.OwnerId == scope.UserId)
         };
-    }
-
-    private async Task LockAsync(string table, long id, long companyId, CancellationToken token)
-    {
-        if (table == "pur_purchase_order")
-            await db.Database.SqlQuery<long>($"SELECT [id] AS [Value] FROM dbo.pur_purchase_order WITH (UPDLOCK, HOLDLOCK) WHERE [id] = {id} AND [company_id] = {companyId}").ToListAsync(token);
-        else if (table == "pur_purchase_receipt")
-            await db.Database.SqlQuery<long>($"SELECT [id] AS [Value] FROM dbo.pur_purchase_receipt WITH (UPDLOCK, HOLDLOCK) WHERE [id] = {id} AND [company_id] = {companyId}").ToListAsync(token);
-        else if (table == "pur_purchase_order_line")
-            await db.Database.SqlQuery<long>($"SELECT [id] AS [Value] FROM dbo.pur_purchase_order_line WITH (UPDLOCK, HOLDLOCK) WHERE [id] = {id} AND [company_id] = {companyId}").ToListAsync(token);
-        else throw new ArgumentOutOfRangeException(nameof(table));
     }
 
     private static NotFoundException NotFound(long id) =>

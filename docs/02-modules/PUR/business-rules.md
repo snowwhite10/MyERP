@@ -1,5 +1,6 @@
 # PUR 業務規則
 
+WU-PUR-007a9（2026-11-28T15:43:06+08:00，ADR-219）：收貨 SUBMIT（PUR.RECEIPT.SUBMIT，body version）只接受 Draft；ReadCommitted 交易先 UPDLOCK 採購單、再收貨單、再按訂單行 ID 升冪逐行鎖，以保存行聚合（007a3／a6 計畫）重驗訂單 Approved 與可收量，不足 422 QUANTITY_EXCEEDED、訂單非 Approved 422 INVALID_SOURCE、舊版 409、非 Draft 422 NOT_SUBMITTABLE，皆整單零變更；成功增加 `pending_receipt_reserved`、狀態 PendingApproval，同交易建立 SYS 實例（金額＝Σ 行量×本位幣單位成本，逐行 4 位）。本單預留由狀態與保存行推得。SYS 駁回以同一鎖序只釋回本單聚合量並設 Rejected，重複／過時決定 409 不二次釋回。007b 前 SYS 零步驟自動核准回 422 APPROVAL_FLOW_REQUIRED、最終核准回 422 POSTING_NOT_AVAILABLE，皆整筆回滾，避免未入庫即核准。
 WU-PUR-007a8（2026-11-28T15:19:42+08:00）：收貨草稿 CREATE／EDIT 在單一 ReadCommitted 交易內先 UPDLOCK 採購單、再收貨單（EDIT）、再按 ID 升冪鎖訂單行，鎖內重讀同公司 Approved 訂單並按 007a2 規則驗可收量；任何拒絕整單回滾。草稿只寫 PUR 收貨表，不改訂單行待審／已收量、不呼叫 INV。EDIT 不可改來源訂單、同行號不可改訂單行或物料，供應商／幣別須與訂單一致；被開票／收貨引用的行不可移除。成本來自訂單行保存的本位幣未稅額，缺值或超 decimal(19,6) 422 COST_UNAVAILABLE。
 
 WU-PUR-008b4（BR-PUR-043d，ADR-208）：過帳命令在供應商應用鎖（與 Draft／MATCH／RESOLVE 共用）下，依發票表頭→採購單表頭→收貨行 ID 升冪→FI 來源鍵取得與讀取；PUR 預檢、指紋與匯率快照錯誤先於 FI 回 422。FI 回 Posted 前不得修改任何追蹤中的 PUR 實體（共用 DbContext，FI 的 SaveChanges 會一併寫出）。收據須證明公司、發票、供應商、版本、指紋、原幣／本位幣含稅金額與正數 FI ID，否則 500 回滾。成功時逐收貨行 `matched_reserved` 減本張量、`posted_invoiced` 加本張量，發票 Posted 並保存 `posted_at`、`posted_from_version`、FI 三個 ID（CHECK `ck_pur_invoice_posted` 保證 Posted ⇔ 五欄齊全）。Posted 不可變：以過帳版本或結果版本重送只回保存結果，不呼叫 FI。
