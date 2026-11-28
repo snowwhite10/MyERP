@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyERP.Modules.Purchasing.Application;
 using MyERP.Shared.Infrastructure.Security;
+using MyERP.Shared.Infrastructure.Web;
+using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.Purchasing.Api;
 
@@ -9,8 +11,66 @@ namespace MyERP.Modules.Purchasing.Api;
 [ApiController]
 [Route("api/v1/pur/purchase-receipts")]
 public sealed class PurchaseReceiptsController(PurchaseReceiptDraftService drafts,
-    PurchaseReceiptSubmissionService submissions) : ControllerBase
+    PurchaseReceiptSubmissionService submissions, PurchaseReceiptQueryService queries,
+    PurchaseReceiptLifecycleService lifecycle) : ControllerBase
 {
+    /// <summary>
+    /// Lists saved receipts in the VIEW data scope. Filters: <c>keyword</c> (receipt or purchase order number),
+    /// <c>from</c>／<c>to</c> business date, <c>purchaseOrderId</c>, <c>status</c> (Draft／PendingApproval／Rejected／Posted);
+    /// sort <c>documentNo</c> or <c>businessDate</c> (default <c>-businessDate</c>, ID tiebreak).
+    /// </summary>
+    [HttpGet]
+    [RequirePermission(PurchasingPermissions.ReceiptView)]
+    [ProducesResponseType<PagedResult<PurchaseReceiptSummary>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public Task<PagedResult<PurchaseReceiptSummary>> List([FromQuery] PurchaseReceiptQuery query,
+        CancellationToken token) => queries.ListAsync(query, token);
+
+    /// <summary>Exports every saved line matching the list filters (VIEW ∩ EXPORT scope); max 10000 lines, otherwise 422 and no file.</summary>
+    /// <remarks>Same filters and sort as the list; paging is ignored. UTF-8 BOM, CRLF, formula-safe cells;
+    /// <c>X-Export-Row-Count</c> is the number of lines written (0 = header only). Print by re-reading <c>GET /{id}</c>.</remarks>
+    [HttpGet("export")]
+    [RequirePermission(PurchasingPermissions.ReceiptExport)]
+    [Produces("text/csv")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, "application/problem+json")]
+    public async Task Export([FromQuery] PurchaseReceiptQuery query, CancellationToken token)
+    {
+        var language = ErpProblemDetailsFactory.ResolveLanguage(Request.Headers.AcceptLanguage);
+        await queries.ExportAsync(query, language, Response.Body, count =>
+        {
+            Response.ContentType = "text/csv; charset=utf-8";
+            Response.Headers.ContentDisposition = "attachment; filename=\"purchase-receipts.csv\"";
+            Response.Headers["X-Export-Row-Count"] = count.ToString(global::System.Globalization.CultureInfo.InvariantCulture);
+            Response.Headers.ContentLanguage = language;
+            return Task.CompletedTask;
+        }, token: token);
+    }
+
+    /// <summary>
+    /// Soft-deletes a Draft receipt with <paramref name="version"/>; number, lines and lot/serial capture are kept.
+    /// Stale version 409; PendingApproval／Rejected／Posted 422 <c>PUR.RECEIPT.NOT_DELETABLE</c>; out of scope 404.
+    /// </summary>
+    [HttpDelete("{id:long}")]
+    [RequirePermission(PurchasingPermissions.ReceiptDelete)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Delete(long id, [FromQuery] int version, CancellationToken token)
+    {
+        await lifecycle.DeleteAsync(id, version, token);
+        return NoContent();
+    }
+
     /// <summary>Creates a receipt draft from one approved order, with saved warehouse and base cost snapshots.</summary>
     [HttpPost]
     [RequirePermission(PurchasingPermissions.ReceiptCreate)]

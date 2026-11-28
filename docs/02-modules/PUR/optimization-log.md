@@ -1271,3 +1271,10 @@ SQL 守衛 DEFER；沒有執行真實 SQL Up／Down、交易、HTTP 或競態驗
 - 問題：草稿每行都經 MD 鎖讀追蹤方式會多鎖、也令沒有 MD 列的舊測試替身失效。修改：草稿只檢查帶擷取的行（不完整草稿允許），SUBMIT 才檢查全部行。效果：草稿保存不增加無謂的鎖；舊 API 測試不變。
 - 問題：PUT 修訂時被刪除行的擷取。修改：PUT 先以 `ExecuteDelete` 清除本收貨所有擷取再重建，資料庫 FK 亦 ON DELETE CASCADE。效果：不會殘留孤兒列（schema 測試驗證串聯）。
 - 複核：新代碼無 `DateTime.Now`、無浮點、無跨模組資料表存取（MD 經 `IInventoryReferenceGuard`、INV 經 `IExternalInventoryPostingService`）；建置 0 警告。
+
+### 2026-11-28T16:53:25+08:00 WU-PUR-007a10 收貨 DELETE／LIST／CSV 複核
+
+- 問題：交接說明要求「實體刪除＋串聯刪除批序號」，但 REQ_F4114.2.6、007d 設計與實體 `ISoftDeletable` 皆為軟刪，且 Rejected 修訂回 Draft 的單已有 SYS 歷史指向收貨 ID。修改：改為只軟刪 Draft（ADR-222），保留單號、行、擷取與歷史。效果：沒有孤兒審批歷史，採購單 CANCEL 的「未軟刪收貨」判斷維持正確。
+- 問題：SQL `decimal(19,6)` 讀回帶六位小數，CSV 會輸出 `2.000000`。修改：`PurchaseReceiptCsv` 數字先去尾零。效果：與輸入一致（2、0.5、4）。
+- 問題：刪除與 SUBMIT／EDIT 併發。修改：刪除在同一 READ COMMITTED 交易先取收貨 UPDLOCK（與 EDIT／SUBMIT 相同），再以版本判定。效果：先到者成功，後到者 409／404，無需鎖採購單（Draft 不佔量）。
+- 複核：列表行數與總量為每頁 ≤ 200 筆的相關子查詢，可接受；匯出 ≤ 10000 行一次讀入。新代碼無 `DateTime.Now`（用 IClock）、無浮點、無跨模組表存取。變異：允許刪除 Rejected → PUR-RECV-DEL-003 紅。

@@ -74,6 +74,28 @@ public sealed class PurchaseOrderHttpTests(TestDatabase database) : IAsyncLifeti
         await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.ReceiptSubmit);
         await AssertProblemAsync(await SendAsync(http, HttpMethod.Post, receipts + "/999999/submit",
             new { version = 1 }, token, company), HttpStatusCode.NotFound, "PUR.RECEIPT.NOT_FOUND");
+
+        // WU-PUR-007a10 PUR-RECV-DEL-005／LST-005: DELETE and EXPORT need their own grants; LIST needs VIEW.
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Delete, receipts + "/999999?version=1", null, token, company),
+            HttpStatusCode.Forbidden, "COMMON.PERMISSION.DENIED");
+        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.ReceiptDelete);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Delete, receipts + "/999999?version=1", null, token, company),
+            HttpStatusCode.NotFound, "PUR.RECEIPT.NOT_FOUND");
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, receipts + "/export", null, token, company),
+            HttpStatusCode.Forbidden, "COMMON.PERMISSION.DENIED");
+        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.ReceiptView);
+        var list = await SendAsync(http, HttpMethod.Get, receipts + "?status=Draft", null, token, company);
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+        Assert.Equal(0, (await list.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("totalCount").GetInt64());
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, receipts + "?status=Cancelled", null, token, company),
+            HttpStatusCode.BadRequest, "COMMON.REQUEST.VALIDATION_FAILED");
+        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.ReceiptView,
+            PurchasingPermissions.ReceiptExport);
+        var exported = await SendAsync(http, HttpMethod.Get, receipts + "/export", null, token, company);
+        Assert.Equal(HttpStatusCode.OK, exported.StatusCode);
+        Assert.Equal("0", Assert.Single(exported.Headers.GetValues("X-Export-Row-Count")));
+        Assert.Equal("text/csv; charset=utf-8", exported.Content.Headers.ContentType!.ToString());
+        Assert.Equal("attachment; filename=\"purchase-receipts.csv\"", exported.Content.Headers.ContentDisposition!.ToString());
     }
 
     [Fact]

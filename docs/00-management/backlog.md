@@ -764,7 +764,7 @@
 | WU-PUR-007a7 | PUR | 擴充既有收貨來源表與訂單行：草稿欄、收貨計數、唯一單號、SQL 容量約束及可逆 migration | P1 | DONE | 007d、既有發票來源表 | 2026-11-28T13:01:04+08:00 真實 SQL 先紅後綠；保留舊 Posted 來源列。 |
 | WU-PUR-007a8 | PUR | 授權收貨草稿 CREATE／EDIT／READ，來源鎖內重讀、保存成本與倉儲快照，真實 SQL／HTTP 驗收 | P1 | DONE | 007a7 | 2026-11-28T15:30:03+08:00 真實 SQL 8/8＋受權 HTTP 1/1、後端全量 4255/4255、migration Down／Up；草稿不佔量、不寫 INV。 |
 | WU-PUR-007a9 | PUR | 收貨 SUBMIT 同交易預留訂單行餘量，雙連線競態與 SYS 失敗回滾驗收 | P1 | DONE | 007a8 | 2026-11-28T15:43:06+08:00 ADR-219：真實 SQL＋真實 SYS 8/8（變異 6 紅／1 紅）、受權 HTTP 1/1；駁回精確釋回；007b 前零步驟與最終核准 422 回滾。 |
-| WU-PUR-007a10 | PUR | 收貨 Draft 實體刪除（DELETE，帶版本）、LIST（篩選／分頁／資料範圍）與伺服器 CSV 後端 API，真實 SQL／HTTP | P1 | TODO | 007a9 | 007a9 拆出；007e 畫面前置。刪除只限 Draft、整單回滾；CSV 沿用採購單 CSV 模式。 |
+| WU-PUR-007a10 | PUR | 收貨 Draft 軟刪（DELETE，帶版本）、LIST（篩選／分頁／資料範圍）與伺服器 CSV 後端 API，真實 SQL／HTTP | P1 | DONE | 007a9 | 2026-11-28T17:00:51+08:00 完成（ADR-222）：DELETE 只軟刪 Draft（PUR.RECEIPT.DELETE；409／422 NOT_DELETABLE／404）、LIST（VIEW 範圍、keyword 收貨或採購單號、from／to、purchaseOrderId、status、穩定排序分頁）、CSV（PUR.RECEIPT.EXPORT∩VIEW、10000 行、公式防護）；PUR-RECV-DEL-001～005、LST-001～005、LST-U01～U02。 |
 | WU-PUR-007a1 | PUR | 收貨草稿離線輸入形狀與 Draft／Rejected 修訂狀態契約 | P1 | DONE | 007d；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T01:22:59+08:00：先 CS0246 紅燈；補邊界後 Architecture 1785/1785、PUR Debug 零警告。真實 SQL／HTTP、Posted 收貨及 INV 接線仍屬 007a～c。 |
 | WU-PUR-007a2 | PUR | Approved 訂單行身份及整單可收量離線預檢 | P1 | DONE | 007a1；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T01:30:04+08:00：缺型別編譯紅燈後定向 9/9、Architecture 1794/1794、PUR Debug 零警告；SQL 鎖內權威與 HTTP 仍屬 007a。 |
 | WU-PUR-007a3 | PUR | 收貨 SUBMIT 預留量與駁回釋回的離線轉移計畫 | P1 | DONE | 007a2；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T01:37:01+08:00：缺型別 CS0246 紅燈後定向及補測、Architecture 1803/1803，PUR Debug 零警告。SQL 更新、SYS 審批與交易仍屬 007a／007b。 |

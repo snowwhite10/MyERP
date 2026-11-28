@@ -1000,6 +1000,18 @@ U=單元、I=真實 SQL／HTTP 整合、E=Playwright 畫面與保存資料雙斷
 | PUR-RECV-026 | 權限／錯誤 | 換公司或來源選項 403／404／500／逾時，清除舊行和倉儲選項；禁用操作顯示具體原因。 | E | REQ_F4114.2.1～3, REQ_F4114.7.1～2 | TODO |
 | PUR-RECV-027 | 設計契約 | PUR 僅使用 INV 專用外部契約；退貨專用來源與原 movement 成本，禁止通用 PostAsync／銷售出庫。 | U,I | REQ_F4114.7.3 | TODO |
 | PUR-RECV-028 | 資料庫 | 同公司 FK、每個 FK 索引、來源行／號碼唯一、非負預留與上限 CHECK、Posted 不可變及 Down migration。 | I | REQ_F4114.2.2～6, REQ_F4114.7.2～3 | TODO |
+| PUR-RECV-DEL-001 | 正常／關聯 | （007a10）Draft 帶版本軟刪：is_deleted／deleted_at（IClock）、版本加一；單號、行保留，訂單待審量不變；之後 GET／LIST／再刪皆 404。 | I | REQ_F4114.2.6 | DONE（PurchaseReceiptQueryTests） |
+| PUR-RECV-DEL-002 | 衝突 | 舊版、0 版 409；ID 0 400；皆零變更。 | I | REQ_F4114.2.6 | DONE |
+| PUR-RECV-DEL-003 | 狀態 | PendingApproval／Rejected／Posted 422 PUR.RECEIPT.NOT_DELETABLE，未軟刪且版本不變（變異：允許 Rejected → 紅）。 | I | REQ_F4114.2.6 | DONE |
+| PUR-RECV-DEL-004 | 權限 | 他人 Self 範圍、他公司 404；只有 EDIT 403；資料不變。 | I | REQ_F4114.2.6 | DONE |
+| PUR-RECV-DEL-005 | 權限／HTTP | DELETE 無 DELETE 權 403、有權不存在 404（真實 JWT）。 | I | REQ_F4114.2.6 | DONE（PurchaseOrderHttpTests） |
+| PUR-RECV-LST-001 | 正常／邊界 | 預設 -businessDate ID 決勝、documentNo／businessDate 升冪、第 2 頁、purchaseOrderId／status／keyword（收貨或採購單號、去空白）／from／to（閏日、月底）篩選；摘要含採購單號、行數、總量、版本；舊發票專用來源列不出現；0 筆。 | I | REQ_F4114.2.1 | DONE |
+| PUR-RECV-LST-002 | 錯誤 | from > to、purchaseOrderId ≤ 0、未知狀態、非白名單排序、pageSize 0 皆 400。 | I | REQ_F4114.2.1 | DONE |
+| PUR-RECV-LST-003 | 權限 | Self 只見本人、Company 見全部、他公司 0 筆、只有 EDIT 403；EXPORT 窄於 VIEW 取交集；缺 EXPORT 403。 | I | REQ_F4114.2.1 | DONE |
+| PUR-RECV-LST-004 | 檔案 | CSV 每保存行一列、列表排序且同單按行號、BOM、CRLF、繁中表頭與狀態、公式防護、忽略分頁、0 行只有表頭；超過上限 422 PUR.RECEIPT.EXPORT_LIMIT 且零輸出、不送標頭。 | I | REQ_F4114.2.1 | DONE |
+| PUR-RECV-LST-005 | 權限／HTTP | LIST 需 VIEW、400 未知狀態；EXPORT 需 EXPORT＋VIEW，200 text/csv、檔名、X-Export-Row-Count。 | I | REQ_F4114.2.1 | DONE（PurchaseOrderHttpTests） |
+| PUR-RECV-LST-U01～U02 | 檔案 | CSV 行格式、三語狀態、未知狀態拋例外、空值欄、表頭數；上限含 10000、10001 422。 | U | REQ_F4114.2.1 | DONE（PurchaseReceiptCsvTests） |
+| PUR-RECV-LST-NA | 部分結果／併發 | 列表與單筆刪除無批次，部分成功不適用；刪除與 SUBMIT 同取收貨 UPDLOCK 並以版本判定，先者勝、後者 409／404。 | - | REQ_F4114.2.6 | 不適用 |
 
 ## WU-PUR-006d 採購單設計情境（尚未執行）
 
