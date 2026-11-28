@@ -69,7 +69,7 @@ describe('PUR-PO-UI rules', () => {
     expect(en.length).toBeGreaterThan(60);
     expect(keys(hantPur.order).sort()).toEqual(en);
     expect(keys(hansPur.order).sort()).toEqual(en);
-    for (const errors of [enErrors, hantErrors, hansErrors]) expect(Object.keys(errors.PUR.ORDER).sort()).toEqual(['EXPORT_LIMIT', 'NOT_FOUND']);
+    for (const errors of [enErrors, hantErrors, hansErrors]) expect(Object.keys(errors.PUR.ORDER).sort()).toEqual(['EMPTY', 'EXPORT_LIMIT', 'HAS_RECEIPTS', 'INVALID_REQUISITION_SOURCE', 'NOT_CANCELLABLE', 'NOT_DELETABLE', 'NOT_FOUND', 'NOT_SUBMITTABLE', 'REQUISITION_INSUFFICIENT']);
   });
 });
 

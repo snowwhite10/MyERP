@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-006f",
-    "lastCompletedWorkUnit":  "WU-PUR-006e4",
-    "nextAction":  "做 WU-PUR-006f：介面 4.2／4.3 採購單建立／修訂表單、請購來源選擇與送審／刪除／取消操作。先估時，超過 90 分鐘就在 backlog 拆 f1（4.1 詳情送審／刪除／取消按鈕與確認、停用原因，沿用 006b／006c API）、f2（4.2 建立表單與請購來源選擇）、f3（4.3 修訂表單、決標行唯讀、版本衝突）、f4（逐態 Playwright／UX QA），只做第一個子項。頁面在 src/frontend/src/app/modules/pur/purchase-order-page.ts 與 purchase-order.service.ts（006e4）；用 myerp-test-scenarios、myerp-ux-review、web-design-guidelines，先寫測試，畫面訊息與保存資料雙斷言。勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
+    "currentWorkUnit":  "WU-PUR-006f2",
+    "lastCompletedWorkUnit":  "WU-PUR-006f1",
+    "nextAction":  "做 WU-PUR-006f2：介面 4.2 建立表單 /pur/purchase-orders/new（權限 PUR.ORDER.CREATE）：供應商、業務日期、幣別、備註與明細行（物料、數量、單價、稅率），以授權選擇器選已核准請購行並顯示可用餘量；沿用 006a2 POST /api/v1/pur/purchase-orders，逐欄 400、MD 422（供應商未核准／物料停用／匯率）、500 traceId 有三語提示；成功後開啟 4.1 詳情（沿用 006f1 送審按鈕）。先估時，超過 90 分鐘再拆。頁面與服務在 src/frontend/src/app/modules/pur/purchase-order-page.ts、purchase-order.service.ts；用 myerp-test-scenarios、myerp-ux-review、web-design-guidelines，先寫測試，畫面訊息與保存資料雙斷言。勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -48,7 +48,8 @@
                              "WU-PUR-006c1":  0,
                              "WU-PUR-006c2":  0,
                              "WU-PUR-006e1":  0,
-                             "WU-PUR-006e4":  0
+                             "WU-PUR-006e4":  0,
+                             "WU-PUR-006f1":  0
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -120,5 +121,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T10:30:36+08:00",
-    "updatedAt":  "2026-11-28T10:30:36+08:00"
+    "updatedAt":  "2026-11-28T10:43:40+08:00"
 }

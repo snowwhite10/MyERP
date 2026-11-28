@@ -1780,4 +1780,10 @@ WU-PUR-005f2a2 阻擋核對（2026-10-23T11:17:26+08:00）：按 `myerp-test-sce
 | PUR-PO-UI-005 | 權限 | 路由需 `PUR.ORDER.VIEW`；缺 `PUR.ORDER.EXPORT` 不顯示匯出按鈕與提示；匯出 403 顯示需匯出權限。 | U | REQ_IO_A4.1.5 | PASS（PUR-PO-UI-005、PUR-PO-UI-007；路由 permissionGuard） |
 | PUR-PO-UI-006 | 狀態 | Draft／PendingApproval／Approved／Rejected／Cancelled 五種狀態三語標籤及顏色，審批輪次用同一詞彙；本畫面唯讀，送審／刪除／取消按鈕屬 006f，不顯示。 | U＋E | REQ_IO_A4.1.2 | PASS（PUR-PO-UI-006；E01 zh-Hans 輪次與標籤同詞） |
 | PUR-PO-UI-007 | 錯誤 | 列表 500 顯示 traceId 且清空舊列與詳情；匯出 422 `PUR.ORDER.EXPORT_LIMIT`、400 欄位原因、逾時、網絡、429 各有三語訊息；匯出中按鈕停用並說明原因，重新查詢取消進行中的匯出。 | U＋E | REQ_IO_A4.1.5 | PASS（PUR-PO-UI-007 及匯出失敗規則；E2E E02 500、E04 422） |
+| PUR-PO-UI-008 | 狀態／權限 | 詳情只顯示當前狀態與權限允許的操作：Draft 送審＋刪除、Rejected 刪除＋停用送審（說明須先修訂）、Draft 無明細停用送審、Approved 取消、PendingApproval／Cancelled 無按鈕並以文字說明；缺 SUBMIT／DELETE／CANCEL 權限不顯示對應按鈕；處理中停用並顯示「儲存中」。 | U＋E | REQ_IO_A4.1.4 | PASS（006f1：PUR-PO-UI-008；E08 Rejected） |
+| PUR-PO-UI-009 | 正常 | 送審先確認（說明整單佔用請購量、零步驟立即核准），取消確認零請求；送出保存版本；成功提示依保存狀態區分待審／立即核准，列狀態與版本更新並重新讀取詳情。 | U＋E | REQ_IO_A4.1.4, REQ_F4114.1.4 | PASS（006f1：PUR-PO-UI-009；E06 後端收到 version 3、保存為 PendingApproval v4） |
+| PUR-PO-UI-010 | 部分結果／錯誤 | 送審 422 `REQUISITION_INSUFFICIENT` 逐請購行列出訂單行、需求與可用量（精確十進位文字）；`INVALID_REQUISITION_SOURCE` 列出訂單行；MD 供應商／物料拒絕、500 traceId、網絡、403 各有訊息；整單未送出、狀態不變、無成功提示；格式錯誤的擴充欄位不顯示。 | U＋E | REQ_IO_A4.1.4 | PASS（006f1：PUR-PO-UI-010 兩案例；E06 截圖） |
+| PUR-PO-UI-011 | 邊界／正常 | 取消需原因：空白／只有空格提示且不發請求，500 字可、501 字拒絕（textarea maxlength 500），開啟時聚焦原因欄；危險確認說明釋回請購量；送出版本與去空白原因，成功後顯示已取消、無操作；已有收貨 422 顯示原因並重新讀取。 | U＋E | REQ_IO_A4.1.4, REQ_F4114.1.6 | PASS（006f1：PUR-PO-UI-011 兩案例；E07 後端保存原因「供應商停產」） |
+| PUR-PO-UI-012 | 重複與衝突 | 409 版本衝突與 NOT_SUBMITTABLE／NOT_DELETABLE／NOT_CANCELLABLE／HAS_RECEIPTS／EMPTY 顯示原因並重新讀取保存詳情（不清除原因）；404 關閉詳情、顯示找不到並重新載入列表。 | U | REQ_IO_A4.1.4 | PASS（006f1：PUR-PO-UI-012） |
+| PUR-PO-UI-013 | 正常／錯誤 | 刪除為危險確認（說明單號保留不重用、請購量不變），送出 `?version=`，成功後關閉詳情並重新載入列表；422 NOT_DELETABLE 顯示原因並重新讀取。 | U＋E | REQ_IO_A4.1.4, REQ_F4114.1.6 | PASS（006f1：PUR-PO-UI-013；E08 後端標記刪除、列表為空） |
 | PUR-PO-UI-NA | 重複／衝突／關聯 | 唯讀畫面：無保存、版本衝突、重複代碼或刪除引用；詳情讀取時資料已軟刪由 404 情境覆蓋。真實 API 畫面驗收沿既有真實 E2E 套件另列，本單元以模擬後端驗畫面。 | — | REQ_F4114.1.1 | N/A |

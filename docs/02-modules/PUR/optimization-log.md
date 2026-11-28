@@ -1195,3 +1195,13 @@ SQL 守衛 DEFER；沒有執行真實 SQL Up／Down、交易、HTTP 或競態驗
 - UX 審查（21 張截圖逐張檢視）：P3 zh-Hans 詳情審批輪次沿用請購詞彙「已核准／已駁回」，與訂單狀態標籤「已批准／已拒绝」不一致；改為輪次狀態沿用訂單狀態 key（Pending 對應待審批），E01 加 zh-Hans 斷言防退步。無 P1／P2。
 - web-design-guidelines：標籤包覆、`autocomplete=off`、`inputmode`、`aria-live`、省略號載入文字、tabular-nums、原生 select 明確前景／背景色均符合。P3 未改：詳情面板未寫入 URL、篩選錯誤未自動聚焦欄位，與 RFQ／發票等既有頁面一致，留待共用列表頁統一處理。
 - 數值：列表／詳情 JSON 以 `parseJsonWithDecimalText` 保留伺服器十進位文字，單元測試以 12,345,678,906.123456 驗證不經 double。
+
+## WU-PUR-006f1（2026-11-28T10:43:40+08:00）採購單 4.1 送審／刪除／取消按鈕
+
+- 估時超過 90 分鐘，006f 拆 f1（本單元）、f2 建立表單、f3 修訂表單、f4 表單 QA。
+- 測試先行：首跑 PUR-PO-UI-010 兩案例紅，原因是以 Node 腳本寫入時 `\d` 跳脫被吃掉，短缺數量正則變成 `/^-?d+(.d+)?$/`，所有短缺被當成格式錯誤丟棄；改回 `/^-?\d+(\.\d+)?$/` 後 19/19。此案例證明格式驗證錯誤時畫面不會顯示原因，測試有效。
+- 短缺量以 `parseJsonWithDecimalText` 解析錯誤本文，保留 12345678901.123456 等伺服器十進位文字，不經 double。
+- 第一次寫入 errors.json 用 `JSON.stringify(_, null, 2)` 重排整檔（692 行差異）；已還原並只替換 `PUR.ORDER` 物件，差異縮為 1 行。
+- 新增共用 `FocusOnInit` 指令（shared/forms），讓按鈕開啟的輸入欄自動聚焦，可供其他頁面重用。
+- UX 審查（14 張截圖逐張檢視）：無 P1／P2。P3 已修：取消原因無效時輸入框沒有紅框，加 `aria-invalid` 樣式。P3 未改：fullPage 截圖時暗色遮罩只覆蓋可視區（既有截圖方式所致，非畫面問題）。
+- web-design-guidelines 自查：標籤、aria-invalid／describedby、focus-visible、aria-live、省略號、危險確認與停用原因均符合；無新發現。

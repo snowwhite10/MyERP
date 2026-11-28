@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, injec
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { TranslatePipe } from '@ngx-translate/core';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -13,12 +13,15 @@ import { apiErrorTraceId } from '../../core/http/api-error';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { displayTime } from '../../shared/date';
 import { formatDecimalText } from '../../shared/decimal-text';
+import { ErpDialogService } from '../../shared/dialogs/dialog.service';
+import { FocusOnInit } from '../../shared/forms/focus-on-init';
 import { checkCsvExport, saveBlob } from '../../shared/export/csv-export';
 import { DocumentStatus, StatusTag } from '../../shared/status-tag/status-tag';
 import {
-  PURCHASE_ORDER_EXPORT_FILE, PURCHASE_ORDER_SORTS, PURCHASE_ORDER_STATUSES, PurchaseOrderDetail, PurchaseOrderExportFailure,
-  PurchaseOrderFilter, PurchaseOrderFilterIssue, PurchaseOrderService, PurchaseOrderStatus, PurchaseOrderSummary,
-  purchaseOrderExportFailure, purchaseOrderFilterIssue,
+  PURCHASE_ORDER_EXPORT_FILE, PURCHASE_ORDER_REASON_MAX, PURCHASE_ORDER_SORTS, PURCHASE_ORDER_STATUSES, PurchaseOrderActionFailure,
+  PurchaseOrderActionResult, PurchaseOrderDetail, PurchaseOrderExportFailure, PurchaseOrderFilter, PurchaseOrderFilterIssue,
+  PurchaseOrderReasonIssue, PurchaseOrderService, PurchaseOrderStatus, PurchaseOrderSummary, purchaseOrderActionFailure,
+  purchaseOrderCancelReasonIssue, purchaseOrderExportFailure, purchaseOrderFilterIssue,
 } from './purchase-order.service';
 
 /** Shared tag tone: pending approval uses the pending tone; a cancelled order is muted like a voided document. */
@@ -29,11 +32,13 @@ const EMPTY_FILTER: PurchaseOrderFilter = { keyword: '', from: '', to: '', statu
 
 /**
  * 介面 4.1 Purchase Order View Interface (WU-PUR-006e4): read-only list, saved detail with sources and SYS approval history,
- * server CSV of the applied filters and sort, and print that re-reads the saved detail first. Lifecycle buttons belong to 006f.
+ * server CSV of the applied filters and sort, and print that re-reads the saved detail first. WU-PUR-006f1 adds the lifecycle
+ * buttons (REQ_IO_A4.1.4): SUBMIT / DELETE for Draft and Rejected, CANCEL with a reason for Approved — each shown only with its
+ * permission, confirmed first, explained when disabled, and followed by a re-read of the saved order.
  */
 @Component({
   selector: 'erp-purchase-order-page',
-  imports: [FormsModule, TranslatePipe, ApiErrorDisplay, HasPermissionDirective, StatusTag, NzAlertModule, NzButtonModule, NzTableModule],
+  imports: [FormsModule, TranslatePipe, ApiErrorDisplay, FocusOnInit, HasPermissionDirective, StatusTag, NzAlertModule, NzButtonModule, NzTableModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="orders"><header><h1>{{ 'pur.order.title' | translate }}</h1></header>
@@ -87,8 +92,43 @@ const EMPTY_FILTER: PurchaseOrderFilter = { keyword: '', from: '', to: '', statu
         <div class="detail-head"><h2 id="pur-order-detail-title">{{ d.documentNo ?? ('pur.order.unnumbered' | translate) }}</h2>
           <erp-status-tag [status]="tag(d.status)" [labelKey]="statusLabel(d.status)" testId="pur-order-detail-status" />
           <span class="spacer"></span>
+          @if (d.status === 'Draft' || d.status === 'Rejected') {
+            <button *erpHasPermission="'PUR.ORDER.SUBMIT'" nz-button nzType="primary" type="button" [disabled]="submitBlocked(d)"
+              [attr.aria-describedby]="actionHint(d) ? 'pur-order-action-hint' : null" [attr.aria-busy]="busy()" (click)="submit(d)"
+              data-testid="pur-order-submit">{{ 'pur.order.submit' | translate }}</button>
+            <button *erpHasPermission="'PUR.ORDER.DELETE'" nz-button nzDanger type="button" [disabled]="busy()"
+              [attr.aria-describedby]="actionHint(d) ? 'pur-order-action-hint' : null" (click)="remove(d)"
+              data-testid="pur-order-delete">{{ 'pur.order.delete' | translate }}</button> }
+          @if (d.status === 'Approved' && !cancelOpen()) {
+            <button *erpHasPermission="'PUR.ORDER.CANCEL'" nz-button nzDanger type="button" [disabled]="busy()"
+              [attr.aria-describedby]="actionHint(d) ? 'pur-order-action-hint' : null" (click)="openCancel()"
+              data-testid="pur-order-cancel">{{ 'pur.order.cancel' | translate }}</button> }
           <button nz-button type="button" [disabled]="printing()" [nzLoading]="printing()" (click)="print(d)" data-testid="pur-order-print">{{ (printing() ? 'pur.order.printing' : 'pur.order.print') | translate }}</button>
           <button nz-button type="button" (click)="closeDetail()" data-testid="pur-order-close">{{ 'pur.order.close' | translate }}</button></div>
+        @if (actionHint(d); as hint) { <p id="pur-order-action-hint" class="hint" data-testid="pur-order-action-hint">{{ hint | translate }}</p> }
+        @if (cancelOpen() && d.status === 'Approved') {
+          <form class="cancel" (ngSubmit)="confirmCancel(d)" data-testid="pur-order-cancel-form" aria-labelledby="pur-order-cancel-title">
+            <h3 id="pur-order-cancel-title">{{ 'pur.order.cancelTitle' | translate }}</h3>
+            <p class="hint">{{ 'pur.order.cancelHelp' | translate }}</p>
+            <label for="pur-order-cancel-reason">{{ 'pur.order.cancelReason' | translate }}</label>
+            <textarea id="pur-order-cancel-reason" erpFocusOnInit rows="3" name="poCancelReason" autocomplete="off" [attr.maxlength]="reasonMax"
+              [value]="cancelReason()" [disabled]="busy()" (input)="cancelReason.set($any($event.target).value)"
+              [attr.aria-invalid]="reasonIssue() ? 'true' : null" [attr.aria-describedby]="reasonIssue() ? 'pur-order-cancel-reason-error' : null"
+              data-testid="pur-order-cancel-reason"></textarea>
+            @if (reasonIssue(); as issue) { <p id="pur-order-cancel-reason-error" class="field-error" role="alert"
+              data-testid="pur-order-cancel-reason-error">{{ 'pur.order.reasonIssue.' + issue | translate: { max: reasonMax } }}</p> }
+            <div class="cancel-actions">
+              <button nz-button nzType="primary" nzDanger type="submit" [disabled]="busy()" [attr.aria-busy]="busy()"
+                data-testid="pur-order-cancel-confirm">{{ 'pur.order.cancelConfirm' | translate }}</button>
+              <button nz-button type="button" [disabled]="busy()" (click)="closeCancel()" data-testid="pur-order-cancel-back">{{ 'pur.order.cancelBack' | translate }}</button>
+            </div></form> }
+        @if (actionFailure(); as failure) { <div class="action-error" aria-live="polite">
+          <erp-api-error-display data-testid="pur-order-action-error" [messageKey]="failure.key" [traceId]="failure.traceId" [details]="failure.fields" />
+          @if (failure.shortages.length || failure.lineNos.length) { <ul class="action-details" data-testid="pur-order-action-details">
+            @for (s of failure.shortages; track s.requisitionLineId) { <li>{{ 'pur.order.shortageDetail' | translate: { line: s.requisitionLineId,
+              orders: s.orderLineNos.join(', '), requested: s.requested, available: s.available } }}</li> }
+            @if (failure.lineNos.length) { <li>{{ 'pur.order.invalidLines' | translate: { lines: failure.lineNos.join(', ') } }}</li> }
+          </ul> } </div> }
         <dl class="facts">
           <div><dt>{{ 'pur.order.businessDate' | translate }}</dt><dd>{{ d.businessDate ?? '—' }}</dd></div>
           <div><dt>{{ 'pur.order.supplierId' | translate }}</dt><dd>{{ d.supplierId }}</dd></div>
@@ -134,8 +174,13 @@ const EMPTY_FILTER: PurchaseOrderFilter = { keyword: '', from: '', to: '', statu
     .facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 16px;margin:0}.facts dt{font-size:12px;color:var(--erp-color-text-secondary)}
     .facts dd{margin:0;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}.facts .wide{grid-column:1/-1}h3{margin:0;font-size:15px}
     .scroll{overflow-x:auto}.detail table{width:100%;border-collapse:collapse}.detail th,.detail td{padding:6px;text-align:left;border-bottom:1px solid var(--erp-color-border)}
-    .detail th.num,.detail td.num{text-align:right}.round p{margin:0}.round ol{margin:4px 0 0;padding-left:20px}
-    @media print{.orders>header,.filters,.field-error,.export,.export-result,nz-table,erp-api-error-display,.detail-head button{display:none!important}
+    .detail th.num,.detail td.num{text-align:right}
+    .cancel{display:grid;gap:6px;max-width:640px;padding:12px;border:1px solid var(--erp-color-border);border-radius:6px}
+    .cancel textarea{background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px;padding:6px;resize:vertical}
+    .cancel textarea[aria-invalid=true]{border-color:var(--erp-color-error-text)}
+    .cancel-actions{display:flex;gap:8px;flex-wrap:wrap}.action-details{margin:6px 0 0;padding-left:24px;color:var(--erp-color-error-text);overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+    button:focus-visible,textarea:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}.round p{margin:0}.round ol{margin:4px 0 0;padding-left:20px}
+    @media print{.orders>header,.filters,.field-error,.export,.export-result,nz-table,erp-api-error-display,.detail-head button,.cancel,.action-error,#pur-order-action-hint{display:none!important}
       .orders{display:block;color:#000;background:#fff}.detail{border:0;padding:0}.detail *{color:#000!important;background:#fff!important;border-color:#bbb!important}.scroll{overflow:visible}}`,
 })
 export class PurchaseOrderPage {
@@ -143,6 +188,8 @@ export class PurchaseOrderPage {
   private readonly company = inject(CompanyContextService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly dialogs = inject(ErpDialogService);
+  readonly reasonMax = PURCHASE_ORDER_REASON_MAX;
   readonly statuses = PURCHASE_ORDER_STATUSES;
   readonly sorts = PURCHASE_ORDER_SORTS;
   readonly rows = signal<PurchaseOrderSummary[]>([]);
@@ -152,6 +199,15 @@ export class PurchaseOrderPage {
   readonly error = signal<string | null>(null); readonly traceId = signal<string | null>(null);
   readonly filterIssue = signal<PurchaseOrderFilterIssue | null>(null);
   readonly printing = signal(false);
+  /** One lifecycle action at a time; its refusal is shown on the detail with per-line reasons. */
+  readonly busy = signal(false);
+  readonly actionFailure = signal<PurchaseOrderActionFailure | null>(null);
+  readonly cancelOpen = signal(false);
+  readonly cancelReason = signal('');
+  readonly cancelAttempted = signal(false);
+  /** Reason problems appear after the first confirm attempt, then follow the typing live. */
+  readonly reasonIssue = computed<PurchaseOrderReasonIssue | null>(() =>
+    this.cancelAttempted() ? purchaseOrderCancelReasonIssue(this.cancelReason()) : null);
   readonly exporting = signal(false);
   readonly exportNotice = signal<{ type: 'success' | 'warning'; key: string; count: number } | null>(null);
   readonly exportFailure = signal<PurchaseOrderExportFailure | null>(null);
@@ -186,6 +242,49 @@ export class PurchaseOrderPage {
   sortLabel(sort: string): string { return 'pur.order.sortBy.' + (sort.startsWith('-') ? sort.slice(1) + 'Desc' : sort + 'Asc'); }
   money(value: string | null): string { return value === null ? '—' : formatDecimalText(value, 'en-US'); }
   time(value: string | null): string { return displayTime(value); }
+  /** Why the lifecycle buttons are disabled or absent for this order; null when the shown actions are available. */
+  actionHint(d: PurchaseOrderDetail): string | null {
+    if (this.busy()) return 'pur.order.actionBusy';
+    if (d.status === 'PendingApproval') return 'pur.order.actionHint.pending';
+    if (d.status === 'Cancelled') return 'pur.order.actionHint.cancelled';
+    if (d.status === 'Rejected') return 'pur.order.actionHint.rejected';
+    if (d.status === 'Draft' && d.lines.length === 0) return 'pur.order.actionHint.empty';
+    return null;
+  }
+  submitBlocked(d: PurchaseOrderDetail): boolean { return this.busy() || d.status !== 'Draft' || d.lines.length === 0; }
+
+  /** SUBMIT after confirmation; the toast follows the saved status (zero-step flows approve at once). */
+  submit(d: PurchaseOrderDetail): void {
+    if (this.submitBlocked(d)) return;
+    this.confirmed({ titleKey: 'pur.order.confirmSubmit', contentKey: 'pur.order.submitExplanation', okKey: 'pur.order.submit' }, d, () =>
+      this.act(d, this.api.submit(d.id, d.version), saved => {
+        this.dialogs.success(saved?.status === 'Approved' ? 'pur.order.submittedApproved' : 'pur.order.submittedPending', { number: d.documentNo });
+        this.read(d.id, false, true);
+      }));
+  }
+  /** DELETE (danger confirm): the order leaves the list; its number is never reused. */
+  remove(d: PurchaseOrderDetail): void {
+    if (this.busy() || (d.status !== 'Draft' && d.status !== 'Rejected')) return;
+    this.confirmed({ titleKey: 'pur.order.confirmDelete', contentKey: 'pur.order.deleteExplanation', okKey: 'pur.order.delete', danger: true }, d,
+      () => this.act(d, this.api.remove(d.id, d.version), () => {
+        this.dialogs.success('pur.order.deleted', { number: d.documentNo });
+        this.closeDetail(); this.load();
+      }));
+  }
+  openCancel(): void { this.cancelReason.set(''); this.cancelAttempted.set(false); this.cancelOpen.set(true); }
+  closeCancel(): void { this.cancelOpen.set(false); this.cancelReason.set(''); this.cancelAttempted.set(false); }
+  /** CANCEL needs a 1–500 character reason, then a danger confirm that explains the requisition quantity release. */
+  confirmCancel(d: PurchaseOrderDetail): void {
+    if (this.busy() || d.status !== 'Approved') return;
+    this.cancelAttempted.set(true);
+    if (purchaseOrderCancelReasonIssue(this.cancelReason())) return;
+    const reason = this.cancelReason();
+    this.confirmed({ titleKey: 'pur.order.confirmCancel', contentKey: 'pur.order.cancelExplanation', okKey: 'pur.order.cancelConfirm', danger: true },
+      d, () => this.act(d, this.api.cancel(d.id, d.version, reason), () => {
+        this.dialogs.success('pur.order.cancelled', { number: d.documentNo });
+        this.closeCancel(); this.read(d.id, false, true);
+      }));
+  }
 
   /** Applies the typed filters; invalid input is explained per field and nothing is requested. */
   search(resetPage = true): void {
@@ -214,7 +313,7 @@ export class PurchaseOrderPage {
   }
   load(keepError = false): void {
     const current = ++this.generation; ++this.detailGeneration;
-    this.detail.set(null); this.printing.set(false); this.loading.set(true); this.listFailed.set(false);
+    this.detail.set(null); this.printing.set(false); this.resetActions(); this.loading.set(true); this.listFailed.set(false);
     if (!keepError) this.clearError();
     this.api.list({ ...this.applied, page: this.page(), pageSize: this.pageSize() }).subscribe({
       next: result => { if (current !== this.generation) return;
@@ -223,8 +322,8 @@ export class PurchaseOrderPage {
         this.rows.set([]); this.total.set(0); this.listFailed.set(true); this.showError(failure); this.loading.set(false); },
     });
   }
-  view(row: PurchaseOrderSummary): void { this.read(row.id, false); }
-  closeDetail(): void { ++this.detailGeneration; this.detail.set(null); this.printing.set(false); }
+  view(row: PurchaseOrderSummary): void { this.resetActions(); this.read(row.id, false); }
+  closeDetail(): void { ++this.detailGeneration; this.detail.set(null); this.printing.set(false); this.resetActions(); }
   /** Print always re-reads the saved order first; a failed read shows the reason and never opens the print dialog. */
   print(d: PurchaseOrderDetail): void { if (!this.printing()) this.read(d.id, true); }
 
@@ -246,10 +345,45 @@ export class PurchaseOrderPage {
     });
   }
 
-  private read(id: number, thenPrint: boolean): void {
+  /** Opens the confirm dialog; the action runs only if confirmed while the same order is still shown and idle. */
+  private confirmed(options: { titleKey: string; contentKey: string; okKey: string; danger?: boolean }, d: PurchaseOrderDetail,
+    run: () => void): void {
+    this.dialogs.confirm({ ...options, params: { number: d.documentNo } }).subscribe(ok => {
+      if (ok && !this.busy() && this.detail()?.id === d.id) run();
+    });
+  }
+  /**
+   * Runs one SUBMIT / DELETE / CANCEL. Success: update the row's status and version, then `done`. Refusal: show the reason on the
+   * detail; when the saved order changed (409, status) re-read it, when it is gone (404) close it and reload the list.
+   */
+  private act(d: PurchaseOrderDetail, request: Observable<PurchaseOrderActionResult | void>,
+    done: (saved: PurchaseOrderActionResult | undefined) => void): void {
+    const current = this.detailGeneration;
+    const live = () => current === this.detailGeneration && this.detail()?.id === d.id;
+    this.busy.set(true); this.actionFailure.set(null); this.clearError();
+    request.subscribe({
+      next: saved => {
+        if (!live()) return;
+        this.busy.set(false);
+        if (saved) this.rows.update(rows => rows.map(r => r.id === saved.id ? { ...r, status: saved.status, version: saved.version } : r));
+        done(saved ?? undefined);
+      },
+      error: (e: unknown) => {
+        if (!live()) return;
+        this.busy.set(false);
+        const failure = purchaseOrderActionFailure(e);
+        if (failure.reload === 'list') { this.closeDetail(); this.showError(e); this.load(true); return; }
+        this.actionFailure.set(failure);
+        if (failure.reload === 'detail') this.read(d.id, false, true);
+      },
+    });
+  }
+  private resetActions(): void { this.busy.set(false); this.actionFailure.set(null); this.closeCancel(); }
+
+  private read(id: number, thenPrint: boolean, keep = false): void {
     const current = ++this.detailGeneration;
     this.clearError(); this.printing.set(thenPrint);
-    if (!thenPrint) this.detail.set(null);
+    if (!thenPrint && !keep) this.detail.set(null);
     this.api.get(id).subscribe({
       next: saved => { if (current !== this.detailGeneration) return;
         this.detail.set(saved);
