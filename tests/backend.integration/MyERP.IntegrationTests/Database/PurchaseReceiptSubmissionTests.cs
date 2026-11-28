@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using MyERP.Modules.Inventory.Contracts;
 using MyERP.Modules.Purchasing;
 using MyERP.Modules.Purchasing.Application;
 using MyERP.Modules.Purchasing.Domain;
@@ -121,17 +122,23 @@ public sealed class PurchaseReceiptSubmissionTests(TestDatabase database)
     }
 
     [Fact]
-    public async Task ZeroStepAutoApprovalIsRefusedUntilInboundPostingExists()
+    public async Task ZeroStepAutoApprovalPostsThroughInventoryAndAnInventoryRefusalRollsBackTheSubmit()
     {
+        // 007b1 (ADR-220) replaced the 007a9 APPROVAL_FLOW_REQUIRED refusal: zero-step SUBMIT now posts INV inbound in
+        // the same transaction, so an INV refusal must leave the Draft, reservation and SYS tables untouched.
         var s = await SeedCompanyAsync(withFlow: false);
         var (orderId, lineIds) = await SeedOrderAsync(s, 5m);
         var receipt = await SeedReceiptAsync(s, orderId, (lineIds[0], 2m, 4m));
+        var inventory = new RefusingInventory();
         await using (var db = NewDb(s))
         {
             var error = await Assert.ThrowsAsync<BusinessRuleException>(() =>
-                Service(db, s).SubmitAsync(receipt.Id, receipt.Version, Ct));
-            Assert.Equal("PUR.RECEIPT.APPROVAL_FLOW_REQUIRED", error.ErrorCode);
+                Service(db, s, inventory: inventory).SubmitAsync(receipt.Id, receipt.Version, Ct));
+            Assert.Equal(RefusingInventory.Code, error.ErrorCode);
         }
+        var call = Assert.Single(inventory.Calls);
+        Assert.Equal((receipt.Id, Day), (call.SourceId, call.Date));
+        Assert.Equal(new PurchaseInboundLine(1, 11, 91, null, 2m, 4m), Assert.Single(call.Lines));
         await AssertUntouchedAsync(s, receipt, (lineIds[0], 0m));
     }
 
@@ -185,7 +192,7 @@ public sealed class PurchaseReceiptSubmissionTests(TestDatabase database)
     }
 
     [Fact]
-    public async Task SysRejectionReleasesOnlyThisReceiptAndApprovalIsRefusedWithoutChanges()
+    public async Task SysRejectionReleasesOnlyThisReceiptAndAnInventoryRefusedApprovalChangesNothing()
     {
         var s = await SeedCompanyAsync(withFlow: true);
         var (orderId, lineIds) = await SeedOrderAsync(s, 5m);
@@ -195,9 +202,9 @@ public sealed class PurchaseReceiptSubmissionTests(TestDatabase database)
         await SubmitPendingAsync(s, mine);
         await using (var check = NewDb(s)) Assert.Equal((5m, 0m), await CountersAsync(check, lineIds[0]));
 
-        // Final approval needs INV posting (007b): the SYS action rolls back and leaves the instance pending.
+        // Final approval posts INV inbound (007b1); an INV refusal rolls the SYS action back and leaves it pending.
         var refused = await Assert.ThrowsAsync<BusinessRuleException>(() => DecideAsync(s, other.Id, approve: true));
-        Assert.Equal("PUR.RECEIPT.POSTING_NOT_AVAILABLE", refused.ErrorCode);
+        Assert.Equal(RefusingInventory.Code, refused.ErrorCode);
         await using (var check = NewDb(s))
         {
             Assert.Equal(ApprovalStatus.Pending, (await Instances(check, other.Id).SingleAsync(Ct)).Status);
@@ -295,11 +302,15 @@ public sealed class PurchaseReceiptSubmissionTests(TestDatabase database)
             : await workflow.RejectAsync(instance.Id, decision, Ct);
     }
 
-    /// <summary>Resolve decision handlers exactly as the API does, through the PUR module registration.</summary>
+    /// <summary>
+    /// Resolve decision handlers exactly as the API does, through the PUR module registration; INV is a refusing stub
+    /// because these fixtures use placeholder items (real INV posting is covered by PurchaseReceiptPostingTests).
+    /// </summary>
     private static IApprovalResultHandler[] Handlers(MyErpDbContext db)
     {
         var services = new ServiceCollection();
         services.AddSingleton(db);
+        services.AddSingleton<IExternalInventoryPostingService>(new RefusingInventory());
         new PurchasingModule().AddServices(services, new ConfigurationBuilder().Build());
         return services.BuildServiceProvider().GetServices<IApprovalResultHandler>().ToArray();
     }
@@ -382,7 +393,7 @@ public sealed class PurchaseReceiptSubmissionTests(TestDatabase database)
     }
 
     private static PurchaseReceiptSubmissionService Service(MyErpDbContext db, Seeded s, long? userId = null,
-        DataScope? scope = DataScope.Company, long branchId = 10)
+        DataScope? scope = DataScope.Company, long branchId = 10, IExternalInventoryPostingService? inventory = null)
     {
         var user = userId ?? s.UserId;
         var grants = new Dictionary<string, DataScope>();
@@ -393,7 +404,28 @@ public sealed class PurchaseReceiptSubmissionTests(TestDatabase database)
             new UserCompanyAuthorization(user, s.CompanyId, branchId, 20, false, grants));
         var workflow = new ApprovalWorkflowService(db, new FixedClock(Today), new FixedUser(user), new AuditTrail(), []);
         return new PurchaseReceiptSubmissionService(db, new RequisitionCompanyAccess(new FixedCompany(s.CompanyId)),
-            authorization.Object, workflow);
+            authorization.Object, workflow, new PurchaseReceiptPosting(db, inventory ?? new RefusingInventory()));
+    }
+
+    /// <summary>Records PUR's inbound calls and refuses them like INV would (for example an unknown item).</summary>
+    private sealed class RefusingInventory : IExternalInventoryPostingService
+    {
+        public const string Code = "INV.TEST.REFUSED";
+        public List<(long SourceId, DateOnly Date, PurchaseInboundLine[] Lines)> Calls { get; } = [];
+
+        public Task<InventoryPostingResult> PostPurchaseInboundAsync(long sourceId, DateOnly businessDate,
+            IReadOnlyList<PurchaseInboundLine> lines, CancellationToken token = default)
+        {
+            Calls.Add((sourceId, businessDate, [.. lines]));
+            throw new BusinessRuleException(Code, "Inventory refused the inbound.");
+        }
+
+        public Task<InventoryPostingResult> PostSalesOutboundAsync(long sourceId, DateOnly businessDate,
+            IReadOnlyList<SalesOutboundLine> lines, CancellationToken token = default) => throw new NotSupportedException();
+
+        public Task<SalesReturnInboundResult> PostSalesReturnInboundAsync(long sourceId, DateOnly businessDate,
+            IReadOnlyList<SalesReturnInboundLine> lines, CancellationToken token = default) =>
+            throw new NotSupportedException();
     }
 
     private MyErpDbContext NewDb(Seeded s, DbCommandInterceptor? fault = null) => NewDb(s.CompanyId, fault, s.UserId);

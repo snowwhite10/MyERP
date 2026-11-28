@@ -39,7 +39,10 @@ public sealed class PurchasingModule : IErpModule
         services.AddScoped<RequisitionSubmissionService>();
         services.AddScoped<IApprovalResultHandler, RequisitionApprovalResultHandler>();
         services.AddScoped<IApprovalResultHandler, PurchaseOrderApprovalResultHandler>();
-        services.AddScoped<IApprovalResultHandler, PurchaseReceiptApprovalResultHandler>();
+        services.AddScoped<PurchaseReceiptPosting>();
+        // Deferred posting step (ADR-220): INV posting resolves MD services, which must not be built with the SYS workflow.
+        services.AddScoped<IApprovalResultHandler>(sp => new PurchaseReceiptApprovalResultHandler(
+            sp.GetRequiredService<MyErpDbContext>(), sp.GetRequiredService<PurchaseReceiptPosting>));
         services.AddSingleton<IModuleDbModel, RequisitionDbModel>();
         services.AddSingleton<IModuleDbModel, RfqDbModel>();
         services.AddSingleton<IModuleDbModel, QuotationDbModel>();

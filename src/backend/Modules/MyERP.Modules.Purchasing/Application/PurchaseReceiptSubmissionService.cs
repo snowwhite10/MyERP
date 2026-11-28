@@ -17,10 +17,11 @@ public sealed record PurchaseReceiptSubmissionResult(long Id, string DocumentNo,
 /// REQ_F4114.2.4 (WU-PUR-007a9, ADR-218/219): SUBMIT reserves purchase order line capacity from saved receipt rows only.
 /// One ReadCommitted transaction locks the order, then the receipt, then order lines by ascending ID (UPDLOCK, HOLDLOCK),
 /// re-validates aggregated quantities, increases <c>pending_receipt_reserved</c> and creates the SYS instance through the
-/// shared DbContext. Any failure leaves zero changes. Zero-step auto-approval is refused until INV posting (007b) exists.
+/// shared DbContext. Any failure leaves zero changes. A zero-step auto-approval posts INV inbound in the same transaction
+/// through <see cref="PurchaseReceiptPosting"/> (WU-PUR-007b1, ADR-220).
 /// </summary>
 public sealed class PurchaseReceiptSubmissionService(MyErpDbContext db, RequisitionCompanyAccess access,
-    ICurrentAuthorization authorization, IApprovalWorkflowService workflow)
+    ICurrentAuthorization authorization, IApprovalWorkflowService workflow, PurchaseReceiptPosting posting)
 {
     public const string DocumentType = PurchaseReceiptDraftService.DocumentType;
 
@@ -84,9 +85,9 @@ public sealed class PurchaseReceiptSubmissionService(MyErpDbContext db, Requisit
             // SYS saves through the shared DbContext, so reservation and status changes commit with the instance.
             var approval = await workflow.SubmitAsync(new ApprovalSubmission(DocumentType, receipt.Id,
                 receipt.DocumentNo, amount, null), token);
+            // SYS does not call result handlers for zero-step approval, so SUBMIT posts the inbound itself.
             if (approval.Status == ApprovalStatus.Approved)
-                throw new BusinessRuleException("PUR.RECEIPT.APPROVAL_FLOW_REQUIRED",
-                    "Receipt approval needs an active SYS approval flow until inbound posting is available.");
+                await posting.PostAsync(receipt, token);
             await tx.CommitAsync(token);
             return new PurchaseReceiptSubmissionResult(receipt.Id, receipt.DocumentNo, receipt.Status,
                 receipt.Version, approval);
@@ -107,9 +108,12 @@ public sealed class PurchaseReceiptSubmissionService(MyErpDbContext db, Requisit
 /// <summary>
 /// REQ_F4114.2.4～5 (WU-PUR-007a9): SYS final decision for a receipt in SYS's transaction. Rejection releases exactly this
 /// receipt's saved quantities with the SUBMIT lock order; a stale or repeated decision returns 409 without a second release.
-/// Final approval must post INV inbound (WU-PUR-007b); until then it is refused so stock is never approved unposted.
+/// Final approval (WU-PUR-007b1, ADR-220) posts INV inbound through <see cref="PurchaseReceiptPosting"/>; the posting
+/// step is resolved only when a decision arrives because INV posting depends on MD services and SYS builds every result
+/// handler when the workflow is resolved (DI cycle, as ADR-142 for SD).
 /// </summary>
-public sealed class PurchaseReceiptApprovalResultHandler(MyErpDbContext db) : IApprovalResultHandler
+public sealed class PurchaseReceiptApprovalResultHandler(MyErpDbContext db, Func<PurchaseReceiptPosting> postingFactory)
+    : IApprovalResultHandler
 {
     public const string StateChanged = "PUR.RECEIPT.APPROVAL_STATE_CHANGED";
 
@@ -132,8 +136,10 @@ public sealed class PurchaseReceiptApprovalResultHandler(MyErpDbContext db) : IA
             throw new ConflictException(StateChanged, "The receipt is no longer waiting for approval.");
 
         if (result.Status == ApprovalStatus.Approved)
-            throw new BusinessRuleException("PUR.RECEIPT.POSTING_NOT_AVAILABLE",
-                "Receipt final approval with inbound stock posting is not available yet.");
+        {
+            await postingFactory().PostAsync(receipt, cancellationToken);
+            return;
+        }
 
         var rows = await PurchaseReceiptLocks.SavedLinesAsync(db, receipt.CompanyId, receipt.Id, cancellationToken);
         var (order, sources) = await PurchaseReceiptLocks.LockSourcesAsync(db, receipt.CompanyId, receipt, rows,

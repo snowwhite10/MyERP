@@ -1,5 +1,22 @@
 # PUR 測試計劃
 
+## WU-PUR-007b1 收貨最終核准／零步驟 SUBMIT 同交易 INV 入庫（2026-11-28T16:04:47+08:00）
+
+依 `myerp-test-scenarios` 逐類檢查。I＝真實 SQL＋真實 SYS 審批引擎＋真實 INV 過帳（`PurchaseReceiptPostingTests`）；S＝INV 以拒絕替身（`PurchaseReceiptSubmissionTests`）。批序號擷取留 007b2（ADR-220）；HTTP 回應形狀未變（SUBMIT 可回 `Posted`）；畫面留 007e。變異驗證：拿掉訂單行已收量轉移、收貨行 posted_received 與重放檢查 → 6 案中 5 紅。
+
+| ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-RECV-POST-001 | 正常 | 一步流程待審收貨（同訂單行 1@4＋2@4.333333、另一行 1.5@7.25）SYS 核准：實例 Approved、收貨 Posted、訂單行待審 3→0／已收 0→3 與 1.5、收貨行 posted_received＝行量；INV 逐行 PURCHASE_INBOUND（來源＝收貨 ID、行號、In、物料、倉庫、保存的本位幣單位成本、業務日）。 | I | REQ_F4114.2.5、BR-PUR-030 | PASS |
+| PUR-RECV-POST-002 | 正常／關聯 | 無啟用流程（SYS 零步驟）：SUBMIT 同交易過帳，回 Posted＋Approved，預留不殘留、INV 1 筆入庫。 | I | REQ_F4114.2.4～5 | PASS |
+| PUR-RECV-POST-003 | 錯誤 | 核准時注入 INSERT inv_stock_movement 失敗 → 整筆回滾：SYS 實例仍 Pending、收貨 PendingApproval、預留 3 不變、收貨行已收 0、無異動；重試核准成功且只有 1 筆異動。 | I | BR-PUR-030 | PASS |
+| PUR-RECV-POST-004 | 重複與衝突／狀態 | Posted 後再送核准或駁回決定 → 409 APPROVAL_STATE_CHANGED，不二次過帳、不釋回。 | I | REQ_F4114.2.5 | PASS |
+| PUR-RECV-POST-005 | 重複與衝突 | INV 已有本收貨相同內容的 PURCHASE_INBOUND（重放）→ 409 PUR.RECEIPT.POSTING_CONFLICT，SUBMIT 整筆回滾（Draft、無預留、無 SYS 實例），異動仍只有原 1 筆。 | I | BR-PUR-030 | PASS |
+| PUR-RECV-POST-006 | 邊界／關聯 | 批號追蹤物料於 007b2 前無批序號 → INV 422 INV.TRACKING.REQUIRED，整筆回滾。 | I | REQ_F4114.2.5 | PASS（擷取留 007b2） |
+| PUR-RECV-POST-007 | 錯誤 | INV 拒絕（替身）時零步驟 SUBMIT 與 SYS 核准皆整筆回滾；INV 收到保存行（收貨 ID、業務日、行號、物料、倉庫、量、成本）。改寫 PUR-RECV-SUB-006／008 的 007a9 拒絕斷言。 | S | REQ_F4114.2.4～5 | PASS |
+| PUR-RECV-POST-008 | 權限 | 不新增端點或權限；SUBMIT 權限／範圍沿用 SUB-004，SYS 核准權限由 SYS 引擎負責。不適用新測。 | — | — | N/A |
+| PUR-RECV-POST-009 | 部分結果 | 整單原子，任一行 INV 拒絕整單回滾；部分成功不適用。 | — | — | N/A（由 003／006 覆蓋） |
+| PUR-RECV-POST-010 | 檔案 | 無檔案輸入，不適用。 | — | — | N/A |
+
 ## WU-PUR-007a9 收貨 SUBMIT 預留與 SYS 駁回釋回（2026-11-28T15:33:15+08:00）
 
 依 `myerp-test-scenarios` 逐類檢查。I＝真實 SQL＋真實 SYS 審批引擎；H＝受權 HTTP。最終核准過帳 INV 留 007b；DELETE／LIST／CSV 另列；畫面留 007e。

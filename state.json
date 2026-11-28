@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-007a9",
-    "lastCompletedWorkUnit":  "WU-PUR-007a9",
-    "nextAction":  "做 WU-PUR-007b：SYS 最終核准收貨與 INV PostPurchaseInboundAsync 同交易。先讀 ADR-218／219、PurchaseReceiptSubmissionService.cs（PurchaseReceiptApprovalResultHandler 目前對 Approved 回 422 POSTING_NOT_AVAILABLE；SUBMIT 對 SYS 零步驟回 422 APPROVAL_FLOW_REQUIRED）與 007a4／a5 離線計畫（PurchaseReceiptApprovalAssembly）。以 myerp-test-scenarios 先寫真實 SQL 紅燈：最終核准以同一鎖序把本單待審量轉已收量、逐行寫 INV 入庫（本位幣單位成本、倉庫快照）、收貨 Posted；零步驟於 SUBMIT 同交易過帳；INV 失敗整筆回滾（SYS 實例仍待審）；重複決定 409 不二次過帳。完成後移除兩個 422 拒絕並改寫 007a9 對應斷言（PurchaseReceiptSubmissionTests 的 ZeroStep 與 SysRejection 測試）。批序號如超出 90 分鐘先拆分（寫 ADR）。007a10（收貨 DELETE／LIST／CSV）排在 007e 之前。勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
+    "currentWorkUnit":  "WU-PUR-007b1",
+    "lastCompletedWorkUnit":  "WU-PUR-007b1",
+    "nextAction":  "做 WU-PUR-007b2：收貨行批號／序號擷取（ADR-220）。先讀 ADR-220、PurchaseReceiptPosting.cs（過帳目前不傳 Tracking，追蹤物料由 INV 422 INV.TRACKING.REQUIRED 拒絕）、PurchaseReceiptDraftService.cs 與 SD 出貨追蹤模式（SalesDeliveryLineTracking、ADR-145、SalesDeliveryPosting.ToInventoryTracking）。以 myerp-test-scenarios 先寫真實 SQL 紅燈：新增 pur_purchase_receipt_line_tracking（company_id＋line_id＋seq_no，lot_no／serial_no／quantity，CHECK 與 FK）及可逆 migration；草稿 CREATE／EDIT 可帶 lines[].tracking（依 MD 物料追蹤方式驗證：非追蹤不可帶、序號整數且唯一、草稿可不完整）並於 READ 回傳；SUBMIT／核准過帳時傳 PurchaseInboundLine.Tracking，批號／序號物料入庫成功並在 INV 追蹤表可查，不完整仍 422 整筆回滾。改寫 PurchaseReceiptPostingTests.LotTrackedItemIsRefusedByInventoryUntilTrackingCaptureExists。之後 007a10（DELETE／LIST／CSV）→ 007c → 007e。勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  221,
-                       "ADR":  219,
+                       "ADR":  220,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -124,5 +124,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T15:53:16+08:00",
-    "updatedAt":  "2026-11-28T15:53:16+08:00"
+    "updatedAt":  "2026-11-28T16:11:27+08:00"
 }

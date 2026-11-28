@@ -1,5 +1,6 @@
 # PUR 業務規則
 
+WU-PUR-007b1（2026-11-28T16:04:47+08:00，ADR-220）：收貨最終核准（SYS 結果處理器）與零步驟 SUBMIT 共用 `PurchaseReceiptPosting`，在同一 ReadCommitted 交易以 ADR-219 鎖序（採購單 → 收貨單 → 訂單行 ID 升冪）由保存行重建轉移（007a4／a5 計畫）：訂單行本單待審量轉已收量、收貨行 posted_received＝行量、經 INV 契約逐行寫 PURCHASE_INBOUND（收貨 ID、業務日、行號、物料、倉庫、保存的本位幣單位成本），收貨設 Posted。INV 拒絕或任一步失敗整筆回滾（SYS 實例仍待審／SUBMIT 零變更）；INV 重放 409 POSTING_CONFLICT；Posted 後重複決定 409 APPROVAL_STATE_CHANGED 不二次過帳。批序號物料在 007b2 前由 INV 422 INV.TRACKING.REQUIRED 拒絕。取代 007a9 的 APPROVAL_FLOW_REQUIRED／POSTING_NOT_AVAILABLE。
 WU-PUR-007a9（2026-11-28T15:43:06+08:00，ADR-219）：收貨 SUBMIT（PUR.RECEIPT.SUBMIT，body version）只接受 Draft；ReadCommitted 交易先 UPDLOCK 採購單、再收貨單、再按訂單行 ID 升冪逐行鎖，以保存行聚合（007a3／a6 計畫）重驗訂單 Approved 與可收量，不足 422 QUANTITY_EXCEEDED、訂單非 Approved 422 INVALID_SOURCE、舊版 409、非 Draft 422 NOT_SUBMITTABLE，皆整單零變更；成功增加 `pending_receipt_reserved`、狀態 PendingApproval，同交易建立 SYS 實例（金額＝Σ 行量×本位幣單位成本，逐行 4 位）。本單預留由狀態與保存行推得。SYS 駁回以同一鎖序只釋回本單聚合量並設 Rejected，重複／過時決定 409 不二次釋回。007b 前 SYS 零步驟自動核准回 422 APPROVAL_FLOW_REQUIRED、最終核准回 422 POSTING_NOT_AVAILABLE，皆整筆回滾，避免未入庫即核准。
 WU-PUR-007a8（2026-11-28T15:19:42+08:00）：收貨草稿 CREATE／EDIT 在單一 ReadCommitted 交易內先 UPDLOCK 採購單、再收貨單（EDIT）、再按 ID 升冪鎖訂單行，鎖內重讀同公司 Approved 訂單並按 007a2 規則驗可收量；任何拒絕整單回滾。草稿只寫 PUR 收貨表，不改訂單行待審／已收量、不呼叫 INV。EDIT 不可改來源訂單、同行號不可改訂單行或物料，供應商／幣別須與訂單一致；被開票／收貨引用的行不可移除。成本來自訂單行保存的本位幣未稅額，缺值或超 decimal(19,6) 422 COST_UNAVAILABLE。
 
