@@ -1,3 +1,5 @@
+using System.Data;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.Purchasing.Domain;
 using MyERP.Shared.Approvals;
@@ -45,6 +47,79 @@ public sealed class PurchaseOrderQueryService(MyErpDbContext db, RequisitionComp
     public async Task<PagedResult<PurchaseOrderSummary>> ListAsync(PurchaseOrderQuery request,
         CancellationToken token = default)
     {
+        var (query, companyId) = await FilterAsync(request, token);
+        var count = await query.LongCountAsync(token);
+        var page = await query.Skip(request.Skip).Take(request.PageSize)
+            .Select(x => new PurchaseOrderSummary(x.Id, x.DocumentNo, x.BusinessDate, x.SupplierId,
+                x.Status, x.Currency, x.BaseGross,
+                db.Set<PurchaseOrderSourceLine>().Count(line => line.CompanyId == companyId && line.PurchaseOrderId == x.Id),
+                x.Version)).ToListAsync(token);
+        return PagedResult.Create(page, request, count);
+    }
+
+    /// <summary>Export all saved lines under VIEW scope and an independent EXPORT grant in one SQL snapshot.</summary>
+    public async Task<long> ExportAsync(PurchaseOrderQuery request, string language, Stream output,
+        Func<long, Task>? onReady = null, int maxRows = PurchaseOrderCsv.MaxRows,
+        CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+        var (orders, companyId) = await FilterAsync(request, token);
+        var exportScope = await ScopeAsync(companyId, PurchasingPermissions.OrderExport, token);
+        orders = ApplyScope(orders, exportScope);
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Snapshot, token);
+        var lines = from order in orders
+            join line in db.Set<PurchaseOrderSourceLine>().AsNoTracking()
+                on new { order.CompanyId, PurchaseOrderId = order.Id }
+                equals new { line.CompanyId, line.PurchaseOrderId }
+            select new { order, line };
+        var count = await lines.LongCountAsync(token);
+        PurchaseOrderCsv.EnsureWithinLimit(count, maxRows);
+        var sort = SortSpec.Parse(request.Sort, ["documentNo", "businessDate"], "-businessDate")[0];
+        lines = (sort.Field, sort.Descending) switch
+        {
+            ("documentNo", false) => lines.OrderBy(x => x.order.DocumentNo).ThenBy(x => x.order.Id).ThenBy(x => x.line.LineNo),
+            ("documentNo", true) => lines.OrderByDescending(x => x.order.DocumentNo).ThenByDescending(x => x.order.Id).ThenBy(x => x.line.LineNo),
+            (_, false) => lines.OrderBy(x => x.order.BusinessDate).ThenBy(x => x.order.Id).ThenBy(x => x.line.LineNo),
+            _ => lines.OrderByDescending(x => x.order.BusinessDate).ThenByDescending(x => x.order.Id).ThenBy(x => x.line.LineNo)
+        };
+        var saved = await lines.Select(x => new
+        {
+            x.order.Id, x.order.DocumentNo, x.order.BusinessDate, x.order.Status, x.order.SupplierId,
+            x.order.Currency, x.order.RfqId, x.line.LineNo, x.line.MaterialId, x.line.Quantity,
+            x.line.UnitPrice, x.line.TaxRatePercent, x.line.BaseNet, x.line.BaseTax, x.line.BaseGross,
+            x.line.RequisitionLineId
+        }).ToListAsync(token);
+        var rfqIds = saved.Where(x => x.RfqId.HasValue).Select(x => x.RfqId!.Value).Distinct().ToArray();
+        var rfqs = await db.Set<Rfq>().IgnoreQueryFilters().AsNoTracking()
+            .Where(x => x.CompanyId == companyId && rfqIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.DocumentNo, token);
+        var requisitionIds = saved.Where(x => x.RequisitionLineId.HasValue)
+            .Select(x => x.RequisitionLineId!.Value).Distinct().ToArray();
+        var requisitions = await (from line in db.Set<RequisitionLine>().AsNoTracking()
+            join requisition in db.Set<Requisition>().IgnoreQueryFilters().AsNoTracking()
+                on line.RequisitionId equals requisition.Id
+            where line.CompanyId == companyId && requisition.CompanyId == companyId
+                && requisitionIds.Contains(line.Id)
+            select new { line.Id, line.LineNo, requisition.DocumentNo })
+            .ToDictionaryAsync(x => x.Id, token);
+        var rows = saved.Select(x => new PurchaseOrderCsvRow(x.DocumentNo, x.BusinessDate, x.Status,
+            x.SupplierId, x.Currency, x.LineNo, x.MaterialId, x.Quantity, x.UnitPrice,
+            x.TaxRatePercent, x.BaseNet, x.BaseTax, x.BaseGross,
+            x.RfqId is { } rfqId ? rfqs.GetValueOrDefault(rfqId) : null,
+            x.RequisitionLineId is { } reqId ? requisitions.GetValueOrDefault(reqId)?.DocumentNo : null,
+            x.RequisitionLineId is { } reqLineId ? requisitions.GetValueOrDefault(reqLineId)?.LineNo : null)).ToArray();
+        var csv = new StringBuilder(PurchaseOrderCsv.HeaderLine(language)).Append("\r\n");
+        foreach (var row in rows) csv.Append(PurchaseOrderCsv.Line(row, language)).Append("\r\n");
+        await tx.CommitAsync(token);
+        if (onReady is not null) await onReady(count);
+        await output.WriteAsync(Encoding.UTF8.GetPreamble(), token);
+        await output.WriteAsync(Encoding.UTF8.GetBytes(csv.ToString()), token);
+        return count;
+    }
+
+    private async Task<(IQueryable<PurchaseOrderSource> Query, long CompanyId)> FilterAsync(
+        PurchaseOrderQuery request, CancellationToken token)
+    {
         ArgumentNullException.ThrowIfNull(request);
         var companyId = access.RequireCompanyId();
         request.EnsureValid();
@@ -80,13 +155,7 @@ public sealed class PurchaseOrderQueryService(MyErpDbContext db, RequisitionComp
             (_, false) => query.OrderBy(x => x.BusinessDate).ThenBy(x => x.Id),
             _ => query.OrderByDescending(x => x.BusinessDate).ThenByDescending(x => x.Id)
         };
-        var count = await query.LongCountAsync(token);
-        var page = await query.Skip(request.Skip).Take(request.PageSize)
-            .Select(x => new PurchaseOrderSummary(x.Id, x.DocumentNo, x.BusinessDate, x.SupplierId,
-                x.Status, x.Currency, x.BaseGross,
-                db.Set<PurchaseOrderSourceLine>().Count(line => line.CompanyId == companyId && line.PurchaseOrderId == x.Id),
-                x.Version)).ToListAsync(token);
-        return PagedResult.Create(page, request, count);
+        return (query, companyId);
     }
 
     public Task<PurchaseOrderReadDetail> GetAsync(long id, CancellationToken token = default) =>

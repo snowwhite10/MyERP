@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MyERP.Modules.Purchasing.Application;
 using MyERP.Shared.Approvals;
 using MyERP.Shared.Infrastructure.Security;
+using MyERP.Shared.Infrastructure.Web;
 using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.Purchasing.Api;
@@ -25,6 +26,30 @@ public sealed class PurchaseOrdersController(PurchaseOrderDraftService drafts,
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public Task<PagedResult<PurchaseOrderSummary>> List([FromQuery] PurchaseOrderQuery query, CancellationToken token) =>
         queries.ListAsync(query, token);
+
+    /// <summary>匯出 VIEW 範圍內所有符合篩選的保存行；另需 PUR.ORDER.EXPORT。最多 10000 行，超限 422 且不輸出部分檔。</summary>
+    /// <remarks>與列表使用相同篩選及排序，忽略分頁。CSV 使用 UTF-8 BOM、CRLF 與公式防護；
+    /// X-Export-Row-Count 是實際輸出行數，0 表示只有表頭。列印請重新請求 GET /{id}。</remarks>
+    [HttpGet("export")]
+    [RequirePermission(PurchasingPermissions.OrderExport)]
+    [Produces("text/csv")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, "application/problem+json")]
+    public async Task Export([FromQuery] PurchaseOrderQuery query, CancellationToken token)
+    {
+        var language = ErpProblemDetailsFactory.ResolveLanguage(Request.Headers.AcceptLanguage);
+        await queries.ExportAsync(query, language, Response.Body, count =>
+        {
+            Response.ContentType = "text/csv; charset=utf-8";
+            Response.Headers.ContentDisposition = "attachment; filename=\"purchase-orders.csv\"";
+            Response.Headers["X-Export-Row-Count"] = count.ToString(global::System.Globalization.CultureInfo.InvariantCulture);
+            Response.Headers.ContentLanguage = language;
+            return Task.CompletedTask;
+        }, token: token);
+    }
 
     /// <summary>讀取 VIEW 範圍內的保存行、詢價與決標來源、請購原量／已轉量／餘量及 SYS 歷次審批；先驗單據範圍。</summary>
     [HttpGet("{id:long}")]

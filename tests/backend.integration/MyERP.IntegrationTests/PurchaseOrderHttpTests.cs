@@ -45,6 +45,45 @@ public sealed class PurchaseOrderHttpTests(TestDatabase database) : IAsyncLifeti
     };
 
     [Fact]
+    public async Task ExportRequiresViewAndExportAndPrintReadOnlyNeedsView()
+    {
+        var company = await NewCompanyAsync("PO export");
+        var other = await NewCompanyAsync("PO export other");
+        using var http = factory.CreateClient();
+        var (userId, token) = await CreateUserAsync(http);
+        var (orderId, _) = await SeedOrderAsync(company, userId, "Draft");
+        var path = Route + "/export";
+        Assert.Equal(HttpStatusCode.Unauthorized, (await http.GetAsync(path, Ct)).StatusCode);
+        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.OrderView);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, path, null, token, company),
+            HttpStatusCode.Forbidden, "COMMON.PERMISSION.DENIED");
+        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.OrderExport);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, path, null, token, company),
+            HttpStatusCode.Forbidden, "COMMON.PERMISSION.DENIED");
+        await GrantAsync(userId, company, DataScope.Company,
+            PurchasingPermissions.OrderView, PurchasingPermissions.OrderExport);
+        await GrantAsync(userId, other, DataScope.Company,
+            PurchasingPermissions.OrderView, PurchasingPermissions.OrderExport);
+        var exported = await SendAsync(http, HttpMethod.Get, path, null, token, company);
+        Assert.Equal(HttpStatusCode.OK, exported.StatusCode);
+        Assert.Equal("1", Assert.Single(exported.Headers.GetValues("X-Export-Row-Count")));
+        Assert.Equal("text/csv; charset=utf-8", exported.Content.Headers.ContentType!.ToString());
+        Assert.StartsWith("\uFEFF", await exported.Content.ReadAsStringAsync(Ct));
+        var empty = await SendAsync(http, HttpMethod.Get, path, null, token, other);
+        Assert.Equal(HttpStatusCode.OK, empty.StatusCode);
+        Assert.Equal("0", Assert.Single(empty.Headers.GetValues("X-Export-Row-Count")));
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, path + "?supplierId=0", null, token, company),
+            HttpStatusCode.BadRequest, "COMMON.REQUEST.VALIDATION_FAILED");
+        // Printing uses a fresh VIEW detail, including current saved version and lines.
+        var detail = await SendAsync(http, HttpMethod.Get, $"{Route}/{orderId}", null, token, company);
+        Assert.Equal(HttpStatusCode.OK, detail.StatusCode);
+        Assert.Equal(1, (await detail.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("lines").GetArrayLength());
+        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.OrderExport);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, $"{Route}/{orderId}", null, token, company),
+            HttpStatusCode.Forbidden, "COMMON.PERMISSION.DENIED");
+    }
+
+    [Fact]
     public async Task ListRequiresViewAndReturnsOnlyCurrentCompanyOrders()
     {
         var company = await NewCompanyAsync("PO list");

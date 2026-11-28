@@ -24,12 +24,67 @@ public sealed class PurchaseOrderListTests(TestDatabase database)
                 new PurchaseInvoiceSourceDbModel()], company);
     }
 
-    private static PurchaseOrderQueryService Query(MyErpDbContext db, long companyId, DataScope scope = DataScope.Company)
+    private static PurchaseOrderQueryService Query(MyErpDbContext db, long companyId, DataScope scope = DataScope.Company,
+        bool export = false, DataScope exportScope = DataScope.Company)
     {
-        var grants = new UserCompanyAuthorization(7, companyId, 10, 20, false,
-            new Dictionary<string, DataScope> { [PurchasingPermissions.OrderView] = scope });
+        var permissions = new Dictionary<string, DataScope> { [PurchasingPermissions.OrderView] = scope };
+        if (export) permissions[PurchasingPermissions.OrderExport] = exportScope;
+        var grants = new UserCompanyAuthorization(7, companyId, 10, 20, false, permissions);
         return new PurchaseOrderQueryService(db, new RequisitionCompanyAccess(new FixedCompany(companyId)),
             new FixedAuthorization(grants));
+    }
+
+    [Fact]
+    public async Task ExportUsesViewScopeSavedLinesAndWholeFileLimit()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var visible = NewOrder(companyId, "=PO,1", 7, 10, 20, new DateOnly(2028, 2, 29), "Approved", 101);
+        var hidden = NewOrder(companyId, "PO-HIDDEN", 8, 11, 21, new DateOnly(2028, 2, 29), "Draft", 102);
+        var deleted = NewOrder(companyId, "PO-DELETED", 7, 10, 20, new DateOnly(2028, 2, 29), "Draft", 101);
+        deleted.IsDeleted = true;
+        deleted.DeletedAt = new DateTime(2028, 3, 1);
+        db.AddRange(visible, hidden, deleted);
+        await db.SaveChangesAsync(Ct);
+        db.AddRange(
+            new PurchaseOrderSourceLine { CompanyId = companyId, PurchaseOrderId = visible.Id, LineNo = 1,
+                MaterialId = 11, Quantity = 2.000001m, UnitPrice = 3.5m, TaxRatePercent = 5m,
+                BaseNet = 7m, BaseTax = 0.35m, BaseGross = 7.35m },
+            new PurchaseOrderSourceLine { CompanyId = companyId, PurchaseOrderId = visible.Id, LineNo = 2,
+                MaterialId = 12, Quantity = 1m, UnitPrice = 2m, TaxRatePercent = 0m },
+            new PurchaseOrderSourceLine { CompanyId = companyId, PurchaseOrderId = hidden.Id, LineNo = 1,
+                MaterialId = 11, Quantity = 1m, UnitPrice = 1m, TaxRatePercent = 0m },
+            new PurchaseOrderSourceLine { CompanyId = companyId, PurchaseOrderId = deleted.Id, LineNo = 1,
+                MaterialId = 11, Quantity = 1m, UnitPrice = 1m, TaxRatePercent = 0m });
+        await db.SaveChangesAsync(Ct);
+
+        await using var output = new MemoryStream();
+        var query = Query(db, companyId, DataScope.Self, export: true);
+        var count = await query.ExportAsync(new PurchaseOrderQuery { Sort = "documentNo" }, "en", output, token: Ct);
+        Assert.Equal(2, count);
+        var bytes = output.ToArray();
+        Assert.Equal([0xEF, 0xBB, 0xBF], bytes[..3]);
+        var text = System.Text.Encoding.UTF8.GetString(bytes);
+        Assert.Equal(3, text.Split("\r\n", StringSplitOptions.RemoveEmptyEntries).Length);
+        Assert.Contains("\"'=PO,1\",2028-02-29,Approved,101,TWD,1,11,2.000001,", text);
+        Assert.DoesNotContain("PO-HIDDEN", text);
+        Assert.DoesNotContain("PO-DELETED", text);
+        await using var narrowed = new MemoryStream();
+        Assert.Equal(2, await Query(db, companyId, export: true, exportScope: DataScope.Self)
+            .ExportAsync(new PurchaseOrderQuery(), "en", narrowed, token: Ct));
+        Assert.DoesNotContain("PO-HIDDEN", System.Text.Encoding.UTF8.GetString(narrowed.ToArray()));
+
+        await using var none = new MemoryStream();
+        Assert.Equal(0, await query.ExportAsync(new PurchaseOrderQuery { Keyword = "NO-MATCH" }, "en", none, token: Ct));
+        Assert.Single(System.Text.Encoding.UTF8.GetString(none.ToArray()).Split("\r\n", StringSplitOptions.RemoveEmptyEntries));
+        await using var limited = new MemoryStream();
+        await Assert.ThrowsAsync<BusinessRuleException>(() => query.ExportAsync(new PurchaseOrderQuery(), "en", limited,
+            maxRows: 1, token: Ct));
+        Assert.Equal(0, limited.Length);
+        await Assert.ThrowsAsync<ForbiddenException>(() => Query(db, companyId, DataScope.Self)
+            .ExportAsync(new PurchaseOrderQuery(), "en", new MemoryStream(), token: Ct));
+        await Assert.ThrowsAsync<RequestValidationException>(() => query.ExportAsync(
+            new PurchaseOrderQuery { Sort = "supplierId" }, "en", new MemoryStream(), token: Ct));
     }
 
     [Fact]

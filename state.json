@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-006e3",
-    "lastCompletedWorkUnit":  "WU-PUR-006e2",
-    "nextAction":  "做 WU-PUR-006e3：採購單安全 CSV 匯出與重新讀取列印契約。先核對 REQ_F4114.1.1、BR-PUR-026、api.md、ui-spec.md；依 myerp-test-scenarios 規劃 0 行、10000 行上限、UTF-8 BOM、公式注入防護、VIEW＋EXPORT 授權、資料範圍與保存快照一致的測試，先紅後實作；列印須重新讀取保存詳情且僅 VIEW。驗證後更新文件、狀態、日誌並提交；006e4 三語亮暗畫面後續處理，勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
+    "currentWorkUnit":  "WU-PUR-006e4",
+    "lastCompletedWorkUnit":  "WU-PUR-006e3",
+    "nextAction":  "做 WU-PUR-006e4：介面 4.1 三語亮暗採購單列表／詳情、CSV／列印畫面及逐態 Playwright QA。先讀 006e3 的 GET /export、GET /{id} 與 test-plan；使用 myerp-test-scenarios、myerp-ux-review、web-design-guidelines，先寫畫面及訊息測試再實作，逐態截圖並做保存資料雙斷言；列印每次重新 GET 詳情，讀取失敗不列印。只做 006e4，勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -119,5 +119,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T08:27:41+08:00",
-    "updatedAt":  "2026-11-28T08:27:41+08:00"
+    "updatedAt":  "2026-11-28T08:46:52+08:00"
 }

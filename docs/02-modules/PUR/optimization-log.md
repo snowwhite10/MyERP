@@ -1181,3 +1181,9 @@ SQL 守衛 DEFER；沒有執行真實 SQL Up／Down、交易、HTTP 或競態驗
 
 - 檢查：原 GET 先套 VIEW 資料範圍，但只回決標 ID 與請購行 ID；缺請購原量、已轉量、餘量及 SYS 審批輪次。修改：在授權訂單後查同公司 PUR 保存來源；軟刪來源以 `IgnoreQueryFilters` 讀歷史單號並保留公司條件；SYS 歷史只走 `IApprovalHistoryReader`。效果：無來源保持 null，查他公司／範圍外先 404，沒有跨模組直讀 SYS 表。
 - 測試夾具首次真實 SQL 失敗：`Rfq` 模型未註冊、`ck_pur_rfq_sent` 缺 `sent_at`、報價缺邀請 FK；用既有 RFQ／報價模型及有效保存鏈補齊。以單一 `DetailShowsSavedAwardAndCurrentRequisitionQuantities` 回饋迴圈重跑通過，產品代碼無需遷移。HTTP 定向 `SysDecisionsOverHttpKeepReleaseOrRollBackTogether` 驗駁回意見通過。
+## WU-PUR-006e3（2026-11-28T08:36:35+08:00）採購單 CSV
+
+- 檢查：最初實作在 SQL 查詢後以 .NET 排序，字串排序可能與資料庫定序不同，導致列表和 CSV 次序不一致。改為 SQL 查詢按相同白名單欄位、ID、行號排序，並保持同一 SNAPSHOT 交易計數與讀取。
+- 完整性：先計數、驗上限、取得全部保存行及同公司歷史來源、產生 CSV，再提交讀取交易及寫 HTTP Body；查詢或產生失敗不留下部分檔。
+- 風險：10000 行需暫存於記憶體；上限固定，匯出沒有寫入副作用。列印畫面重新 GET 的互動由 006e4 驗收。
+- 全量首跑 `PurchasingModuleTests.PurchaseModuleRegistersIsolatedContractsAndPurchasingPermissions` 紅燈：測試權限清單仍固定 31 項，新增 EXPORT 後實際為 32 項；將新權限加入精確清單（未刪或放寬斷言），定向再跑與全量複驗。

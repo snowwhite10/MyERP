@@ -63,6 +63,8 @@ MATCH 無差異回 Matched，仍須呼叫 POST；Disputed 各行接受後轉 Mat
 
 基址 `/api/v1/pur/purchase-receipts`、`/api/v1/pur/purchase-returns`，Swagger 標籤 `PUR - Purchase Receipts`／`PUR - Purchase Returns`。兩者各有 VIEW／CREATE／EDIT／DELETE／SUBMIT 權限；LIST、詳情與編輯專用上下文分別套 SYS 動作資料範圍。只讀查詢支援 `keyword,from,to,purchaseOrderId,status,page,pageSize,sort` 白名單穩定分頁。另有 VIEW + EXPORT 的安全 CSV；已保存單據重新讀取後列印。無 VIEW 的 CREATE／EDIT 用戶由該動作權限的專用來源選項及 EDIT 詳情取得必要資料。
 
+WU-PUR-006e3（2026-11-28T08:33:59+08:00）：`GET /api/v1/pur/purchase-orders/export`，要求 `PUR.ORDER.EXPORT` 且再驗 `PUR.ORDER.VIEW`，結果取兩個動作資料範圍交集。篩選／排序與列表一致，`page`／`pageSize` 驗證但匯出全部；每個保存行一列，同單按行號。`200 text/csv; charset=utf-8`、`Content-Disposition: attachment; filename="purchase-orders.csv"`、`Content-Language`、`X-Export-Row-Count`。內容為 BOM＋CRLF、三語表頭與狀態、ISO 日期、invariant 數字、RFC 4180 引號與公式前導轉義；0 行只有表頭。超過 10000 行在輸出前回 422 `PUR.ORDER.EXPORT_LIMIT`；非法參數 400、缺任一權限 403。列印由前端每次重新請求 `GET /{id}`，沿原 VIEW／公司／資料範圍及 SYS 歷史契約，無列印寫入端點。
+
 | Method | Path（相對各基址） | Body／回應 | 權限 |
 |---|---|---|---|
 | GET | `/`, `/{id}` | 分頁摘要／保存行、來源餘量、追蹤、版本與審批歷史 | VIEW |

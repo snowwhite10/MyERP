@@ -80,6 +80,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
     public const string RfqConvert = "PUR.RFQ.CONVERT";
     public const string OrderCreate = "PUR.ORDER.CREATE";
     public const string OrderView = "PUR.ORDER.VIEW";
+    public const string OrderExport = "PUR.ORDER.EXPORT";
     public const string OrderEdit = "PUR.ORDER.EDIT";
     public const string OrderSubmit = "PUR.ORDER.SUBMIT";
     public const string OrderDelete = "PUR.ORDER.DELETE";
@@ -114,6 +115,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
         new(RfqConvert, PurchasingModuleContracts.ModuleCode),
         new(OrderCreate, PurchasingModuleContracts.ModuleCode),
         new(OrderView, PurchasingModuleContracts.ModuleCode),
+        new(OrderExport, PurchasingModuleContracts.ModuleCode),
         new(OrderEdit, PurchasingModuleContracts.ModuleCode),
         new(OrderSubmit, PurchasingModuleContracts.ModuleCode),
         new(OrderDelete, PurchasingModuleContracts.ModuleCode),

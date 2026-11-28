@@ -1755,3 +1755,15 @@ WU-PUR-005f2a2 阻擋核對（2026-10-23T11:17:26+08:00）：按 `myerp-test-sce
 | PUR-PO-DETAIL-003 | 審批／重複 | SYS 歷次提交依最新在前，保留各輪核准、駁回及逐步意見；未送審回空陣列；不直接查 SYS 表。 | I（真實 SQL）／I（HTTP） | REQ_F4114.1.1 | PASS（PurchaseOrderSubmitHttpTests.SysDecisionsOverHttpKeepReleaseOrRollBackTogether 駁回意見；全輪次排序由 IApprovalHistoryReader 既有契約） |
 | PUR-PO-DETAIL-004 | 權限／衝突 | 匿名 401、缺 VIEW 403、他公司／範圍外／軟刪 404；通過訂單授權後才讀來源及審批；詳情不按版本拒絕，因無寫入。 | I（HTTP） | REQ_F4114.1.1, BR-PUR-026 | PASS（PurchaseOrderHttpTests.MissingPermissionsAre403AndEditDoesNotFollowViewOrCreate／OtherCompanyIs404；PurchaseOrderListTests.ListFiltersAndPagesOnlySavedVisibleOrders） |
 | PUR-PO-DETAIL-NA | 部分結果／錯誤／檔案／畫面 | 單筆純讀，無批次部分成功、400／409／422 寫入衝突或檔案。ID 非正回 400；SQL／SYS 故障依共用 500 ProblemDetails（traceId）。前端錯誤、逾時與畫面留 006e4。 | — | REQ_F4114.1.1 | N/A |
+
+### WU-PUR-006e3 採購單 CSV／列印讀取契約
+
+| ID | 類別 | 情境與預期 | 層級 | 追溯 | 結果 |
+|---|---|---|---|---|---|
+| PUR-PO-CSV-001 | 正常／檔案 | 以列表篩選與排序匯出每張保存行，BOM、CRLF、行數標頭、日期與數值 invariant，逗號／引號轉義；文字公式前導轉義。 | I（HTTP／SQL）＋U | REQ_F4114.1.1, BR-PUR-026 | PASS（PurchaseOrderListTests.ExportUsesViewScopeSavedLinesAndWholeFileLimit、PurchaseOrderCsvTests、PurchaseOrderHttpTests.ExportRequiresViewAndExportAndPrintReadOnlyNeedsView） |
+| PUR-PO-CSV-002 | 邊界／部分結果 | 0 行只回表頭與 0 筆，不輸出假資料；剛好 10000 行可輸出，10001 行回 422 且無部分檔。 | I＋U | REQ_F4114.1.1 | PASS（0 行真實 SQL／HTTP；10000／10001 格式規則 U，超限無部分檔 I 以注入上限 1 驗） |
+| PUR-PO-CSV-003 | 權限 | 匿名 401、只有 VIEW 或只有 EXPORT 403、他公司／VIEW 範圍外資料不輸出；授權改變時重驗。 | I（HTTP／SQL） | REQ_F4114.1.1, BR-PUR-026 | PASS（真實 JWT HTTP＋VIEW／EXPORT 範圍交集 SQL） |
+| PUR-PO-CSV-004 | 重複／衝突／狀態 | 同單多行各一列，不重複或漏行；Draft／Pending／Approved／Rejected／Cancelled 均可讀，軟刪不輸出。匯出無寫入與版本衝突。 | I（SQL） | REQ_F4114.1.1 | PASS（同單兩行、他人與軟刪過濾；五狀態均不設匯出狀態限制，沿唯讀查詢） |
+| PUR-PO-CSV-005 | 錯誤 | 非法篩選／排序 400；資料計數與讀取使用同一快照；SQL 錯誤在輸出前回 500 ProblemDetails，不宣稱成功。 | I（HTTP／SQL） | REQ_F4114.1.1 | PASS（非法篩選 HTTP、非法排序 I；SNAPSHOT 與先完整產檔後輸出由程式檢查；故障注入未另造測試） |
+| PUR-PO-CSV-006 | 列印／關聯 | 列印由 VIEW 詳情 GET 重新讀保存行及歷史；無 VIEW 403、他公司或範圍外 404，失敗不列印。畫面行為由 006e4 驗收。 | I（HTTP）＋E（006e4） | REQ_F4114.1.1 | PASS（GET 契約與 VIEW 403／404；畫面重新 GET／失敗不列印待 006e4） |
+| PUR-PO-CSV-NA | 部分成功／上傳 | 單一唯讀匯出，沒有批次寫入、部分成功或上傳檔案；逾時／網絡與畫面提示由 006e4 驗收。 | — | REQ_F4114.1.1 | N/A |

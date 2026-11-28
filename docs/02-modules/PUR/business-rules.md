@@ -94,6 +94,8 @@ WU-PUR-008a44（BR-PUR-036j 保存交易補充）：Draft SQL session 使用 Ser
 | BR-PUR-025 | （006c1／c2、ADR-215）DELETE 須獨立 `PUR.ORDER.DELETE`（EDIT 不含），READ COMMITTED 先 UPDLOCK 訂單；只可刪未消耗的 Draft 或 Rejected（駁回已釋回），其餘 422 `PUR.ORDER.NOT_DELETABLE`；只設軟刪欄位，請購已轉量不變。CANCEL 須獨立 `PUR.ORDER.CANCEL`，body 帶目前版本與去空白後 1～500 字原因；同樣先鎖訂單，僅 `Approved` 且消耗旗標 true、無未軟刪 `pur_purchase_receipt` 引用時可取消，否則 422 `PUR.ORDER.NOT_CANCELLABLE`／`PUR.ORDER.HAS_RECEIPTS`。按保存行聚合、按請購行 ID 升冪逐行鎖定；不足扣回 409 `PUR.ORDER.REQUISITION_RELEASE_INVALID`，整筆回滾；成功原子釋回一次、清旗標、狀態改 Cancelled、保存原因。兩動作舊版本 409、他公司／範圍外／已刪 404。審批、單號、保存行及決標來源連結永久保留，單號與決標來源不重用；已收貨須走退貨。 | REQ_F4114.1.6 |
 | BR-PUR-026 | 所有訂單動作按目前公司、獨立權限及 SYS 動作資料範圍守衛；列表只返回可見資料，單筆範圍外／他公司 404。詳情先驗訂單 VIEW 範圍，才查同公司 PUR 請購／詢價來源及 SYS 公開歷史契約；請購量顯示目前保存的原量、已轉量與差額，無來源為 null；軟刪來源的歷史單號仍可讀。保存前經 MD 公開契約重驗人工行有效引用；保存的已停用歷史仍可讀。狀態、版本及交易失敗不顯示成功，按行列出來源不足或失效原因。 | REQ_F4114.1.1～6 |
 
+WU-PUR-006e3（2026-11-28T08:33:59+08:00）：採購單 CSV 要求 `PUR.ORDER.VIEW` 和獨立 `PUR.ORDER.EXPORT`，結果取兩個動作資料範圍的交集；按列表白名單篩選、排序讀完整保存行，在一個 SQL SNAPSHOT 交易內先計數（上限 10000）再讀行與同公司歷史來源，全部產生成功後才寫出 BOM＋CSV；0 行只有表頭。文字 RFC 4180 與公式轉義，數值 invariant；列印畫面必須重新 GET `/{id}`（只需 VIEW），失敗不得列印。沒有新增寫入或資料表。
+
 WU-PUR-006e1（2026-11-28T07:58:46+08:00）：VIEW 列表沿用 EF 公司／軟刪過濾與 SYS 的 `PUR.ORDER.VIEW` 動作資料範圍；按已保存單號、業務日、供應商、狀態、請購來源過濾，請購來源採 `EXISTS`，避免同一訂單多行來源導致重複列。單號或業務日排序一律追加 ID 作穩定次序；行數只計同公司保存行。查詢不重估 MD 快照，不寫入。
 | BR-PUR-027 | 採購單核准不過帳庫存；WU-PUR-007 的採購入庫需保存明細與 SYS 最終核准，在同一交易呼叫 INV `IExternalInventoryPostingService.PostPurchaseInboundAsync`，只用固定 `PURCHASE_INBOUND` 來源，重放由 INV 保證冪等。訂單是否已有入庫由 PUR 自身入庫單據或其公開契約檢查，不跨模組查表。 | REQ_F4114.1.4, REQ_F4114.1.6, REQ_F4114.2.4 |
 
