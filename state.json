@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-006e4",
-    "lastCompletedWorkUnit":  "WU-PUR-006e3",
-    "nextAction":  "做 WU-PUR-006e4：介面 4.1 三語亮暗採購單列表／詳情、CSV／列印畫面及逐態 Playwright QA。先讀 006e3 的 GET /export、GET /{id} 與 test-plan；使用 myerp-test-scenarios、myerp-ux-review、web-design-guidelines，先寫畫面及訊息測試再實作，逐態截圖並做保存資料雙斷言；列印每次重新 GET 詳情，讀取失敗不列印。只做 006e4，勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
+    "currentWorkUnit":  "WU-PUR-006f",
+    "lastCompletedWorkUnit":  "WU-PUR-006e4",
+    "nextAction":  "做 WU-PUR-006f：介面 4.2／4.3 採購單建立／修訂表單、請購來源選擇與送審／刪除／取消操作。先估時，超過 90 分鐘就在 backlog 拆 f1（4.1 詳情送審／刪除／取消按鈕與確認、停用原因，沿用 006b／006c API）、f2（4.2 建立表單與請購來源選擇）、f3（4.3 修訂表單、決標行唯讀、版本衝突）、f4（逐態 Playwright／UX QA），只做第一個子項。頁面在 src/frontend/src/app/modules/pur/purchase-order-page.ts 與 purchase-order.service.ts（006e4）；用 myerp-test-scenarios、myerp-ux-review、web-design-guidelines，先寫測試，畫面訊息與保存資料雙斷言。勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -47,7 +47,8 @@
                              "WU-PUR-006b3":  0,
                              "WU-PUR-006c1":  0,
                              "WU-PUR-006c2":  0,
-                             "WU-PUR-006e1":  0
+                             "WU-PUR-006e1":  0,
+                             "WU-PUR-006e4":  0
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -119,5 +120,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T08:27:41+08:00",
-    "updatedAt":  "2026-11-28T08:46:52+08:00"
+    "updatedAt":  "2026-11-28T10:28:58+08:00"
 }

@@ -1765,5 +1765,19 @@ WU-PUR-005f2a2 阻擋核對（2026-10-23T11:17:26+08:00）：按 `myerp-test-sce
 | PUR-PO-CSV-003 | 權限 | 匿名 401、只有 VIEW 或只有 EXPORT 403、他公司／VIEW 範圍外資料不輸出；授權改變時重驗。 | I（HTTP／SQL） | REQ_F4114.1.1, BR-PUR-026 | PASS（真實 JWT HTTP＋VIEW／EXPORT 範圍交集 SQL） |
 | PUR-PO-CSV-004 | 重複／衝突／狀態 | 同單多行各一列，不重複或漏行；Draft／Pending／Approved／Rejected／Cancelled 均可讀，軟刪不輸出。匯出無寫入與版本衝突。 | I（SQL） | REQ_F4114.1.1 | PASS（同單兩行、他人與軟刪過濾；五狀態均不設匯出狀態限制，沿唯讀查詢） |
 | PUR-PO-CSV-005 | 錯誤 | 非法篩選／排序 400；資料計數與讀取使用同一快照；SQL 錯誤在輸出前回 500 ProblemDetails，不宣稱成功。 | I（HTTP／SQL） | REQ_F4114.1.1 | PASS（非法篩選 HTTP、非法排序 I；SNAPSHOT 與先完整產檔後輸出由程式檢查；故障注入未另造測試） |
-| PUR-PO-CSV-006 | 列印／關聯 | 列印由 VIEW 詳情 GET 重新讀保存行及歷史；無 VIEW 403、他公司或範圍外 404，失敗不列印。畫面行為由 006e4 驗收。 | I（HTTP）＋E（006e4） | REQ_F4114.1.1 | PASS（GET 契約與 VIEW 403／404；畫面重新 GET／失敗不列印待 006e4） |
+| PUR-PO-CSV-006 | 列印／關聯 | 列印由 VIEW 詳情 GET 重新讀保存行及歷史；無 VIEW 403、他公司或範圍外 404，失敗不列印。畫面行為由 006e4 驗收。 | I（HTTP）＋E（006e4） | REQ_F4114.1.1 | PASS（GET 契約與 VIEW 403／404；畫面重新 GET／失敗不列印由 006e4 PUR-PO-UI-004／E05 驗） |
 | PUR-PO-CSV-NA | 部分成功／上傳 | 單一唯讀匯出，沒有批次寫入、部分成功或上傳檔案；逾時／網絡與畫面提示由 006e4 驗收。 | — | REQ_F4114.1.1 | N/A |
+
+
+### WU-PUR-006e4 介面 4.1 採購單列表／詳情／CSV／列印畫面
+
+| ID | 類別 | 情境與預期 | 層級 | 追溯 | 結果 |
+|---|---|---|---|---|---|
+| PUR-PO-UI-001 | 正常 | 列表顯示保存單號、業務日、供應商 ID、狀態標籤、幣別、本位幣含稅、行數；點單號以 GET `/{id}` 讀詳情，顯示詢價單號、決標 ID、請購單號／行號、原量／已轉量／餘量及 SYS 審批輪次與意見；數值保留伺服器十進位文字。 | U＋E | REQ_IO_A4.1.2, REQ_IO_A4.1.3 | PASS（purchase-order.spec PUR-PO-UI-001；E2E PUR-PO-UI-E01 畫面與模擬保存詳情雙斷言、三語亮暗截圖） |
+| PUR-PO-UI-002 | 邊界 | 空列表、篩選無結果、讀取失敗各有不同空狀態；起日晚於迄日、日期無效、供應商 ID／請購行 ID 非正整數在送出前提示且不發請求；無來源行顯示「—」、未送審顯示「尚未送審」。 | U＋E | REQ_IO_A4.1.1 | PASS（PUR-PO-UI-002 兩則；E2E PUR-PO-UI-E02 驗證錯誤不發請求） |
+| PUR-PO-UI-003 | 檔案／部分結果 | CSV 只帶已套用篩選與排序、不帶分頁；`X-Export-Row-Count` 與 RFC 4180 實際列數一致才下載並以成功樣式顯示同一行數；0 行警告且不下載；行數不符視為不完整不下載；切換語言後送對應 `Accept-Language`，檔案表頭與狀態為該語言。 | U＋E | REQ_IO_A4.1.5, MASTER_PROMPT 9.1 | PASS（PUR-PO-UI-003 兩則；E2E E03 三語檔案表頭／狀態與提示行數一致，E04 0 行／不符不下載） |
+| PUR-PO-UI-004 | 列印／錯誤 | 每次列印重新 GET 詳情並以回應覆蓋畫面後才呼叫 `window.print`；404／500 顯示原因（5xx 含 traceId）且不列印，404 同時重新載入列表。 | U＋E | REQ_IO_A4.1.5 | PASS（PUR-PO-UI-004；E2E E05 第二次 GET 後才列印、500／404 不列印並重載列表、列印媒體截圖） |
+| PUR-PO-UI-005 | 權限 | 路由需 `PUR.ORDER.VIEW`；缺 `PUR.ORDER.EXPORT` 不顯示匯出按鈕與提示；匯出 403 顯示需匯出權限。 | U | REQ_IO_A4.1.5 | PASS（PUR-PO-UI-005、PUR-PO-UI-007；路由 permissionGuard） |
+| PUR-PO-UI-006 | 狀態 | Draft／PendingApproval／Approved／Rejected／Cancelled 五種狀態三語標籤及顏色，審批輪次用同一詞彙；本畫面唯讀，送審／刪除／取消按鈕屬 006f，不顯示。 | U＋E | REQ_IO_A4.1.2 | PASS（PUR-PO-UI-006；E01 zh-Hans 輪次與標籤同詞） |
+| PUR-PO-UI-007 | 錯誤 | 列表 500 顯示 traceId 且清空舊列與詳情；匯出 422 `PUR.ORDER.EXPORT_LIMIT`、400 欄位原因、逾時、網絡、429 各有三語訊息；匯出中按鈕停用並說明原因，重新查詢取消進行中的匯出。 | U＋E | REQ_IO_A4.1.5 | PASS（PUR-PO-UI-007 及匯出失敗規則；E2E E02 500、E04 422） |
+| PUR-PO-UI-NA | 重複／衝突／關聯 | 唯讀畫面：無保存、版本衝突、重複代碼或刪除引用；詳情讀取時資料已軟刪由 404 情境覆蓋。真實 API 畫面驗收沿既有真實 E2E 套件另列，本單元以模擬後端驗畫面。 | — | REQ_F4114.1.1 | N/A |

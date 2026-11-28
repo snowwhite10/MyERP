@@ -36,6 +36,8 @@ export const MAIN_MENU: readonly MenuItem[] = [
       permission: 'PUR.REQUISITION.VIEW', testId: 'layout-menu-pur-requisitions' },
     { labelKey: 'layout.menu.rfqs', route: '/pur/rfqs',
       permission: 'PUR.RFQ.VIEW', testId: 'layout-menu-pur-rfqs' },
+    { labelKey: 'layout.menu.purchaseOrders', route: '/pur/purchase-orders',
+      permission: 'PUR.ORDER.VIEW', testId: 'layout-menu-pur-orders' },
     { labelKey: 'layout.menu.purchaseInvoices', route: '/pur/purchase-invoices',
       permission: 'PUR.INVOICE.VIEW', testId: 'layout-menu-pur-invoices' },
   ] },

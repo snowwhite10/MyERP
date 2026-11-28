@@ -1187,3 +1187,11 @@ SQL 守衛 DEFER；沒有執行真實 SQL Up／Down、交易、HTTP 或競態驗
 - 完整性：先計數、驗上限、取得全部保存行及同公司歷史來源、產生 CSV，再提交讀取交易及寫 HTTP Body；查詢或產生失敗不留下部分檔。
 - 風險：10000 行需暫存於記憶體；上限固定，匯出沒有寫入副作用。列印畫面重新 GET 的互動由 006e4 驗收。
 - 全量首跑 `PurchasingModuleTests.PurchaseModuleRegistersIsolatedContractsAndPurchasingPermissions` 紅燈：測試權限清單仍固定 31 項，新增 EXPORT 後實際為 32 項；將新權限加入精確清單（未刪或放寬斷言），定向再跑與全量複驗。
+
+## WU-PUR-006e4（2026-11-28T10:28:58+08:00）採購單 4.1 畫面
+
+- 全量前端首跑 `i18n-keys.spec` 紅：排序選項 i18n key 用了 `-businessDate` 等非 camelCase 片段。改為 `businessDateDesc／Asc`、`documentNoAsc／Desc`，頁面以 `sortLabel()` 對應；定向重跑通過。
+- Playwright E04 首跑紅：刻意 422 上限回應產生 console 資源錯誤，共用守衛判失敗；按守衛規則以 `pageErrors.allow` 明確登記該預期錯誤，未放寬其他斷言。
+- UX 審查（21 張截圖逐張檢視）：P3 zh-Hans 詳情審批輪次沿用請購詞彙「已核准／已駁回」，與訂單狀態標籤「已批准／已拒绝」不一致；改為輪次狀態沿用訂單狀態 key（Pending 對應待審批），E01 加 zh-Hans 斷言防退步。無 P1／P2。
+- web-design-guidelines：標籤包覆、`autocomplete=off`、`inputmode`、`aria-live`、省略號載入文字、tabular-nums、原生 select 明確前景／背景色均符合。P3 未改：詳情面板未寫入 URL、篩選錯誤未自動聚焦欄位，與 RFQ／發票等既有頁面一致，留待共用列表頁統一處理。
+- 數值：列表／詳情 JSON 以 `parseJsonWithDecimalText` 保留伺服器十進位文字，單元測試以 12,345,678,906.123456 驗證不經 double。
