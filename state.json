@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-006f2b",
-    "lastCompletedWorkUnit":  "WU-PUR-006f2a",
-    "nextAction":  "做 WU-PUR-006f2b：介面 4.2 建立表單頁 /pur/purchase-orders/new（路由 permissionGuard PUR.ORDER.CREATE＋unsavedChangesGuard，參考 requisition-form.ts 結構）：表頭供應商（PurchaseOrderService.supplierOptions 選擇器）、業務日期（變更時重讀 createContext(businessDate) 取幣別與稅率，舊稅率失效要提示）、幣別、備註；明細行物料（itemOptions）、請購來源（requisitionOptions(query,itemId) 顯示單號／行號／原量／已轉量／餘量，可清除）、數量、單價（13 位整數＋6 位小數）、稅率；前端逐欄驗證、create(draft) 400 逐欄、422 MD／INVALID_REQUISITION_SOURCE 三語、500 traceId；成功提示單號後導向 /pur/purchase-orders?id=\u003cid\u003e（沿用 006f1 詳情送審）並在列表加「新增」按鈕（CREATE）。客戶端已在 purchase-order.service.ts（006f2a）；先估時，超過 90 分鐘再拆。用 myerp-test-scenarios、myerp-ux-review、web-design-guidelines，先寫測試，畫面訊息與保存資料雙斷言。勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
+    "currentWorkUnit":  "WU-PUR-006f3",
+    "lastCompletedWorkUnit":  "WU-PUR-006f2b",
+    "nextAction":  "做 WU-PUR-006f3：介面 4.3 修訂表單 /pur/purchase-orders/:id/edit（路由 permissionGuard PUR.ORDER.EDIT＋unsavedChangesGuard）。以 006f2b 的 purchase-order-form.ts 擴充（id 存在時為修訂模式）：先查 006a3 的 GET /{id}/edit（或沿用 GET /{id}）與 PUT /{id} 是否已有前端客戶端，沒有就在 purchase-order.service.ts 加 getForEdit／update（PUT body 沿用 purchaseOrderBody＋version）；只有 Draft／Rejected 可編輯，其他狀態唯讀並說明；決標行（awardId 非空）物料／來源／數量／單價／稅率唯讀並說明不可改；Rejected 儲存後回 Draft 要在成功提示說明；409 版本衝突保留輸入、顯示重新載入按鈕（確認後重讀）；422 PUR.ORDER.NOT_EDITABLE／AWARD_LINE_LOCKED 三語並重讀；保存選項標籤（供應商、物料、來源）要能顯示已保存值（無則 #ID）。4.1 詳情加「修改」按鈕（EDIT，Draft／Rejected）。先估時，超過 90 分鐘再拆。用 myerp-test-scenarios、myerp-ux-review、web-design-guidelines，先寫測試，畫面訊息與保存資料雙斷言。勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  221,
-                       "ADR":  216,
+                       "ADR":  217,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -50,7 +50,8 @@
                              "WU-PUR-006e1":  0,
                              "WU-PUR-006e4":  0,
                              "WU-PUR-006f1":  0,
-                             "WU-PUR-006f2a":  0
+                             "WU-PUR-006f2a":  0,
+                             "WU-PUR-006f2b":  0
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -122,5 +123,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T11:01:16+08:00",
-    "updatedAt":  "2026-11-28T11:01:16+08:00"
+    "updatedAt":  "2026-11-28T11:15:33+08:00"
 }

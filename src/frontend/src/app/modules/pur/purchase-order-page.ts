@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, Subscription } from 'rxjs';
 import { TranslatePipe } from '@ngx-translate/core';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
@@ -38,10 +38,11 @@ const EMPTY_FILTER: PurchaseOrderFilter = { keyword: '', from: '', to: '', statu
  */
 @Component({
   selector: 'erp-purchase-order-page',
-  imports: [FormsModule, TranslatePipe, ApiErrorDisplay, FocusOnInit, HasPermissionDirective, StatusTag, NzAlertModule, NzButtonModule, NzTableModule],
+  imports: [FormsModule, RouterLink, TranslatePipe, ApiErrorDisplay, FocusOnInit, HasPermissionDirective, StatusTag, NzAlertModule, NzButtonModule, NzTableModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="orders"><header><h1>{{ 'pur.order.title' | translate }}</h1></header>
+    <section class="orders"><header><h1>{{ 'pur.order.title' | translate }}</h1>
+      <a nz-button nzType="primary" routerLink="/pur/purchase-orders/new" *erpHasPermission="'PUR.ORDER.CREATE'" data-testid="pur-order-new">{{ 'pur.order.new' | translate }}</a></header>
       <form class="filters" (ngSubmit)="search()" data-testid="pur-order-filters">
         <label>{{ 'pur.order.keyword' | translate }} <input type="search" name="poKeyword" autocomplete="off" [(ngModel)]="filter.keyword"
           data-testid="pur-order-keyword" /></label>
@@ -163,7 +164,7 @@ const EMPTY_FILTER: PurchaseOrderFilter = { keyword: '', from: '', to: '', statu
             @if (step.actedAt) { · {{ time(step.actedAt) }} } @if (step.comment) { · “{{ step.comment }}” }</li> }</ol></div> }
       </section> }
     </section>`,
-  styles: `.orders{display:grid;gap:16px;color:var(--erp-color-text)}header{display:flex;gap:8px;align-items:center}h1{font-size:20px;margin:0;text-wrap:balance}
+  styles: `.orders{display:grid;gap:16px;color:var(--erp-color-text)}header{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}h1{font-size:20px;margin:0;text-wrap:balance}
     .filters{display:flex;gap:8px;align-items:end;flex-wrap:wrap}.filters label{display:grid;gap:4px;font-size:12px}
     .filters input,.filters select{min-height:32px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px;padding:0 6px}
     .filters input[type=number]{width:120px}.field-error{color:var(--erp-color-error-text);margin:0}
@@ -220,6 +221,8 @@ export class PurchaseOrderPage {
   private generation = 0; private detailGeneration = 0; private exportEpoch = 0;
   private exportRequest?: Subscription;
   private firstLoad = true;
+  /** Order to open once the first list arrives (`?id=` after saving on 介面 4.2); used once, never written back to the URL. */
+  private openId: number | null = null;
 
   constructor() {
     const params = this.route.snapshot.queryParamMap;
@@ -231,6 +234,7 @@ export class PurchaseOrderPage {
       supplierId: id('supplierId'), requisitionLineId: id('requisitionLineId') };
     if ((PURCHASE_ORDER_SORTS as readonly string[]).includes(sort)) this.sort = sort;
     const page = id('page'); if (page) this.page.set(page);
+    this.openId = id('id');
     effect(() => { this.company.current(); untracked(() => { this.search(!this.firstLoad); this.firstLoad = false; }); });
     inject(DestroyRef).onDestroy(() => { this.generation++; this.detailGeneration++; this.stopExport(); });
   }
@@ -317,9 +321,11 @@ export class PurchaseOrderPage {
     if (!keepError) this.clearError();
     this.api.list({ ...this.applied, page: this.page(), pageSize: this.pageSize() }).subscribe({
       next: result => { if (current !== this.generation) return;
-        this.rows.set(result.items); this.total.set(result.totalCount); this.loading.set(false); },
+        this.rows.set(result.items); this.total.set(result.totalCount); this.loading.set(false);
+        const open = this.openId; this.openId = null;
+        if (open) this.read(open, false); },
       error: failure => { if (current !== this.generation) return;
-        this.rows.set([]); this.total.set(0); this.listFailed.set(true); this.showError(failure); this.loading.set(false); },
+        this.openId = null; this.rows.set([]); this.total.set(0); this.listFailed.set(true); this.showError(failure); this.loading.set(false); },
     });
   }
   view(row: PurchaseOrderSummary): void { this.resetActions(); this.read(row.id, false); }

@@ -1212,3 +1212,11 @@ SQL 守衛 DEFER；沒有執行真實 SQL Up／Down、交易、HTTP 或競態驗
 - 測試資料第一次執行時，「已核准且已軟刪」的請購違反 `ck_pur_requisition_deleted`（只有 Draft 可軟刪）。改為 Draft 軟刪資料，並補 Closed 狀態情境；測試沒有削弱。
 - 審查：`PurchaseOrderOptionService.RequisitionOptionsAsync` 和 `RfqQueryService.SourceOptionsAsync` 的查詢條件相同，但守衛權限與回應欄位不同（多了 requisitionId、需求日、原量、已轉量）。抽共用查詢要跨兩個服務改投影，收益小，所以保留兩份，並以整合測試鎖定兩者的條件。
 - 前端以 `responseType: 'text'` 加 `parseJsonWithDecimalText` 讀取選項與 201 回應，`ratePercent`、`remainingQuantity`、`baseGross` 等不經 double 轉換。POST 的數量與單價以輸入的十進位文字傳送（ASP.NET Web JSON 預設 AllowReadingFromString）。
+
+## 2026-11-28T11:14:15+08:00 WU-PUR-006f2b 介面 4.2 建立表單頁
+
+- 審查：表單沿用 requisition-form 的結構（整單驗證、逐欄伺服器錯誤、公司切換重設），但 4.2 多了日期相依的 context。以 `contextRevision` 丟棄過期回應，避免快速改日期時舊稅率覆蓋新清單。
+- 發現：既有 `errors.PUR.ORDER.INVALID_REQUISITION_SOURCE` 文字寫「整張單未送審」，建立時會誤導。改法：建立頁用專用 key `pur.order.form.invalidSource`，送審仍用原文字。
+- 發現：POST 可回 `CURRENCY_UNAVAILABLE`、`NO_BASE_CURRENCY`、`BASE_CURRENCY_INACTIVE`、`INVALID_RATE`、`AMOUNT_OVERFLOW`，但前端沒有翻譯，只會顯示通用錯誤。改法：三語補上，並把 4.1 錯誤代碼集合的測試擴充為 14 個代碼。
+- UX 截圖審查：英文成功文字「with 1 lines」單複數錯誤（P3），改為「(lines: n)」。web-design-guidelines 只有 P3 項目：代碼與名稱沒有加 `translate="no"`，供應商、物料、來源以按鈕加 aria-label 取代 `<label>`。其餘按 ui-conventions 處理，不改。
+- 效果：前端單元 9 個新案例，模擬 E2E E09／E10 加上相鄰 4.1 的 8 個，共 10/10；建置 0 警告。

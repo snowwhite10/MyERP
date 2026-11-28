@@ -66,6 +66,8 @@ WU-PUR-006e4（2026-11-28T10:28:58+08:00）：4.1 已實作 `/pur/purchase-order
 
 WU-PUR-006f1（2026-11-28T10:43:40+08:00）：4.1 詳情加入生命週期按鈕（REQ_IO_A4.1.4）。Draft 顯示「送審」與「刪除」，Rejected 顯示「刪除」與停用的「送審」（提示須先修訂並儲存），無明細的 Draft 停用送審並說明；Approved 顯示「取消訂單」，開啟內嵌原因表單（必填、最多 500 字、自動聚焦、逐欄錯誤）；PendingApproval／Cancelled 不顯示按鈕，改以文字說明。各按鈕依 SUBMIT／DELETE／CANCEL 權限顯示，處理中全部停用並說明。送審、刪除、取消均先確認（刪除與取消為危險樣式並說明後果）；成功提示依保存結果（待審／立即核准／已刪除／已取消並釋回），之後更新列並重新讀取詳情（刪除則重新載入列表）。拒絕原因顯示在詳情：請購量不足逐行列出訂單行、需求與可用量，無效來源列出訂單行；409 與狀態已變更的 422 重新讀取保存詳情，404 關閉詳情並重新載入列表。截圖：`tests/qa/PUR/screenshots/4.1-actions-*.png`（14 張）。
 
+WU-PUR-006f2b（2026-11-28T11:14:15+08:00，ADR-217）：4.2 已實作 `/pur/purchase-orders/new`（CREATE 守衛＋未保存提醒），列表右上「新增採購單」只在有 CREATE 時顯示。表頭：供應商選擇器（只列已核准啟用）、業務日期（有效時重讀 create-context）、幣別（只有一個時自動帶入）、備註 ≤500；明細 1～1000 行：物料、選填請購來源（先選物料，顯示單號／行號／請購量／已轉量／餘量，可清除，改物料時移除不符來源並說明，超過餘量軟性警告）、數量與單價（13 位整數＋6 位小數，以文字送出）、當日有效進項稅率。改日期使原稅率／幣別失效時清除並指出行號。金額不在前端預估，儲存後在 4.1 詳情顯示。逐欄錯誤、400 欄位、422 MD／來源／幣別、500 traceId 都附「採購單未儲存」；成功提示單號與行數並開啟 `/pur/purchase-orders?id=<id>` 的保存詳情（無 VIEW 則留在本頁顯示單號並重設）。截圖：`tests/qa/PUR/screenshots/4.2-{normal,filled-over,success,validation,422,500}-{light,dark}-zh-Hant.png`、`4.2-filled-light-{en,zh-Hans}.png`。
+
 | Interface No. | Interface | Route | Related REQ_F | Access |
 |---|---|---|---|---|
 | 4.1 | Purchase Order View Interface | `/pur/purchase-orders` | REQ_F4114.1.1, REQ_F4114.1.4, REQ_F4114.1.5, REQ_F4114.1.6 | `PUR.ORDER.VIEW` |

@@ -5,6 +5,8 @@ import { unsavedChangesGuard } from '../../shared/document-page/unsaved-changes.
 export const PUR_ROUTES: Routes = [
   { path: 'purchase-invoices', canActivate: [permissionGuard('PUR.INVOICE.VIEW')],
     loadComponent: () => import('./purchase-invoice-page').then(m => m.PurchaseInvoicePage) },
+  { path: 'purchase-orders/new', canActivate: [permissionGuard('PUR.ORDER.CREATE')], canDeactivate: [unsavedChangesGuard],
+    loadComponent: () => import('./purchase-order-form').then(m => m.PurchaseOrderForm) },
   { path: 'purchase-orders', canActivate: [permissionGuard('PUR.ORDER.VIEW')],
     loadComponent: () => import('./purchase-order-page').then(m => m.PurchaseOrderPage) },
   { path: 'rfqs/:id/comparison', canActivate: [permissionGuard('PUR.RFQ.COMPARE')],
