@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-006e",
-    "lastCompletedWorkUnit":  "WU-PUR-006c2",
-    "nextAction":  "做 WU-PUR-006e：採購單 VIEW 列表／詳情（含保存行、請購／決標來源與 SYS 審批歷史）、CSV 匯出及列印，先核對 PUR requirements.md、api.md、ui-spec.md 與 test-plan.md，再按第 14 節測試先行完成後端與三語前端、亮暗 QA；依 myerp-test-scenarios、myerp-ux-review、web-design-guidelines 執行。006c1／006c2 已完成，006c 父項結清；勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
+    "currentWorkUnit":  "WU-PUR-006e2",
+    "lastCompletedWorkUnit":  "WU-PUR-006e1",
+    "nextAction":  "做 WU-PUR-006e2：擴充採購單 GET /{id} 的保存詳情，顯示請購原量／已轉量／餘量、決標來源（含詢價／決標連結）及 SYS 全輪次審批歷史。先核對 REQ_F4114.1.1、BR-PUR-026、api.md、ui-spec.md，按 myerp-test-scenarios 補真實 SQL 與授權 HTTP 測試再實作；只讀本模組表，SYS 歷史走公開契約；全量後端通過後更新文件、狀態並提交。006e1 已完成；006e3 CSV／列印、006e4 三語亮暗畫面後續處理，勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -46,7 +46,8 @@
                              "WU-PUR-006b2":  0,
                              "WU-PUR-006b3":  0,
                              "WU-PUR-006c1":  0,
-                             "WU-PUR-006c2":  0
+                             "WU-PUR-006c2":  0,
+                             "WU-PUR-006e1":  0
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -117,6 +118,6 @@
                      "rounds":  0,
                      "consecutiveRoundsWithoutIdea":  0
                  },
-    "lastSuccessfulPush":  "2026-11-28T07:52:50+08:00",
-    "updatedAt":  "2026-11-28T07:52:50+08:00"
+    "lastSuccessfulPush":  "2026-11-28T08:09:26+08:00",
+    "updatedAt":  "2026-11-28T08:09:26+08:00"
 }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyERP.Modules.Purchasing.Application;
 using MyERP.Shared.Infrastructure.Security;
+using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.Purchasing.Api;
 
@@ -14,6 +15,16 @@ public sealed class PurchaseOrdersController(PurchaseOrderDraftService drafts,
     PurchaseOrderQueryService queries, PurchaseOrderSubmissionService submissions,
     PurchaseOrderLifecycleService lifecycle) : ControllerBase
 {
+    /// <summary>按單號、業務日、供應商、狀態及請購來源篩選 VIEW 範圍內的保存採購單；以 ID 穩定排序分頁。</summary>
+    [HttpGet]
+    [RequirePermission(PurchasingPermissions.OrderView)]
+    [ProducesResponseType<PagedResult<PurchaseOrderSummary>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public Task<PagedResult<PurchaseOrderSummary>> List([FromQuery] PurchaseOrderQuery query, CancellationToken token) =>
+        queries.ListAsync(query, token);
+
     /// <summary>讀取目前公司與 VIEW 資料範圍內的已保存詳情，包括決標來源 ID。</summary>
     [HttpGet("{id:long}")]
     [RequirePermission(PurchasingPermissions.OrderView)]

@@ -45,6 +45,36 @@ public sealed class PurchaseOrderHttpTests(TestDatabase database) : IAsyncLifeti
     };
 
     [Fact]
+    public async Task ListRequiresViewAndReturnsOnlyCurrentCompanyOrders()
+    {
+        var company = await NewCompanyAsync("PO list");
+        var other = await NewCompanyAsync("PO list other");
+        using var http = factory.CreateClient();
+        var (userId, token) = await CreateUserAsync(http);
+        var (orderId, version) = await SeedOrderAsync(company, userId, "Draft");
+        Assert.Equal(HttpStatusCode.Unauthorized, (await http.GetAsync(Route, Ct)).StatusCode);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, Route, null, token, company),
+            HttpStatusCode.Forbidden, "COMMON.COMPANY.ACCESS_DENIED");
+        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.OrderEdit);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, Route, null, token, company),
+            HttpStatusCode.Forbidden, "COMMON.PERMISSION.DENIED");
+        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.OrderView);
+        await GrantAsync(userId, other, DataScope.Company, PurchasingPermissions.OrderView);
+        var list = await SendAsync(http, HttpMethod.Get, $"{Route}?status=Draft&pageSize=1", null, token, company);
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+        var body = await list.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(1, body.GetProperty("totalCount").GetInt64());
+        Assert.Equal(orderId, body.GetProperty("items")[0].GetProperty("id").GetInt64());
+        Assert.Equal(version, body.GetProperty("items")[0].GetProperty("version").GetInt32());
+        var empty = await SendAsync(http, HttpMethod.Get, Route, null, token, other);
+        Assert.Equal(HttpStatusCode.OK, empty.StatusCode);
+        Assert.Equal(0, (await empty.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("totalCount").GetInt64());
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, $"{Route}?supplierId=0", null, token, company),
+            HttpStatusCode.BadRequest, "COMMON.REQUEST.VALIDATION_FAILED");
+        await AssertUnchangedAsync(company, orderId, version);
+    }
+
+    [Fact]
     public async Task MissingPermissionsAre403AndEditDoesNotFollowViewOrCreate()
     {
         var company = await NewCompanyAsync("PO perms");

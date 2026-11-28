@@ -1737,3 +1737,11 @@ WU-PUR-005f2a2 阻擋核對（2026-10-23T11:17:26+08:00）：按 `myerp-test-sce
 | PUR-INV-UI-E04 | 正常／422／三語亮暗 | 模擬 API：Matched 亮暗、確認框亮暗（取消不送）、FI 422 仍已比對、成功 Posted 顯示參照，en／zh-Hans 截圖；送出恰兩次 POST 版本 4、body null。 | E | REQ_IO_A4.19.8～9 | PASS |
 
 執行記錄：2026-11-27T05:30:01+08:00；真實 SQL PUR_POST_* 10/10（含 105～108）；後端全量 4070/4071（INV LotSerialTrackingTests 一次 SQL 死鎖犧牲，與本變更無關，單獨重跑 29/29）；前端 1305/1305、production 建置；Playwright purchasing-invoice 4/4。真實 API Playwright 過帳仍待 WU-PUR-008b6c。
+## WU-PUR-006e1 VIEW 採購單列表（2026-11-28T07:58:46+08:00）
+
+| ID | 類別 | 情境與預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-PO-LIST-001 | 正常／邊界 | 保存單按單號／業務日穩定排序與分頁；同日以 ID 破同序；篩選單號、閏日日期、供應商、狀態及請購來源，行數與保存行一致。 | I | REQ_F4114.1.1 | PASS（PurchaseOrderListTests 1/1） |
+| PUR-PO-LIST-002 | 權限／關聯 | 公司、本人、部門、分店範圍及軟刪過濾；列表不洩漏他公司或已刪資料；缺 VIEW 403，匿名 401。 | I | REQ_F4114.1.1 | PASS（真實 SQL 1/1、JWT HTTP 1/1） |
+| PUR-PO-LIST-003 | 邊界／錯誤 | 反向日期、零供應商／請購行 ID、未知狀態／排序、非法頁碼回 400，無資料變更；空結果回 200、總數 0。 | I | REQ_F4114.1.1 | PASS（真實 SQL 1/1、JWT HTTP 1/1） |
+| PUR-PO-LIST-NA | 重複／狀態／部分結果／檔案 | 本單元僅唯讀列表：無版本衝突、批次部分寫入或檔案；五種已保存狀態皆可讀。CSV、詳情及畫面錯誤由 006e2～e4 驗。 | — | REQ_F4114.1.1 | N/A |

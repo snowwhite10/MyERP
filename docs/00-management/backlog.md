@@ -746,7 +746,11 @@
 | WU-PUR-006c | PUR | SYS 最終核准／駁回、釋回請購量、取消與草稿軟刪 | P1 | 拆 c1／c2（父項不計） | 006b | 2026-11-28T07:08:03+08:00 依 90 分鐘邊界拆 006c1（DELETE）／006c2（CANCEL），ADR-215；SYS 核准／駁回釋回已由 006b2／006b3 交付。不重複釋回，保留決標來源；入庫後取消限制與 WU-PUR-007 公開契約銜接。 |
 | WU-PUR-006c1 | PUR | DELETE `/{id}?version=` 軟刪未消耗 Draft／Rejected：新權限 PUR.ORDER.DELETE、UPDLOCK、409／422／404、單號與決標來源保留不重用 | P1 | DONE | 006b | 2026-11-28T07:08:03+08:00 真實 SQL PUR-PO-DEL-001～005 共 8 案例＋受權 HTTP 1/1（略過狀態守衛變異 5 紅）；ADR-215。 |
 | WU-PUR-006c2 | PUR | CANCEL `POST /{id}/cancel {version,reason}`：Approved 且無入庫引用，同交易按請購行 ID 升冪鎖定原子釋回並清旗標、保留審批／單號／決標來源；PendingApproval／Draft／Rejected／Cancelled 422；故障注入回滾只釋回一次；受權 HTTP | P1 | DONE | 006c1 | 2026-11-28T07:50:43+08:00 獨立 `PUR.ORDER.CANCEL`、原因 migration、共用釋回、PUR 收貨引用檢查；真實 SQL 35/35、HTTP 4/4、後端全量重跑 4236/4236、帶資料測試庫 migration Down／Up。006c 父項結清。 |
-| WU-PUR-006e | PUR | 採購單列表／詳情、來源及審批歷史、CSV／列印、三語亮暗 QA | P1 | TODO | 006a,006c | 4.1 畫面與逐態 Playwright，提示與保存資料雙斷言。 |
+| WU-PUR-006e | PUR | 採購單列表／詳情、來源及審批歷史、CSV／列印、三語亮暗 QA | P1 | 拆 e1～e4（父項不計） | 006a,006c | 2026-11-28T07:58:46+08:00 依 90 分鐘邊界拆分；4.1 畫面逐態 Playwright 與保存資料雙斷言。 |
+| WU-PUR-006e1 | PUR | VIEW 列表 API：公司／SYS 資料範圍、篩選、穩定分頁、保存行數 | P1 | DONE | 006c2 | 2026-11-28T08:07:53+08:00 真實 SQL 2/2、受權 HTTP 1/1、後端全量 4239/4239；不包含詳情擴充。 |
+| WU-PUR-006e2 | PUR | VIEW 詳情擴充：請購原量／已轉量／餘量、決標來源與 SYS 全輪次審批歷史 | P1 | TODO | 006e1 | 不直接讀寫其他模組資料表，SYS 經公開契約。 |
+| WU-PUR-006e3 | PUR | 採購單安全 CSV 匯出與重新讀取列印契約 | P1 | TODO | 006e2 | 0 行、上限、BOM、公式防護、授權與快照一致。 |
+| WU-PUR-006e4 | PUR | 介面 4.1 三語亮暗列表／詳情／CSV／列印與逐態 Playwright QA | P1 | TODO | 006e3 | 畫面訊息和保存資料雙斷言；使用兩項 UX skills。 |
 | WU-PUR-006f | PUR | 採購單建立／修訂表單、請購來源選擇與提交／取消操作、三語亮暗 QA | P1 | TODO | 006b,006c,006e | 4.2／4.3 畫面；轉單來源不可改、餘量衝突及全部失敗原因。 |
 | WU-PUR-007 | PUR | 收貨／採購入庫與 INV 原子過帳、批序號、退貨 | P1 | 已拆分 | 006 | 007d 設計、007a 收貨後端、007b 入庫與審批、007c 退貨後端、007e 前端；父項待全部驗收。 |
 | WU-PUR-007d | PUR | 收貨／採購入庫／退貨需求、INV 契約、交易邊界及完整測試情境設計 | P1 | DONE | 006d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4114.2.1～6、4.7.1～3、BR-PUR-028～035、PUR-RECV-001～028；無表、端點或畫面。 |
