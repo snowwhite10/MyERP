@@ -1,5 +1,12 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-28T21:34:33+08:00 — WU-PUR-007c5 退貨 LIST／CSV
+
+- 問題：首次真實 SQL CSV 匯出 4 行（預期 3），軟刪退貨被匯出。原因：CSV 連收貨表頭用 `IgnoreQueryFilters()`（讀可能軟刪來源的單號），EF Core 對整個查詢關閉全域篩選，包括退貨自身的軟刪篩選；keyword 子查詢同理。修改：退貨查詢基底明確 `!IsDeleted`。效果：3/3 綠；移除條件即紅（ADR-226 第 5 點）。
+- 發現（既有）：`PurchaseReceiptQueryService` keyword 子查詢對採購單用 `IgnoreQueryFilters()`，可能令軟刪收貨出現在 keyword 搜尋結果；未在本單元修改，已列 backlog WU-PUR-007a11 以真實 SQL 驗證後修正。
+- 測試加強：種子原本收貨成本與原入庫成本同為 4，無法分辨金額取哪個成本；過帳後把收貨行成本改 5，Posted 金額仍須 4。變異（成本取收貨優先）令 LIST 與 CSV 2 個案例紅，還原後綠。
+- 審查：Posted 不可變 trigger 拒絕直接改業務日，測試改在 Draft 時設定日期再送審。LIST 只對當頁 ID 讀行彙總與採購單號（兩次小查詢），避免每列相關子查詢；金額逐行四位與 SUBMIT 審批金額一致。
+
 ## 2026-11-28T21:12:59+08:00 — WU-PUR-007c4 退貨 SUBMIT、SYS 核准過帳與駁回釋回
 
 - 問題：首次真實 SQL 4/9 紅（駁回時「預留少於本單量」）。原因：收貨行鎖後讀取以 `join ... AsNoTracking()` 連收貨表頭，EF 對整個查詢套用不追蹤，SUBMIT 對 `pending_return_reserved` 的修改從未保存。修改：改為只查收貨行並以 `Any` 子查詢判斷 Posted 表頭。效果：預留隨 SYS 實例同交易提交，9/9 綠。

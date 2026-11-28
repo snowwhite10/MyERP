@@ -151,6 +151,34 @@ public sealed class PurchaseOrderHttpTests(TestDatabase database) : IAsyncLifeti
         await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.ReturnSubmit);
         await AssertProblemAsync(await SendAsync(http, HttpMethod.Post, returns + "/999999/submit", new { version = 1 },
             token, company), HttpStatusCode.NotFound, "PUR.RETURN.NOT_FOUND");
+
+        // WU-PUR-007c5 PUR-RET-LST-005: LIST needs VIEW; CSV needs EXPORT and VIEW.
+        Assert.Equal(HttpStatusCode.Unauthorized, (await http.GetAsync(returns, Ct)).StatusCode);
+        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.ReturnEdit,
+            PurchasingPermissions.ReturnExport);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, returns, null, token, company),
+            HttpStatusCode.Forbidden, "COMMON.PERMISSION.DENIED");
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, returns + "/export", null, token, company),
+            HttpStatusCode.Forbidden, "COMMON.PERMISSION.DENIED");
+        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.ReturnView);
+        var list = await SendAsync(http, HttpMethod.Get, returns + "?status=Posted&sort=documentNo", null, token, company);
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+        Assert.Equal(0, (await list.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("totalCount").GetInt64());
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, returns + "?status=Cancelled", null, token, company),
+            HttpStatusCode.BadRequest, "COMMON.REQUEST.VALIDATION_FAILED");
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, returns + "/export", null, token, company),
+            HttpStatusCode.Forbidden, "COMMON.PERMISSION.DENIED");
+        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.ReturnView,
+            PurchasingPermissions.ReturnExport);
+        var exported = await SendAsync(http, HttpMethod.Get, returns + "/export", null, token, company);
+        Assert.Equal(HttpStatusCode.OK, exported.StatusCode);
+        Assert.Equal("0", Assert.Single(exported.Headers.GetValues("X-Export-Row-Count")));
+        Assert.Equal("text/csv; charset=utf-8", exported.Content.Headers.ContentType!.ToString());
+        Assert.Equal("attachment; filename=\"purchase-returns.csv\"",
+            exported.Content.Headers.ContentDisposition!.ToString());
+        Assert.StartsWith("﻿", await exported.Content.ReadAsStringAsync(Ct));
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, returns + "/export?purchaseOrderId=0", null, token,
+            company), HttpStatusCode.BadRequest, "COMMON.REQUEST.VALIDATION_FAILED");
         await using var db = database.CreateRawContext();
         Assert.Equal(0, await db.Database.SqlQuery<int>(
             $"SELECT COUNT(*) AS [Value] FROM dbo.pur_purchase_return WHERE company_id={company}").SingleAsync(Ct));

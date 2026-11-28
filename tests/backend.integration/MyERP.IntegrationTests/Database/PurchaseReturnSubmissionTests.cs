@@ -32,7 +32,7 @@ namespace MyERP.IntegrationTests.Database;
 /// 把本單量加到收貨行 pending_return_reserved；最終核准（或零步驟）同交易經 INV PostPurchaseReturnAsync 出庫、保存原入庫成本，
 /// 預留轉 posted_returned；駁回只釋回本單；INV 失敗或重放整筆回滾；重複決定 409；雙連線不超退。
 /// </summary>
-public sealed class PurchaseReturnSubmissionTests(TestDatabase database)
+public sealed partial class PurchaseReturnSubmissionTests(TestDatabase database)
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
     private static readonly DateTime Today = new(2028, 3, 1, 9, 30, 0);

@@ -2,18 +2,62 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyERP.Modules.Purchasing.Application;
 using MyERP.Shared.Infrastructure.Security;
+using MyERP.Shared.Infrastructure.Web;
+using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.Purchasing.Api;
 
 /// <summary>
-/// Purchase return drafts (WU-PUR-007c3). Drafts reference Posted receipt lines of one purchase order, keep the original
+/// Purchase returns (WU-PUR-007c3～c5): LIST／CSV, drafts and SUBMIT. Drafts reference Posted receipt lines of one purchase order, keep the original
 /// inventory receipt movement and never reserve quantity or post stock; SUBMIT reserves and final approval posts (007c4).
 /// </summary>
 [ApiController]
 [Route("api/v1/pur/purchase-returns")]
 public sealed class PurchaseReturnsController(PurchaseReturnDraftService drafts,
-    PurchaseReturnSubmissionService submissions) : ControllerBase
+    PurchaseReturnSubmissionService submissions, PurchaseReturnQueryService queries) : ControllerBase
 {
+    /// <summary>
+    /// Lists saved returns in the VIEW data scope. Filters: <c>keyword</c> (return or purchase order number),
+    /// <c>from</c>／<c>to</c> business date, <c>purchaseOrderId</c>, <c>status</c> (Draft／PendingApproval／Rejected／Posted);
+    /// sort <c>documentNo</c> or <c>businessDate</c> (default <c>-businessDate</c>, ID tiebreak). <c>returnAmount</c> is
+    /// base currency: Posted lines at the original receipt cost; until then the receipt unit cost
+    /// (<c>amountEstimated</c> = true).
+    /// </summary>
+    [HttpGet]
+    [RequirePermission(PurchasingPermissions.ReturnView)]
+    [ProducesResponseType<PagedResult<PurchaseReturnSummary>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public Task<PagedResult<PurchaseReturnSummary>> List([FromQuery] PurchaseReturnQuery query,
+        CancellationToken token) => queries.ListAsync(query, token);
+
+    /// <summary>Exports every saved line matching the list filters (VIEW ∩ EXPORT scope); max 10000 lines, otherwise 422
+    /// <c>PUR.RETURN.EXPORT_LIMIT</c> and no file.</summary>
+    /// <remarks>Same filters and sort as the list; paging is ignored. UTF-8 BOM, CRLF, formula-safe cells, three-language
+    /// header／status／cost source; <c>X-Export-Row-Count</c> is the number of lines written (0 = header only).
+    /// Lots/serials are not exported; print by re-reading <c>GET /{id}</c>.</remarks>
+    [HttpGet("export")]
+    [RequirePermission(PurchasingPermissions.ReturnExport)]
+    [Produces("text/csv")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, "application/problem+json")]
+    public async Task Export([FromQuery] PurchaseReturnQuery query, CancellationToken token)
+    {
+        var language = ErpProblemDetailsFactory.ResolveLanguage(Request.Headers.AcceptLanguage);
+        await queries.ExportAsync(query, language, Response.Body, count =>
+        {
+            Response.ContentType = "text/csv; charset=utf-8";
+            Response.Headers.ContentDisposition = "attachment; filename=\"purchase-returns.csv\"";
+            Response.Headers["X-Export-Row-Count"] = count.ToString(global::System.Globalization.CultureInfo.InvariantCulture);
+            Response.Headers.ContentLanguage = language;
+            return Task.CompletedTask;
+        }, token: token);
+    }
+
     /// <summary>
     /// Posted receipt lines of <paramref name="purchaseOrderId"/> that still have returnable quantity, with saved
     /// lots/serials (max 1000). Needs CREATE or EDIT; the quantity is advisory and rechecked when saving.

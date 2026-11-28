@@ -36,6 +36,7 @@ public sealed class PurchasingModule : IErpModule
         services.AddScoped<PurchaseReceiptLifecycleService>();
         services.AddScoped<PurchaseReturnDraftService>();
         services.AddScoped<PurchaseReturnSubmissionService>();
+        services.AddScoped<PurchaseReturnQueryService>();
         services.AddScoped<PurchaseReturnPosting>();
         services.AddScoped<QuotationMutationService>();
         services.AddScoped<RfqDraftService>();
@@ -112,6 +113,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
     public const string ReturnEdit = "PUR.RETURN.EDIT";
     public const string ReturnDelete = "PUR.RETURN.DELETE";
     public const string ReturnSubmit = "PUR.RETURN.SUBMIT";
+    public const string ReturnExport = "PUR.RETURN.EXPORT";
     public const string InvoiceCreate = "PUR.INVOICE.CREATE";
     public const string InvoiceEdit = "PUR.INVOICE.EDIT";
     public const string InvoiceMatch = "PUR.INVOICE.MATCH";
@@ -158,6 +160,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
         new(ReturnEdit, PurchasingModuleContracts.ModuleCode),
         new(ReturnDelete, PurchasingModuleContracts.ModuleCode),
         new(ReturnSubmit, PurchasingModuleContracts.ModuleCode),
+        new(ReturnExport, PurchasingModuleContracts.ModuleCode),
         new(InvoiceCreate, PurchasingModuleContracts.ModuleCode),
         new(InvoiceEdit, PurchasingModuleContracts.ModuleCode),
         new(InvoiceMatch, PurchasingModuleContracts.ModuleCode),

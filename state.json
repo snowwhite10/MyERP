@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-007c4",
-    "lastCompletedWorkUnit":  "WU-PUR-007c4",
-    "nextAction":  "做 WU-PUR-007c5（退貨 LIST／CSV，新權限 PUR.RETURN.EXPORT）：沿 ADR-222 收貨列表／CSV 模式（PurchaseReceiptQueryService、PurchaseReceiptCsv）新增 PurchaseReturnQueryService：GET /api/v1/pur/purchase-returns（VIEW 資料範圍、keyword 退貨或採購單號、from／to、purchaseOrderId、status、documentNo／businessDate 穩定排序分頁；摘要含採購單號、行數、總量、退貨金額＝Σ 行量×OriginalUnitCost（未過帳用收貨單位成本並標示））與 GET /export.csv（EXPORT∩VIEW、快照、10000 行上限 422、BOM／CRLF／三語／公式防護）。用 myerp-test-scenarios 先寫真實 SQL＋受權 HTTP 紅燈；PurchasingModuleTests 權限清單補 PUR.RETURN.EXPORT。不得做畫面（007e）。",
+    "currentWorkUnit":  "WU-PUR-007c5",
+    "lastCompletedWorkUnit":  "WU-PUR-007c5",
+    "nextAction":  "做 WU-PUR-007a11（收貨 LIST keyword 軟刪洩漏，ADR-226 後果）：先在 PurchaseReceiptQueryTests 寫真實 SQL 紅燈——軟刪 Draft 收貨以其採購單號 keyword 搜尋 LIST 與 CSV 都不得出現（PurchaseReceiptQueryService keyword 子查詢對 PurchaseOrderSource 用 IgnoreQueryFilters，EF 會關閉整個查詢的軟刪篩選）；修正為基底查詢明確 !IsDeleted；同時檢查 PurchaseOrderQueryService、發票查詢服務有無同樣模式，有則同樣補測試與修正。之後做 007e 收貨／退貨畫面（前端 skills 必用）。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  225,
-                       "ADR":  225,
+                       "ADR":  226,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -57,7 +57,8 @@
                              "WU-PUR-007c1":  0,
                              "WU-PUR-007c2":  0,
                              "WU-PUR-007c3":  0,
-                             "WU-PUR-007c4":  0
+                             "WU-PUR-007c4":  0,
+                             "WU-PUR-007c5":  0
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -129,5 +130,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T21:20:17+08:00",
-    "updatedAt":  "2026-11-28T21:20:17+08:00"
+    "updatedAt":  "2026-11-28T21:41:22+08:00"
 }

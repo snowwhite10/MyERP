@@ -1,5 +1,19 @@
 # PUR 測試計劃
 
+## WU-PUR-007c5 退貨 LIST／CSV（2026-11-28T21:34:33+08:00）
+
+依 `myerp-test-scenarios`：`I` 為真實 SQL＋真實 SYS 核准＋真實 INV 過帳（取得 OriginalUnitCost），`H` 為受權 HTTP，`U` 為單元。測試類 `PurchaseReturnSubmissionTests`（partial `.Query.cs`）、`PurchaseOrderHttpTests.PurchaseReturnRoutes…`、`PurchaseReturnCsvTests`。種子：Draft d1（2＋1.5、收貨成本 4）、Posted d2（1、原入庫成本 4，過帳後收貨行成本改 5）、軟刪 Draft 一張。
+
+| ID | 類別 | 情境與預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-RET-LST-001 | 正常／邊界 | 預設 -businessDate、businessDate／documentNo 升降冪、第 2 頁、status（含 0 筆 Rejected）、purchaseOrderId、keyword（採購單號片段含前後空白、退貨單號）、from／to 同日邊界、無結果；摘要含採購單號、供應商、幣別、行數 2、總量 3.5、金額 14 暫估；Posted 金額 4（原成本，非收貨成本 5）不暫估；軟刪不出現。 | I | REQ_F4114.7.1 | PASS（變異：成本取收貨優先 → 紅） |
+| PUR-RET-LST-002 | 錯誤 | from > to、purchaseOrderId 0、未知狀態、非白名單排序、兩個排序、pageSize 0 皆 400；CSV 未知狀態 400。 | I | REQ_F4114.7.1 | PASS |
+| PUR-RET-LST-003 | 權限 | Self 他人 0 筆、Self 本人 2 筆、他公司 0 筆、只有 EDIT 403；EXPORT（Self）窄於 VIEW（Company）時 CSV 0 行而 LIST 仍 2 筆；缺 VIEW 或缺 EXPORT 皆 403。 | I | REQ_F4114.7.1 | PASS |
+| PUR-RET-LST-004 | 檔案 | CSV 每保存行一列、列表排序且同單按行號、忽略分頁、BOM、CRLF、繁中表頭／狀態／成本來源（入庫原成本 vs 收貨單位成本（暫估））、英文表頭；軟刪不匯出；0 行只有表頭；超上限 422 PUR.RETURN.EXPORT_LIMIT 零輸出且不呼叫標頭回呼。 | I | REQ_F4114.7.1 | PASS（變異：缺明確 !IsDeleted → 紅） |
+| PUR-RET-LST-005 | 權限／HTTP | 匿名 LIST 401；只有 EDIT＋EXPORT 時 LIST／CSV 403；VIEW 200 totalCount 0、未知狀態 400；VIEW 無 EXPORT CSV 403；VIEW＋EXPORT 200 text/csv、purchase-returns.csv、X-Export-Row-Count 0、BOM；purchaseOrderId=0 400。 | H | REQ_F4114.7.1 | PASS |
+| PUR-RET-LST-U01～U03 | 檔案 | CSV 行格式、公式防護（=、+、-）、三語狀態與成本來源、未知狀態例外、空值欄、表頭數 14；金額逐行四位 AwayFromZero；上限含 10000、10001 422。 | U | REQ_F4114.7.1 | PASS |
+| PUR-RET-LST-NA | 部分結果／重複／狀態／關聯 | 唯讀查詢無批次、無寫入：部分成功、重複代碼、409 不適用；所有狀態皆可列出（無禁止操作）；引用關聯只讀取保存號碼，採購單／收貨被停用不影響；500／逾時沿全域 ProblemDetails，畫面屬 007e。 | — | — | N/A |
+
 ## WU-PUR-007c4 退貨 SUBMIT、SYS 核准過帳與駁回釋回（2026-11-28T21:12:59+08:00）
 
 依 `myerp-test-scenarios`：`I` 為真實 SQL＋真實 SYS 審批引擎＋真實 INV（`PostPurchaseReturnAsync`、MD 物料／倉庫），`H` 為受權 HTTP。測試類 `PurchaseReturnSubmissionTests`、`PurchaseOrderHttpTests.PurchaseReturnRoutesRequireIndependentPermissionsAndHideMissingDocuments`。每筆拒絕均驗零變更（預留、狀態、SYS 實例、INV 異動）。

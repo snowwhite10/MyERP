@@ -87,6 +87,7 @@ WU-PUR-007a7（2026-11-28T13:01:04+08:00）：訂單行 `posted_received` 與 `p
 | BR-PUR-034 | 收貨／退貨的公司、動作權限及 SYS 資料範圍分別守衛；匿名 401、缺權 403、跨公司或範圍外 404、舊版 409、狀態或餘量 422。任一行失敗整單零變更，不回部分成功；錯誤須指出行號、可用量與原因。 | REQ_F4114.2.1～6, REQ_F4114.7.1～3 |
 WU-PUR-007c3（BR-PUR-032／034 草稿補充，ADR-224）：鎖序 採購單 → 退貨 → 收貨行（ID 升冪）；收貨行須屬同公司、未刪、同採購單的 Posted 收貨，同收貨行各草稿行合計 ≤ 已收 − 已退 − 待審預留（草稿本身不預留，Rejected 已釋回）；原入庫 movement 經 INV `IPurchaseInboundEvidenceQuery` 以（收貨 ID、行號）取得，須唯一且物料、數量與收貨行相符並有成本；批號／序號須在該收貨行擷取中且每號合計不超擷取量（不分大小寫）。倉庫預設收貨行倉庫，可改為其他有效倉庫；儲位暫不擷取。`OriginalUnitCost` 至過帳才寫入。
 WU-PUR-007c4（BR-PUR-031～034／044 退貨補充，ADR-225）：SUBMIT 以「採購單 → 退貨 → 收貨行升冪」鎖內按收貨行聚合重驗：仍屬同採購單 Posted 收貨、`已收 − 已退 − 待審預留 ≥ 本單量`、`PurchaseReturnInvoicedLimit`（本單預留 0）；批號／序號物料擷取合計須等於行量（PUR.RETURN.TRACKING_REQUIRED）；通過後加待審預留並送 SYS（金額＝Σ 行量 × 收貨單位成本，四位）。最終核准（含零步驟）排除本單預留再驗一次，預留轉已退，以保存的原入庫 movement、倉庫與批序號呼叫 INV `PostPurchaseReturnAsync`，回傳 `OriginalUnitCost` 寫入退貨行後才把表頭標 Posted（不可變 trigger 要求先行後頭）；INV 拒絕或重放（409 PUR.RETURN.POSTING_CONFLICT）整筆回滾。駁回只釋回本單預留。
+WU-PUR-007c5（REQ_F4114.7.1 退貨列表／CSV，ADR-226）：只讀已保存、未軟刪退貨（明確 `!IsDeleted`，因連採購單／收貨需 IgnoreQueryFilters 會關閉全域篩選）；LIST 套 VIEW 範圍、CSV 再交集 EXPORT 範圍並以 Snapshot 一致讀取。退貨金額＝Σ 逐行 round(退貨量 × 成本, 4, AwayFromZero)，成本 Posted 取 INV 原入庫成本 `OriginalUnitCost`，未過帳取收貨行本位幣單位成本並標示暫估；不重估、不寫任何資料。
 | BR-PUR-035 | 採購入庫與退貨只處理庫存；FI 應付和三單比對由 WU-PUR-008 以其公開契約處理，不在收貨核准時隱含產生應付。 | REQ_F4114.2.4, REQ_F4114.7.3 |
 
 現有 INV `PurchaseInboundLine.UnitCost` 是 `decimal`；本設計的本位幣未稅單位成本須在 PUR 保存，應用層在送 INV 前驗精度、幣別與溢位。退貨契約的型別和冪等實作由 007 後續子單元以真實 SQL 驗收。設計審查避免「草稿先佔量」、「駁回後遺留預留」及「全退後錯誤取消採購單」三種競態／狀態缺口。
