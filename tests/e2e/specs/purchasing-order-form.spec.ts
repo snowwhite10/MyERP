@@ -87,6 +87,13 @@ test('PUR-PO-UI-E09 New from the list saves one exact draft and opens its saved 
   await expect(form.getByTestId('pur-po-form-context-hint')).toContainText('請先選擇業務日期');
   await capture(page, 'normal-light-zh-Hant');
   await chooseTheme(page, 'dark'); await capture(page, 'normal-dark-zh-Hant'); await chooseTheme(page, 'light');
+  await chooseLanguage(page, 'en');
+  await expect(form.getByRole('heading', { name: 'New purchase order' })).toBeVisible();
+  await capture(page, 'normal-light-en');
+  await chooseLanguage(page, 'zh-Hans');
+  await expect(form.getByRole('heading', { name: '新增采购单' })).toBeVisible();
+  await capture(page, 'normal-light-zh-Hans');
+  await chooseLanguage(page, 'zh-Hant');
 
   await fillValid(page);
   expect(backend.contextDates).toEqual(['2028-02-29']);
@@ -147,4 +154,33 @@ test('PUR-PO-UI-E10 validation, 422 and 500 explain why and save nothing', async
   await chooseLanguage(page, 'zh-Hans');
   await expect(form.getByRole('heading', { name: '新增采购单' })).toBeVisible();
   await capture(page, 'filled-light-zh-Hans');
+});
+
+test('PUR-PO-UI-E13 server 400 identifies fields and number conflict 409 keeps the draft', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: the server responded with a status of (400|409)/);
+  const backend = await mockBackend(page);
+  await page.goto('/pur/purchase-orders/new');
+  const form = page.getByTestId('pur-po-form');
+  await fillValid(page);
+  backend.next = { status: 400, body: { errorCode: 'COMMON.VALIDATION', errors: {
+    supplierId: ['invalid'], 'lines[0].quantity': ['invalid'], 'lines[0].currencyCode': ['invalid'] } } };
+  await form.getByTestId('pur-po-form-save').click();
+  await expect(form.getByTestId('pur-po-form-error')).toContainText('採購單未儲存，資料未變更。');
+  await expect(form.getByTestId('pur-po-form-server-supplierId')).toBeVisible();
+  await expect(form.getByTestId('pur-po-form-server-quantity-0')).toBeVisible();
+  await expect(form.getByTestId('pur-po-form-server-currencyCode')).toBeVisible();
+  await expect(form.getByTestId('pur-po-form-quantity-0')).toHaveValue('2.5');
+  expect(backend.saved).toHaveLength(0);
+  await capture(page, '400-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, '400-dark-zh-Hant'); await chooseTheme(page, 'light');
+
+  backend.next = { status: 409, body: { errorCode: 'COMMON.CONCURRENCY.CONFLICT' } };
+  await form.getByTestId('pur-po-form-save').click();
+  await expect(form.getByTestId('pur-po-form-error')).toContainText('單號衝突，請重新儲存');
+  await expect(form.getByTestId('pur-po-form-error')).toContainText('採購單未儲存，資料未變更。');
+  await expect(form.getByTestId('pur-po-form-quantity-0')).toHaveValue('2.5');
+  expect(backend.posts).toHaveLength(2);
+  expect(backend.saved).toHaveLength(0);
+  await capture(page, '409-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, '409-dark-zh-Hant');
 });

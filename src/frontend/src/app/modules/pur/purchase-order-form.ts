@@ -466,7 +466,8 @@ export class PurchaseOrderForm implements HasUnsavedChanges {
   private explain(error: unknown): void {
     this.lastServerError = error;
     const code = error instanceof HttpErrorResponse ? (error.error as { errorCode?: unknown } | null)?.errorCode : undefined;
-    const key = code === 'PUR.ORDER.INVALID_REQUISITION_SOURCE' ? 'pur.order.form.invalidSource'
+    const key = !this.id && error instanceof HttpErrorResponse && error.status === 409 ? 'pur.order.form.createConflict'
+      : code === 'PUR.ORDER.INVALID_REQUISITION_SOURCE' ? 'pur.order.form.invalidSource'
       : apiErrorKey(error, PURCHASE_ORDER_FORM_ERROR_CODES);
     const t = (k: string, p?: object) => this.translate.instant(k, p) as string;
     const inline: Record<string, string> = {}; const details: string[] = [];

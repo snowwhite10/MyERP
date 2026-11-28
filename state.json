@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-006f4",
-    "lastCompletedWorkUnit":  "WU-PUR-006f3",
-    "nextAction":  "做 WU-PUR-006f4：4.2／4.3 逐態 Playwright 與三語亮暗 UX QA，作為 006f 父項結清條件。已有模擬 E2E：E09／E10（4.2 正常、驗證、422、500）與 E11／E12（4.3 正常、409 重新載入、422 NOT_EDITABLE 唯讀）。補齊尚未覆蓋的狀態：4.2 的 409（SYS 發號衝突）與 400 逐欄；4.3 的 400 逐欄、422 AWARD_LINE_LOCKED（原因加重讀）、500 traceId、無 VIEW 時留在本頁的成功、404 找不到；4.1 詳情「修改」按鈕的亮暗截圖。每個狀態截淺色與深色（zh-Hant），en／zh-Hans 各截正常狀態一張；斷言畫面訊息與後端保存資料一致。可考慮真實 API 一個修訂情境（real-api-*，需記憶體守衛 PASS，DEFER 就只做模擬並記錄）。用 myerp-ux-review、web-design-guidelines，結果寫入 optimization-log。完成後 006f 父項結清。勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
+    "currentWorkUnit":  "WU-PUR-007a",
+    "lastCompletedWorkUnit":  "WU-PUR-006f4",
+    "nextAction":  "做 WU-PUR-007a：採購入庫／收貨後端草稿。先依 007d 規格與 PUR-RECV-001～028 核對需求、資料結構、API、BR 及現有 007a1～a6 離線規則；測一次 Test-SqlMemoryGate.ps1，PASS 後按第 14 節先寫真實 SQL／HTTP 紅燈，再做收貨表／行、採購單已收及待審量、草稿 CREATE／EDIT／READ 與雙連線餘量，建置、全量測試、migration Down／Up、文件和提交。若單輪超過 90 分鐘，按可驗收邊界先拆 007a 子單元；DEFER 就依第 1 節延後 SQL 驗證並改做不依賴 SQL 的工作。勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -124,5 +124,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T12:38:41+08:00",
-    "updatedAt":  "2026-11-28T12:38:41+08:00"
+    "updatedAt":  "2026-11-28T12:50:48+08:00"
 }
