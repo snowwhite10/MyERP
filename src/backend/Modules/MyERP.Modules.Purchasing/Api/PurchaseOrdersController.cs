@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.Purchasing.Application;
 using MyERP.Shared.Approvals;
+using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Security;
 using MyERP.Shared.Infrastructure.Web;
 using MyERP.Shared.Paging;
@@ -15,7 +17,9 @@ namespace MyERP.Modules.Purchasing.Api;
 [Tags("PUR - Purchase Orders")]
 public sealed class PurchaseOrdersController(PurchaseOrderDraftService drafts,
     PurchaseOrderQueryService queries, PurchaseOrderSubmissionService submissions,
-    PurchaseOrderLifecycleService lifecycle, IApprovalHistoryReader history) : ControllerBase
+    PurchaseOrderLifecycleService lifecycle, IApprovalHistoryReader history, PurchaseOrderOptionService options,
+    ISupplierSelectionOptions supplierOptions, IInventorySelectionOptions itemOptions,
+    IQuotationSelectionOptions selectionOptions) : ControllerBase
 {
     /// <summary>按單號、業務日、供應商、狀態及請購來源篩選 VIEW 範圍內的保存採購單；以 ID 穩定排序分頁。</summary>
     [HttpGet]
@@ -50,6 +54,55 @@ public sealed class PurchaseOrdersController(PurchaseOrderDraftService drafts,
             return Task.CompletedTask;
         }, token: token);
     }
+
+    /// <summary>CREATE／EDIT 專用的目前公司已核准、啟用供應商選項；不需 MD.VIEW。</summary>
+    [HttpGet("supplier-options")]
+    [RequireAnyPermission(PurchasingPermissions.OrderCreate, PurchasingPermissions.OrderEdit)]
+    [ProducesResponseType<PagedResult<SupplierSelectionOption>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public Task<PagedResult<SupplierSelectionOption>> SupplierOptions([FromQuery] PagedRequest request,
+        CancellationToken token) => supplierOptions.ApprovedAsync(request, token);
+
+    /// <summary>CREATE／EDIT 專用的目前公司啟用物料選項；不需 MD.VIEW。</summary>
+    [HttpGet("item-options")]
+    [RequireAnyPermission(PurchasingPermissions.OrderCreate, PurchasingPermissions.OrderEdit)]
+    [ProducesResponseType<PagedResult<InventorySelectionOption>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public Task<PagedResult<InventorySelectionOption>> ItemOptions([FromQuery] PagedRequest request,
+        CancellationToken token) => itemOptions.ItemsAsync(request, token);
+
+    /// <summary>
+    /// CREATE／EDIT 專用：目前公司啟用幣別及 <paramref name="businessDate"/> 當日有效的非銷項稅率。
+    /// 日期必填；保存時仍以同一日期重驗。
+    /// </summary>
+    [HttpGet("create-context")]
+    [RequireAnyPermission(PurchasingPermissions.OrderCreate, PurchasingPermissions.OrderEdit)]
+    [ProducesResponseType<PurchaseOrderCreateContext>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public async Task<PurchaseOrderCreateContext> CreateContext([FromQuery] DateOnly? businessDate,
+        CancellationToken token)
+    {
+        if (businessDate is not { } date || date == DateOnly.MinValue)
+            throw new RequestValidationException("businessDate", "Business date is required.");
+        var options = await selectionOptions.GetAsync(date, token);
+        return new PurchaseOrderCreateContext(date, options.Currencies, options.TaxRates);
+    }
+
+    /// <summary>CREATE／EDIT 專用：目前公司已核准且仍有餘量的請購行（原量／已轉量／餘量），可按物料及單號篩選。</summary>
+    [HttpGet("requisition-options")]
+    [RequireAnyPermission(PurchasingPermissions.OrderCreate, PurchasingPermissions.OrderEdit)]
+    [ProducesResponseType<PagedResult<PurchaseOrderRequisitionOption>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public Task<PagedResult<PurchaseOrderRequisitionOption>> RequisitionOptions([FromQuery] PagedRequest request,
+        [FromQuery] long? itemId, CancellationToken token) => options.RequisitionOptionsAsync(request, itemId, token);
 
     /// <summary>讀取 VIEW 範圍內的保存行、詢價與決標來源、請購原量／已轉量／餘量及 SYS 歷次審批；先驗單據範圍。</summary>
     [HttpGet("{id:long}")]
@@ -165,3 +218,7 @@ public sealed class PurchaseOrdersController(PurchaseOrderDraftService drafts,
 
 /// <summary>SUBMIT 請求：目前保存版本。</summary>
 public sealed record PurchaseOrderSubmitInput(int Version);
+
+/// <summary>介面 4.2／4.3 表頭與行選項：查詢日期、啟用幣別及當日有效進項稅率。</summary>
+public sealed record PurchaseOrderCreateContext(DateOnly BusinessDate,
+    IReadOnlyList<QuotationCurrencyOption> Currencies, IReadOnlyList<QuotationTaxRateOption> TaxRates);

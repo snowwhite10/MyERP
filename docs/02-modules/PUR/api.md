@@ -90,9 +90,10 @@ WU-PUR-007a6 的 `PurchaseReceiptReservationAssembly.ForSubmit/ForReject` 只以
 |---|---|---|---|---|
 | GET | `/` | `keyword,from,to,supplierId,status,requisitionLineId,page,pageSize,sort`；穩定分頁；同排序鍵以 ID 破同序，行數來自已保存行。006e1 已實作 | `PUR.ORDER.VIEW` | 400、401、403 |
 | GET | `/{id}` | 先查 VIEW 範圍訂單；保存行含 `awardId`、`requisitionLineId`、請購單 ID／單號／行號、`requisitionQuantity`／`requisitionOrderedQuantity`／`requisitionRemainingQuantity`；表頭含 `rfqId`／`rfqDocumentNo`、版本、`approvalHistory`（SYS 公開契約，最新輪次在前）。無來源欄位為 null，歷史軟刪來源仍可讀。006e2 已實作 | `PUR.ORDER.VIEW` | 400、401、403、404 |
-| GET | `/create-options` | 目前公司有效供應商、物料、幣別及日期有效進項稅率的分頁選項 | `PUR.ORDER.CREATE` | 400、403 |
+| GET | `/supplier-options`、`/item-options` | 目前公司已核准啟用供應商、啟用物料分頁選項（`page,pageSize,keyword,sort`）；沿用 MD 公開契約。已實作（006f2a，ADR-216） | `PUR.ORDER.CREATE` 或 `PUR.ORDER.EDIT` | 400、401、403 |
+| GET | `/create-context?businessDate=` | 目前公司啟用幣別及該業務日有效的非銷項稅率（`ratePercent` 精確十進位）；日期必填，缺漏／無效／0001-01-01 回 400。已實作（006f2a） | `PUR.ORDER.CREATE` 或 `PUR.ORDER.EDIT` | 400、401、403 |
 | GET | `/{id}/edit` | EDIT 動作範圍內可修訂詳情和保存引用狀態 | `PUR.ORDER.EDIT` | 403、404、422 |
-| GET | `/requisition-options` | 依物料／單號查同公司已核准且餘量大於零的請購行，並回原量／已轉量／餘量 | `PUR.ORDER.CREATE` 或 `PUR.ORDER.EDIT` | 400、403 |
+| GET | `/requisition-options` | `itemId?,keyword,page,pageSize`：同公司未刪除、已核准且原量大於已轉量的請購行，回 `id,requisitionId,documentNo,lineNo,itemId,requiredDate,quantity,orderedQuantity,remainingQuantity`，按單號／行號／ID 穩定分頁；非正 itemId 400。不需 REQUISITION.VIEW；送審時仍鎖內重算。已實作（006f2a） | `PUR.ORDER.CREATE` 或 `PUR.ORDER.EDIT` | 400、403 |
 | POST | `/` | 原子建立人工 Draft，201 回保存詳情（ID、單號、行、原幣／本位幣價稅、版本） | `PUR.ORDER.CREATE` | 400、409、422 |
 | PUT | `/{id}?version=` | 整組修訂 Draft／Rejected（保存後回 Draft），單號不變；行按行號比對，決標行保留 ID 與商業快照，200 回保存詳情（決標行原幣金額可為 null）。已實作（006a3） | `PUR.ORDER.EDIT` | 400、404、409（舊版本）、422（`PUR.ORDER.NOT_EDITABLE`、`PUR.ORDER.AWARD_LINE_LOCKED`、`PUR.ORDER.INVALID_REQUISITION_SOURCE`、`PUR.ORDER.AMOUNT_OVERFLOW`：決標行保存金額加人工行重算後表頭達 DECIMAL(19,4) 上限，006a4） |
 | DELETE | `/{id}?version=` | 軟刪未消耗的 Draft／Rejected（駁回已釋回），204；單號、保存行、決標來源與 SYS 歷史保留，請購已轉量不變，單號不重用。已實作（006c1，ADR-215） | `PUR.ORDER.DELETE`（EDIT 不含） | 400、401、403、404（他公司／範圍外／已刪）、409（舊版本）、422 `PUR.ORDER.NOT_DELETABLE`（待審／已核准／已取消；核准單改用 CANCEL） |

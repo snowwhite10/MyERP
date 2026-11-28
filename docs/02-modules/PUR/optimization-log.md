@@ -1205,3 +1205,10 @@ SQL 守衛 DEFER；沒有執行真實 SQL Up／Down、交易、HTTP 或競態驗
 - 新增共用 `FocusOnInit` 指令（shared/forms），讓按鈕開啟的輸入欄自動聚焦，可供其他頁面重用。
 - UX 審查（14 張截圖逐張檢視）：無 P1／P2。P3 已修：取消原因無效時輸入框沒有紅框，加 `aria-invalid` 樣式。P3 未改：fullPage 截圖時暗色遮罩只覆蓋可視區（既有截圖方式所致，非畫面問題）。
 - web-design-guidelines 自查：標籤、aria-invalid／describedby、focus-visible、aria-live、省略號、危險確認與停用原因均符合；無新發現。
+
+## 2026-11-28T10:57:25+08:00 WU-PUR-006f2a 表單選項 API
+
+- 發現：006d 設計的 `/create-options`／`/requisition-options` 沒有實作，表單只能借用 RFQ／REQUISITION 權限讀選項。改法：拆成四個 CREATE 或 EDIT 守衛的唯讀端點，沿用 MD 公開契約（ADR-216）。效果：只有 ORDER.CREATE 或 EDIT 的用戶即可完成表單，且不新增 migration。
+- 測試資料第一次執行時，「已核准且已軟刪」的請購違反 `ck_pur_requisition_deleted`（只有 Draft 可軟刪）。改為 Draft 軟刪資料，並補 Closed 狀態情境；測試沒有削弱。
+- 審查：`PurchaseOrderOptionService.RequisitionOptionsAsync` 和 `RfqQueryService.SourceOptionsAsync` 的查詢條件相同，但守衛權限與回應欄位不同（多了 requisitionId、需求日、原量、已轉量）。抽共用查詢要跨兩個服務改投影，收益小，所以保留兩份，並以整合測試鎖定兩者的條件。
+- 前端以 `responseType: 'text'` 加 `parseJsonWithDecimalText` 讀取選項與 201 回應，`ratePercent`、`remainingQuantity`、`baseGross` 等不經 double 轉換。POST 的數量與單價以輸入的十進位文字傳送（ASP.NET Web JSON 預設 AllowReadingFromString）。

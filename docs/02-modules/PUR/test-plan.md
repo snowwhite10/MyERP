@@ -1787,3 +1787,14 @@ WU-PUR-005f2a2 阻擋核對（2026-10-23T11:17:26+08:00）：按 `myerp-test-sce
 | PUR-PO-UI-012 | 重複與衝突 | 409 版本衝突與 NOT_SUBMITTABLE／NOT_DELETABLE／NOT_CANCELLABLE／HAS_RECEIPTS／EMPTY 顯示原因並重新讀取保存詳情（不清除原因）；404 關閉詳情、顯示找不到並重新載入列表。 | U | REQ_IO_A4.1.4 | PASS（006f1：PUR-PO-UI-012） |
 | PUR-PO-UI-013 | 正常／錯誤 | 刪除為危險確認（說明單號保留不重用、請購量不變），送出 `?version=`，成功後關閉詳情並重新載入列表；422 NOT_DELETABLE 顯示原因並重新讀取。 | U＋E | REQ_IO_A4.1.4, REQ_F4114.1.6 | PASS（006f1：PUR-PO-UI-013；E08 後端標記刪除、列表為空） |
 | PUR-PO-UI-NA | 重複／衝突／關聯 | 唯讀畫面：無保存、版本衝突、重複代碼或刪除引用；詳情讀取時資料已軟刪由 404 情境覆蓋。真實 API 畫面驗收沿既有真實 E2E 套件另列，本單元以模擬後端驗畫面。 | — | REQ_F4114.1.1 | N/A |
+
+### WU-PUR-006f2a 介面 4.2／4.3 表單選項 API 與前端客戶端（ADR-216）
+
+| ID | 類別 | 情境與預期 | 層級 | 追溯 | 結果 |
+|---|---|---|---|---|---|
+| PUR-PO-OPT-001 | 正常 | 只有 `PUR.ORDER.CREATE` 或只有 `EDIT`（Self 範圍、無 MD.VIEW／ORDER.VIEW）可讀 supplier-options（只列已核准，排除待審供應商）、item-options、requisition-options；前端帶 page／pageSize／去空白 keyword 與可選 itemId。 | I、U | REQ_F4114.1.2～3 | PASS（2026-11-28T10:57:25+08:00） |
+| PUR-PO-OPT-002 | 邊界 | create-context 以業務日回啟用幣別（排除停用 USD）與當日有效非銷項稅率（2028-02-29 閏日只生效一天，次日 0 筆；銷項稅率不列）；ratePercent 前端保留精確文字。 | I、U | REQ_F4114.1.2 | PASS |
+| PUR-PO-OPT-003 | 狀態／關聯 | 請購來源只列已核准且原量大於已轉量的行；Draft、PendingApproval、Closed、已用盡、已軟刪及他公司請購不列；回 requisitionId／單號／行號／需求日／原量 5.123456／已轉 2／餘量 3.123456（精確）；itemId 與單號 keyword 篩選；不存在物料 0 筆。 | I、U | REQ_F4114.1.2、BR-PUR-020 | PASS |
+| PUR-PO-OPT-004 | 權限／錯誤 | 匿名 401；只有 ORDER.VIEW＋RFQ.CREATE＋REQUISITION.CREATE 的用戶四端點皆 403 `COMMON.PERMISSION.DENIED`（含 traceId）；未授權公司 403；itemId=0、pageSize=0、缺日期、2028-02-30、0001-01-01 皆 400。 | I | REQ_F4114.1.2 | PASS |
+| PUR-PO-OPT-005 | 正常／錯誤 | POST body 依畫面順序編行號、表頭幣別大寫套用每行、數量／單價以精確十進位文字（13 位整數＋6 位小數、0.000001）傳送、空備註為 null、不送公司／單號／金額；201 回應金額保留精確文字；422 `MD.SUPPLIER.NOT_APPROVED` 轉三語錯誤 key。 | U | REQ_F4114.1.2 | PASS |
+| PUR-PO-OPT-006 | 部分結果／檔案／衝突 | 不適用：唯讀選項無批次、上傳或寫入；POST 400／409／422／500 的畫面呈現屬 006f2b／006f4。 | — | — | N/A |

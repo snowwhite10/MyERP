@@ -27,6 +27,7 @@ public sealed class PurchasingModule : IErpModule
         services.AddScoped<RfqConversionService>();
         services.AddScoped<PurchaseOrderDraftService>();
         services.AddScoped<PurchaseOrderQueryService>();
+        services.AddScoped<PurchaseOrderOptionService>();
         services.AddScoped<PurchaseOrderSubmissionService>();
         services.AddScoped<PurchaseOrderLifecycleService>();
         services.AddScoped<QuotationMutationService>();

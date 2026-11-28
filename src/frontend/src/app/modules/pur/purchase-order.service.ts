@@ -6,12 +6,14 @@ import { apiErrorKey, apiErrorTraceId, apiValidationDetails, blobJsonErrors, jso
 import { parseJsonWithDecimalText } from '../../shared/decimal-text';
 import { validIsoDate } from '../../shared/date';
 import { PagedResult } from '../../shared/list-page/table-query';
+import { SelectDialogQuery } from '../../shared/dialogs/select-dialog';
+import { RequisitionItemOption } from './requisition.service';
 
 const API = '/api/v1/pur/purchase-orders';
 /** Every decimal field stays as the exact server digits (never a JavaScript double). */
 const DECIMAL_KEYS = ['baseGross', 'baseNet', 'baseTax', 'exchangeRate', 'quantity', 'unitPrice', 'taxRatePercent',
   'originalNet', 'originalTax', 'originalGross', 'requisitionQuantity', 'requisitionOrderedQuantity',
-  'requisitionRemainingQuantity'] as const;
+  'requisitionRemainingQuantity', 'ratePercent', 'orderedQuantity', 'remainingQuantity'] as const;
 export const PURCHASE_ORDER_EXPORT_FILE = 'purchase-orders.csv';
 export const PURCHASE_ORDER_EXPORT_TIMEOUT_MS = 120_000;
 export const PURCHASE_ORDER_STATUSES = ['Draft', 'PendingApproval', 'Approved', 'Rejected', 'Cancelled'] as const;
@@ -59,6 +61,35 @@ export interface PurchaseOrderShortage { requisitionLineId: number; orderLineNos
 export interface PurchaseOrderActionFailure { key: string; traceId: string | null; shortages: PurchaseOrderShortage[];
   lineNos: number[]; fields: string[]; reload: 'none' | 'detail' | 'list' }
 export type PurchaseOrderReasonIssue = 'required' | 'length';
+/** 介面 4.2／4.3 options (006f2a): only PUR.ORDER.CREATE or EDIT is needed, never MD.VIEW or ORDER.VIEW. */
+export interface PurchaseOrderSupplierOption { id: number; code: string; name: string; isActive: boolean; isApproved: boolean }
+export type PurchaseOrderItemOption = RequisitionItemOption;
+export interface PurchaseOrderCreateContext { businessDate: string; currencies: { code: string; name: string }[];
+  taxRates: { id: number; code: string; name: string; ratePercent: string }[] }
+/** An approved requisition line with remaining quantity; quantities keep the server's exact digits. */
+export interface PurchaseOrderRequisitionOption { id: number; requisitionId: number; documentNo: string; lineNo: number;
+  itemId: number; requiredDate: string; quantity: string; orderedQuantity: string; remainingQuantity: string }
+export interface PurchaseOrderLineDraft { itemId: number | null; requisitionLineId: number | null; quantity: string;
+  unitPrice: string; taxRateId: number | null }
+export interface PurchaseOrderDraft { supplierId: number | null; businessDate: string; currencyCode: string; remark: string;
+  lines: PurchaseOrderLineDraft[] }
+/** 201 / 200 reply of POST / PUT: the saved order with server-computed amounts (exact decimal text). */
+export interface PurchaseOrderSaved { id: number; documentNo: string; status: PurchaseOrderStatus; version: number;
+  supplierId: number; businessDate: string; currency: string; baseCurrencyCode: string; exchangeRate: string;
+  baseNet: string; baseTax: string; baseGross: string; remark: string | null;
+  lines: { id: number; lineNo: number; itemId: number; requisitionLineId: number | null; quantity: string; unitPrice: string;
+    taxRateId: number; taxRatePercent: string; baseNet: string; baseTax: string; baseGross: string }[] }
+
+/**
+ * POST / PUT body: line numbers follow screen order, the header currency applies to every manual line, quantities and prices
+ * travel as the exact typed decimal text (never a JavaScript double); company, number, owner and amounts are never sent.
+ */
+export function purchaseOrderBody(draft: PurchaseOrderDraft): object {
+  const currencyCode = draft.currencyCode.trim().toUpperCase();
+  return { supplierId: draft.supplierId, businessDate: draft.businessDate, remark: draft.remark.trim() || null,
+    lines: draft.lines.map((line, index) => ({ lineNo: index + 1, itemId: line.itemId, requisitionLineId: line.requisitionLineId,
+      quantity: line.quantity.trim(), unitPrice: line.unitPrice.trim(), currencyCode, taxRateId: line.taxRateId })) };
+}
 
 const positiveId = (value: number | null) => value === null || (Number.isSafeInteger(value) && value > 0);
 /** The first reason the typed filters cannot be sent; null when valid (mirrors the server's 400 rules). */
@@ -113,6 +144,12 @@ export function purchaseOrderCancelReasonIssue(reason: string): PurchaseOrderRea
   return !trimmed ? 'required' : trimmed.length > PURCHASE_ORDER_REASON_MAX ? 'length' : null;
 }
 
+function optionParams(query: SelectDialogQuery): HttpParams {
+  let params = new HttpParams().set('page', query.page).set('pageSize', query.pageSize);
+  if (query.keyword.trim()) params = params.set('keyword', query.keyword.trim());
+  return params;
+}
+
 function filterParams(params: HttpParams, filter: PurchaseOrderFilter & { sort: string }): HttpParams {
   for (const key of ['keyword', 'from', 'to', 'status', 'sort'] as const) {
     const value = filter[key].trim();
@@ -152,6 +189,27 @@ export class PurchaseOrderService {
   /** POST /{id}/cancel with the saved version and the trimmed reason; releases the requisition quantity once. */
   cancel(id: number, version: number, reason: string): Observable<PurchaseOrderActionResult> {
     return this.act(this.http.post(`${API}/${id}/cancel`, { version, reason: reason.trim() }, { responseType: 'text' }));
+  }
+  supplierOptions(query: SelectDialogQuery): Observable<PagedResult<PurchaseOrderSupplierOption>> {
+    return this.read(this.http.get(`${API}/supplier-options`, { params: optionParams(query), responseType: 'text' }));
+  }
+  itemOptions(query: SelectDialogQuery): Observable<PagedResult<PurchaseOrderItemOption>> {
+    return this.read(this.http.get(`${API}/item-options`, { params: optionParams(query), responseType: 'text' }));
+  }
+  /** Active currencies and the input tax rates valid on the business date (rates as exact decimal text). */
+  createContext(businessDate: string): Observable<PurchaseOrderCreateContext> {
+    return this.read(this.http.get(`${API}/create-context`,
+      { params: new HttpParams().set('businessDate', businessDate), responseType: 'text' }));
+  }
+  /** Approved requisition lines with remaining quantity, optionally only for the line's item. */
+  requisitionOptions(query: SelectDialogQuery, itemId: number | null): Observable<PagedResult<PurchaseOrderRequisitionOption>> {
+    let params = optionParams(query);
+    if (itemId) params = params.set('itemId', itemId);
+    return this.read(this.http.get(`${API}/requisition-options`, { params, responseType: 'text' }));
+  }
+  /** POST / creates a manual Draft atomically (201 with the saved order); 400 / 422 bodies keep field and MD reasons. */
+  create(draft: PurchaseOrderDraft): Observable<PurchaseOrderSaved> {
+    return this.read(this.http.post(API, purchaseOrderBody(draft), { responseType: 'text' }));
   }
   /** Error bodies are parsed with shortage quantities kept as exact decimal text. */
   private act(request: Observable<string>): Observable<PurchaseOrderActionResult> {
