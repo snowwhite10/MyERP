@@ -9177,6 +9177,272 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseReturn", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("BranchId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("branch_id");
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CustomFields")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("custom_fields");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<long?>("DepartmentId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("department_id");
+
+                    b.Property<string>("DocumentNo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("document_no");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<long?>("OwnerId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("owner_id");
+
+                    b.Property<long>("PurchaseOrderId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("purchase_order_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pur_purchase_return");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_pur_purchase_return_company_id_id");
+
+                    b.HasIndex("CompanyId", "DocumentNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pur_purchase_return_company_id_document_no");
+
+                    b.HasIndex("CompanyId", "OwnerId", "Id")
+                        .HasDatabaseName("ix_pur_purchase_return_company_id_owner_id_id");
+
+                    b.HasIndex("CompanyId", "PurchaseOrderId", "Status", "Id")
+                        .HasDatabaseName("ix_pur_purchase_return_company_id_purchase_order_id_status_id");
+
+                    b.ToTable("pur_purchase_return", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_pur_return_order", "[purchase_order_id] > 0");
+
+                            t.HasCheckConstraint("ck_pur_return_status", "[status] IN ('Draft','PendingApproval','Rejected','Posted')");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseReturnLine", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int")
+                        .HasColumnName("line_no");
+
+                    b.Property<long?>("LocationId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("location_id");
+
+                    b.Property<long>("MaterialId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("material_id");
+
+                    b.Property<long>("OriginalMovementId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("original_movement_id");
+
+                    b.Property<decimal?>("OriginalUnitCost")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("original_unit_cost");
+
+                    b.Property<long>("PurchaseReturnId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("purchase_return_id");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<long>("ReceiptLineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("receipt_line_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.Property<long>("WarehouseId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pur_purchase_return_line");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_pur_purchase_return_line_company_id_id");
+
+                    b.HasIndex("CompanyId", "ReceiptLineId")
+                        .HasDatabaseName("ix_pur_purchase_return_line_company_id_receipt_line_id");
+
+                    b.HasIndex("CompanyId", "PurchaseReturnId", "LineNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pur_purchase_return_line_company_id_purchase_return_id_line_no");
+
+                    b.ToTable("pur_purchase_return_line", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_pur_return_line_quantity", "[purchase_return_id] > 0 AND [receipt_line_id] > 0 AND [original_movement_id] > 0 AND [line_no] > 0 AND [material_id] > 0 AND [warehouse_id] > 0 AND [quantity] > 0 AND ([original_unit_cost] IS NULL OR [original_unit_cost] >= 0)");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseReturnLineTracking", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("LineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("line_id");
+
+                    b.Property<string>("LotNo")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("lot_no");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<int>("SeqNo")
+                        .HasColumnType("int")
+                        .HasColumnName("seq_no");
+
+                    b.Property<string>("SerialNo")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("serial_no");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pur_purchase_return_line_tracking");
+
+                    b.HasIndex("CompanyId", "LineId", "SeqNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pur_purchase_return_line_tracking_company_id_line_id_seq_no");
+
+                    b.ToTable("pur_purchase_return_line_tracking", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_pur_return_tracking_seq", "[seq_no] > 0");
+
+                            t.HasCheckConstraint("ck_pur_return_tracking_target", "([lot_no] IS NOT NULL AND [serial_no] IS NULL AND LEN([lot_no]) > 0 AND [quantity] > 0) OR ([lot_no] IS NULL AND [serial_no] IS NOT NULL AND LEN([serial_no]) > 0 AND [quantity] = 1)");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.QuotationLine", b =>
                 {
                     b.Property<long>("Id")
@@ -14714,6 +14980,47 @@ namespace MyERP.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_pur_purchase_receipt_line_pur_purchase_receipt_company_id_purchase_receipt_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseReturn", b =>
+                {
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.PurchaseOrderSource", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "PurchaseOrderId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_purchase_return_order");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseReturnLine", b =>
+                {
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.PurchaseReturn", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "PurchaseReturnId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_purchase_return_line_return");
+
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.PurchaseReceiptSourceLine", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "ReceiptLineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_purchase_return_line_receipt_line");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseReturnLineTracking", b =>
+                {
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.PurchaseReturnLine", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "LineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_purchase_return_tracking_line");
                 });
 
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.QuotationLine", b =>

@@ -53,6 +53,7 @@ public sealed class PurchasingModule : IErpModule
         services.AddSingleton<IModuleDbModel, PurchaseInvoiceNumberDbModel>();
         services.AddSingleton<IModuleDbModel, PurchaseInvoiceDraftDbModel>();
         services.AddSingleton<IModuleDbModel, PurchaseInvoiceSourceDbModel>();
+        services.AddSingleton<IModuleDbModel, PurchaseReturnDbModel>();
         services.AddSingleton<IModuleDbModel, PurchaseInvoiceResolutionDbModel>();
         services.AddScoped<IPurchaseInvoiceDraftSourceReader, PurchaseInvoiceDraftSourceReader>();
         services.AddScoped<IPurchaseInvoiceExchangeSource, PurchaseInvoiceExchangeSource>();

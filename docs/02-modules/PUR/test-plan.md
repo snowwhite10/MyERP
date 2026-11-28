@@ -1,5 +1,22 @@
 # PUR 測試計劃
 
+## WU-PUR-007c2 退貨 schema（2026-11-28T18:31:36+08:00）
+
+依 `myerp-test-scenarios`：本切片只建 schema，退貨命令、授權與畫面由 007c3～c5 驗收。`I` 為真實 SQL；每筆拒絕均驗原資料不變。
+
+| ID | 類別 | 情境與預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-RET-SCH-001 | 正常 | 三表、同公司 FK、FK 索引、唯一單號與 CHECK 存在；有效 Draft 表頭、行、批號可寫。 | I | REQ_F4114.7.2、REQ_DS43.223～225 | PASS |
+| PUR-RET-SCH-002 | 邊界 | 量 0、行號 0、原 movement ID 0、負成本、空批號及序號量≠1 被 CHECK 拒絕；六位量允許。 | I | REQ_DS43.224～225 | PASS |
+| PUR-RET-SCH-003 | 重複與衝突 | 同公司重複單號、已軟刪單號、同單重複行號／追蹤序號拒絕；不同公司單號可重用。版本 409 屬 007c3。 | I | REQ_DS43.223～225 | PASS |
+| PUR-RET-SCH-004 | 權限／關聯 | 跨公司採購單、退貨表頭、收貨行或追蹤行 FK 拒絕；MD／INV 外部 ID 無跨模組 FK。API 權限與資料範圍屬 007c3。 | I | REQ_DS43.223～225 | PASS |
+| PUR-RET-SCH-005 | 狀態 | 無效狀態拒絕；Posted 表頭及行不可修改／刪除，Draft 可修改；狀態轉換由 007c4 驗收。 | I | REQ_DS43.223～225 | PASS |
+| PUR-RET-SCH-006 | 容量 | 收貨行預留／已退各非負，兩者與已開票、匹配量總和不得超已收量。 | I | REQ_F4114.7.3 | PASS（既有 CHECK） |
+| PUR-RET-SCH-007 | migration | 帶舊收貨資料 Down／Up 後資料、既有 CHECK 及三表結構正確。 | I | REQ_DS43.223～225 | PASS（正式 myerp 16 行保留） |
+| PUR-RET-SCH-NA | 部分結果／錯誤／檔案／E2E | schema 寫入是單交易，無批次部分成功；HTTP 400／409／422／500、逾時與畫面訊息屬 007c3～007e；本切片無檔案。 | — | REQ_F4114.7.2～3 | N/A |
+
+結果（2026-11-28T18:38:52+08:00）：真實 SQL 4/4、後端全量 4317/4317；正式 myerp migration Up／Down／Up 後原收貨 16 行保留、三表與三個 Posted 保護 trigger 存在。DocGen 帶資料庫一致性 0 Error／615 Warning。
+
 ## WU-PUR-007b2 收貨行批號／序號擷取與入庫傳遞（2026-11-28T16:28:11+08:00）
 
 依 myerp-test-scenarios 列出；測試：`PurchaseReceiptTrackingTests`（I，真實 SQL＋MD＋SYS＋INV）、`PurchaseReceiptTrackingRulesTests`（U）、改寫 `PurchaseReceiptPostingTests`。

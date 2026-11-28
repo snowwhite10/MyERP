@@ -144,7 +144,6 @@ BlueWhale 的 4.1 採購單六項需求沿用原編號。人工建立與 ADR-070
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
 | REQ_F4114.1.1 | 1.1 | System should enable user to view purchase orders. | Developer | VIEW 只列目前公司及 SYS 動作資料範圍內的訂單；依單號、日期、供應商、狀態及請購來源穩定分頁。詳情顯示保存行、決標來源、請購原量／已轉量／餘量、版本與 SYS 審批歷史；他公司或範圍外 404。另持 EXPORT 權限才可匯出相同篩選與 VIEW 範圍的完整保存行 CSV：UTF-8 BOM、CRLF、三語欄名／狀態、公式防護、最多 10000 行，超限不輸出部分檔；列印重新讀取已保存詳情。 |
-
 | REQ_F4114.1.2 | 1.0 | System should enable user to create purchase orders. | Developer | CREATE 可人工建立 1～1000 行草稿；CONVERT 建立的草稿沿用 REQ_F4114.6.3。SYS 同交易發永久唯一單號；供應商、物料、幣別、進項稅率與可選請購來源須在目前公司有效，正數六位基本單位數量、非負六位單價、逐行四位金額；來源請購必須已核准且物料相同。草稿不消耗請購量、不寫 INV。 |
 | REQ_F4114.1.3 | 1.0 | System should enable user to edit purchase orders. | Developer | EDIT 只可帶目前版本修改草稿或駁回單的可編輯表頭與人工行；決標轉單行的來源、供應商、數量與價格快照不可改。駁回的純轉單訂單可只修訂備註後回草稿。修訂後重新驗人工行 MD 與請購引用並重算金額；待審、已核准、已取消不可修改；舊版本 409。 |
 | REQ_F4114.1.4 | 1.0 | System should enable user to approve purchase orders. | Developer | SUBMIT 只接受草稿及目前版本，按請購行鎖定並檢查全部來源的累計已轉量不超核准量，在同一交易增加已轉量與建立 SYS 審批實例；零步驟立即核准。人工最終核准只經 SYS 審批 API，同交易更新訂單狀態；重複提交／決定不重複消耗。核准不寫 INV，採購入庫另行過帳。 |

@@ -1,5 +1,12 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-28T18:31:36+08:00 — WU-PUR-007c2 退貨 schema
+
+- 審查：收貨行的 `pending_return_reserved`、`posted_returned` 及容量 CHECK 已由前單元建立；重建會破壞既有發票限量規則，沿用原約束。退貨行的 INV movement／MD 參照只存 ID，PUR 內部以公司複合 FK 保護。
+- 測試先行：新增真實 SQL schema 測試先見三表 0/3；migration 產生器初次未註冊 DbModel 產出空 migration，補註冊後重生。產生碼的重複陣列觸發 CA1861，改靜態欄位。SQL trigger 拒絕會令測試交易回滾，將 Posted 表頭／行／追蹤各自隔離測試。
+- 優化：Posted 表頭、行、追蹤以 SQL trigger 禁止後續寫入；007c4 必須先在交易內寫 OriginalUnitCost、再把表頭轉 Posted。這避免只靠 API 防止意外改寫成本快照。
+- 文件一致性：帶 SQL 的 DocGen 初次 17 Error，因既有 `requirements.md` 在 4.1.1 與 4.1.2 間有空行、後續需求未被解析；移除空行後 0 Error／615 Warning，無語義改動。
+
 ## 2026-11-28T16:04:47+08:00 — WU-PUR-007b1 收貨最終核准與零步驟同交易 INV 入庫- 設計：仿 SD 出貨（ADR-144／142）抽出共用過帳步驟，結果處理器以 Func 延遲解析避免 SYS／MD 的 DI 循環；不新增異動 ID 欄，以 INV 冪等鍵（公司、來源類型、收貨 ID、行號）識別（ADR-220）。- 測試先行證據：變異（移除訂單行已收量轉移、收貨行 posted_received、重放檢查）使 PurchaseReceiptPostingTests 6 案中 5 紅（批號案不受影響，正確），還原後全綠。- 拆分：批序號需要收貨行追蹤表與草稿輸入，超出 90 分鐘，拆為 007b2；期間追蹤物料由 INV 拒絕並整筆回滾。- 風險：收貨無 PostedAt 欄；過帳時間以 INV 異動 PostedAt 為準，畫面（007e）如需顯示再評估。
 ## 2026-11-28T15:43:06+08:00 — WU-PUR-007a9 收貨 SUBMIT 預留與 SYS 駁回釋回
 

@@ -1,12 +1,12 @@
-﻿{
+{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-007c1",
-    "lastCompletedWorkUnit":  "WU-PUR-007c1",
-    "nextAction":  "做 WU-PUR-007c2（退貨 schema）：先讀 ADR-223、ADR-218（收貨草稿 schema 切片）、ADR-221（追蹤表）、PurchaseReceiptSource／Line DbModel 與 docs/02-modules/PUR/data-structure.md。新增 pur_purchase_return（REQ_DS43.223，公司＋唯一單號、來源採購單、業務日、狀態 Draft/PendingApproval/Rejected/Posted、版本、軟刪、custom_fields）、pur_purchase_return_line（REQ_DS43.224，原收貨行 FK、原 INV movement ID、物料／倉儲、數量 DECIMAL(19,6) CHECK > 0、OriginalUnitCost 快照可空待 c4 寫入）、pur_purchase_return_line_tracking（REQ_DS43.225），收貨行加 pending_return_reserved／returned_quantity（CHECK 非負且 reserved+returned <= received）；可逆 migration、帶資料 Down/Up；以 myerp-test-scenarios 先寫真實 SQL schema 紅燈（同公司 FK、FK 索引、唯一、CHECK 拒絕）。不做服務或端點（c3）。之後 c3 草稿 CRUD、c4 SUBMIT/SYS 核准呼叫 INV PostPurchaseReturnAsync 並保存 OriginalUnitCost、c5 LIST/CSV，再 007e 畫面。勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
+    "currentWorkUnit":  "WU-PUR-007c2",
+    "lastCompletedWorkUnit":  "WU-PUR-007c2",
+    "nextAction":  "做 WU-PUR-007c3（退貨草稿 CRUD）：先讀 ADR-223、REQ_F4114.7.1～3、BR-PUR-030～034／044、007c2 退貨表與 007a8 收貨草稿模式。用 myerp-test-scenarios 先列 CREATE／EDIT／READ／DELETE 與來源選項情境並寫紅燈真實 SQL＋受權 HTTP；實作 PUR.RETURN.VIEW／CREATE／EDIT／DELETE、Posted 收貨行可退量來源選項、同公司及 SYS 範圍、Draft／Rejected 帶版本修訂、僅 Draft 軟刪，原 movement、批序號與成本來源由已保存收貨／INV 證據驗證。不得做 SUBMIT／SYS 過帳（007c4）、LIST／CSV（007c5）或畫面（007e）。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -25,7 +25,7 @@
                     "SCM":  "IN_PROGRESS"
                 },
     "idCounters":  {
-                       "REQ_DS43":  222,
+                       "REQ_DS43":  225,
                        "ADR":  223,
                        "nextSrsModuleNo":  17
                    },
@@ -54,7 +54,8 @@
                              "WU-PUR-006f2b":  0,
                              "WU-PUR-006f3":  0,
                              "WU-PUR-007a10":  0,
-                             "WU-PUR-007c1":  0
+                             "WU-PUR-007c1":  0,
+                             "WU-PUR-007c2":  0
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -126,5 +127,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T17:20:15+08:00",
-    "updatedAt":  "2026-11-28T17:20:15+08:00"
+    "updatedAt":  "2026-11-28T18:40:25+08:00"
 }

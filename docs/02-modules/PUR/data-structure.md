@@ -1,5 +1,23 @@
 # PUR 資料結構
 
+## WU-PUR-007c2 採購退貨 schema
+
+| Requirement ID | Version | Table Name | Description | Author | 追溯 |
+|---|---|---|---|---|---|
+| REQ_DS43.223 | 1.0 | pur_purchase_return | 保存同公司採購單來源、永久唯一單號、業務日、Draft／PendingApproval／Rejected／Posted、資料範圍、軟刪、custom_fields 與審計。 | Developer | REQ_F4114.7.1～3 |
+| REQ_DS43.224 | 1.0 | pur_purchase_return_line | 保存同公司退貨表頭與原收貨行、原 INV movement ID、物料／倉儲／儲位、六位正數量及過帳時才寫入的 OriginalUnitCost 快照。 | Developer | REQ_F4114.7.2～3 |
+| REQ_DS43.225 | 1.0 | pur_purchase_return_line_tracking | 保存退貨行批號或單件序號及六位數量。 | Developer | REQ_F4114.7.2～3 |
+
+三表均有 `id BIGINT IDENTITY`、`company_id`、建立／更新審計與 `version`；表頭單號 `NVARCHAR(50)` 在公司內永久唯一（軟刪亦不釋放），`custom_fields NVARCHAR(MAX)`。行的 `original_movement_id` 及物料／倉儲／儲位只存外部 ID，不建跨模組 FK。`(company_id,id)` alternate key 用於同公司 FK；表頭→採購單、行→表頭／收貨行、追蹤→行均有同公司 FK 與查詢索引；單內行號及行內追蹤序號唯一。CHECK 拒絕非正來源、數量或行號、負成本、無效狀態及不合法批序號。收貨行原有 `posted_returned`／`pending_return_reserved` 及 `ck_pur_receipt_line_quantities` 已防止兩者與開票／匹配量合計超過已收量，本切片不重建欄位。退貨服務在 007c3／c4 加鎖與重驗，資料庫 FK 只保證同公司存在，Posted 來源狀態與原 movement 一致性由應用／INV 契約驗。
+
+```mermaid
+erDiagram
+    pur_purchase_order ||--o{ pur_purchase_return : source
+    pur_purchase_return ||--o{ pur_purchase_return_line : contains
+    pur_purchase_receipt_line ||--o{ pur_purchase_return_line : original_receipt
+    pur_purchase_return_line ||--o{ pur_purchase_return_line_tracking : captures
+```
+
 WU-PUR-007b2（2026-11-28T16:28:11+08:00，ADR-221）：新增 REQ_DS43.222 `pur_purchase_receipt_line_tracking`（migration `Purchasing_ReceiptLineTracking`，可逆）：`company_id`、`line_id`（FK `(company_id,line_id)` → `pur_purchase_receipt_line(company_id,id)` ON DELETE CASCADE）、`seq_no`、`lot_no nvarchar(50)`／`serial_no nvarchar(100)` 擇一、`quantity decimal(19,6)`、批號專用 `manufacture_date`／`expiry_date date` 與審計欄。CHECK：批號或序號擇一且非空、序號量 1 且無日期、量 > 0、seq_no > 0、有效期限 ≥ 生產日期；唯一索引 `(company_id,line_id,seq_no)` 兼作 FK 索引。草稿可不完整，SUBMIT 才要求合計等於行量；INV 過帳時建立 inv_lot／inv_serial。ER：`pur_purchase_receipt_line ||--o{ pur_purchase_receipt_line_tracking : "lot/serial capture"`。
 
 WU-PUR-007a8（2026-11-28T15:19:42+08:00，ADR-218）：migration `Purchasing_ReceiptDraftSnapshots` 於 `pur_purchase_receipt` 加可空 `owner_id`／`branch_id`／`department_id`（SYS 資料範圍快照，索引 `(company_id,owner_id,id)`），`pur_purchase_receipt_line` 加可空 `unit_cost decimal(19,6)`（本位幣未稅單位成本快照 = 訂單行 base_net ÷ quantity，六位四捨五入）。舊來源列保持 NULL，可逆。
@@ -65,11 +83,11 @@ erDiagram
 
 圖中 FI 應付僅為保存的外部 ID，沒有跨模組 FK。FI 原幣／本位幣確定金額由已保存訂單匯率與發票行價稅快照形成；不能由 FI 重新查 PUR 表。
 
-## WU-PUR-007d 收貨與退貨預定模型（尚未建表）
+## WU-PUR-007d 收貨與退貨原設計基線（交付狀態見上方 007a／007b／007c2）
 
 WU-PUR-007a7（2026-11-28T13:01:04+08:00，ADR-218）：沿用既有發票來源用 `pur_purchase_receipt`／`pur_purchase_receipt_line`，加可空 `document_no`／`business_date`（保留歷史來源列）、草稿行 `quantity`／`warehouse_id`；採購單行加非空預設零的 `posted_received`／`pending_receipt_reserved`，migration 在加容量約束前由同公司有效 Posted 收貨行回填已收量。`(company_id,document_no)` 非空單號永久唯一。訂單行 SQL CHECK 守住兩量非負及總和不超訂單量；收貨行允許舊式正數已收行或正數草稿量加正數倉庫，保留退貨／開票量約束。`Purchasing_ReceiptDraftFoundation` 可逆；草稿 API、成本、儲位及追蹤欄仍待 007a8／007b。下文為原 007d 預案，未實作欄位不可視為已交付。
 
-`pur_purchase_receipt`／`pur_purchase_receipt_line` 保存公司、單號、採購單與其行、業務日、倉儲／儲位、基本單位六位數量、本位幣未稅六位單位成本、批序號快照、狀態 Draft／PendingApproval／Rejected／Posted、版本、SYS 審批 ID 與審計。`pur_purchase_return`／`pur_purchase_return_line` 另保存原 Posted 入庫行及 INV movement ID、原入庫成本／追蹤快照、退貨量和相同生命週期。實際表與追蹤子表可於 migration 細化，REQ_DS43 只在真實建表時分配；目前沒有新增資料表。
+`pur_purchase_receipt`／`pur_purchase_receipt_line` 保存公司、單號、採購單與其行、業務日、倉儲／儲位、基本單位六位數量、本位幣未稅六位單位成本、批序號快照、狀態 Draft／PendingApproval／Rejected／Posted、版本、SYS 審批 ID 與審計。`pur_purchase_return`／`pur_purchase_return_line` 保存原 Posted 入庫行及 INV movement ID、原入庫成本／追蹤快照、退貨量和相同生命週期。實際退貨表欄位與 REQ_DS43.223～225 見上方 007c2。
 
 採購單行要能在同交易維護待審收貨預留量與已過帳收貨量；入庫行要能維護待審退貨預留量與已過帳退貨量。各量以 `DECIMAL(19,6)`、非負及不超來源量 CHECK 保護。按 `(company_id,order_line_id)` 與 `(company_id,receipt_line_id)` 建查詢索引；同公司 PUR 內 FK 與每個 FK 欄位索引手動建立。對 MD／SYS／INV 只存 ID，不建跨模組 FK；`(company_id,document_no)` 永久唯一，來源行號在單據內唯一。已過帳來源連結和 movement ID 不可刪改。DB 交易與鎖序按 BR-PUR-028／032，migration 必須可 Down，並以真實 SQL 驗證約束、併發及隔離。
 
