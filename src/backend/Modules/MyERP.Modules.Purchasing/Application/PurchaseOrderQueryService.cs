@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.Purchasing.Domain;
+using MyERP.Shared.Approvals;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Paging;
@@ -10,13 +11,20 @@ namespace MyERP.Modules.Purchasing.Application;
 public sealed record PurchaseOrderReadLine(long Id, int LineNo, long ItemId, long? RequisitionLineId,
     long? AwardId, decimal Quantity, decimal UnitPrice, long? TaxRateId, decimal TaxRatePercent,
     decimal? OriginalNet, decimal? OriginalTax, decimal? OriginalGross,
-    decimal? BaseNet, decimal? BaseTax, decimal? BaseGross);
+    decimal? BaseNet, decimal? BaseTax, decimal? BaseGross,
+    long? RequisitionId = null, string? RequisitionDocumentNo = null, int? RequisitionLineNo = null,
+    decimal? RequisitionQuantity = null, decimal? RequisitionOrderedQuantity = null,
+    decimal? RequisitionRemainingQuantity = null);
 
 public sealed record PurchaseOrderReadDetail(long Id, string? DocumentNo, string Status, int Version,
     long SupplierId, long? RfqId, DateOnly? BusinessDate, string Currency, string? BaseCurrencyCode,
     decimal? ExchangeRate, decimal? BaseNet, decimal? BaseTax, decimal? BaseGross,
     string? Remark, long? OwnerId, long? BranchId, long? DepartmentId,
-    IReadOnlyList<PurchaseOrderReadLine> Lines);
+    IReadOnlyList<PurchaseOrderReadLine> Lines)
+{
+    public string? RfqDocumentNo { get; init; }
+    public IReadOnlyList<ApprovalDocumentHistory> ApprovalHistory { get; init; } = [];
+}
 
 public sealed record PurchaseOrderQuery : PagedRequest
 {
@@ -100,17 +108,38 @@ public sealed class PurchaseOrderQueryService(MyErpDbContext db, RequisitionComp
             join source in db.Set<PurchaseOrderAwardSource>().AsNoTracking()
                 on line.Id equals source.PurchaseOrderLineId into linked
             from source in linked.DefaultIfEmpty()
+            join requisitionLine in db.Set<RequisitionLine>().AsNoTracking()
+                on line.RequisitionLineId equals requisitionLine.Id into requisitionLines
+            from requisitionLine in requisitionLines.DefaultIfEmpty()
+            join requisition in db.Set<Requisition>().IgnoreQueryFilters().AsNoTracking()
+                on requisitionLine.RequisitionId equals requisition.Id into requisitions
+            from requisition in requisitions.DefaultIfEmpty()
             where line.PurchaseOrderId == id && line.CompanyId == companyId
+                && (source == null || source.CompanyId == companyId)
+                && (requisitionLine == null || requisitionLine.CompanyId == companyId)
+                && (requisition == null || requisition.CompanyId == companyId)
             orderby line.LineNo, line.Id
             select new PurchaseOrderReadLine(line.Id, line.LineNo, line.MaterialId,
                 line.RequisitionLineId, source == null ? null : source.AwardId,
                 line.Quantity, line.UnitPrice, line.TaxRateId, line.TaxRatePercent,
                 line.OriginalNet, line.OriginalTax, line.OriginalGross,
-                line.BaseNet, line.BaseTax, line.BaseGross)).ToArrayAsync(token);
+                line.BaseNet, line.BaseTax, line.BaseGross,
+                requisitionLine == null ? null : requisitionLine.RequisitionId,
+                requisition == null ? null : requisition.DocumentNo,
+                requisitionLine == null ? null : requisitionLine.LineNo,
+                requisitionLine == null ? null : requisitionLine.Quantity,
+                requisitionLine == null ? null : requisitionLine.OrderedQuantity,
+                requisitionLine == null ? null : requisitionLine.Quantity - requisitionLine.OrderedQuantity))
+            .ToArrayAsync(token);
+        var rfqDocumentNo = order.RfqId is { } rfqId
+            ? await db.Set<Rfq>().IgnoreQueryFilters().AsNoTracking()
+                .Where(x => x.Id == rfqId && x.CompanyId == companyId)
+                .Select(x => x.DocumentNo).SingleOrDefaultAsync(token)
+            : null;
         return new PurchaseOrderReadDetail(order.Id, order.DocumentNo, order.Status, order.Version,
             order.SupplierId, order.RfqId, order.BusinessDate, order.Currency, order.BaseCurrencyCode,
             order.ExchangeRate, order.BaseNet, order.BaseTax, order.BaseGross, order.Remark,
-            order.OwnerId, order.BranchId, order.DepartmentId, rows);
+            order.OwnerId, order.BranchId, order.DepartmentId, rows) { RfqDocumentNo = rfqDocumentNo };
     }
 
     private async Task<DataScopeFilter> ScopeAsync(long companyId, string permission, CancellationToken token)

@@ -162,7 +162,8 @@ public sealed class PurchaseOrderSubmitHttpTests(TestDatabase database) : IAsync
         using var http = factory.CreateClient();
         var (userId, token) = await CreateUserAsync(http);
         var (approverId, approverToken) = await CreateUserAsync(http);
-        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.OrderSubmit);
+        await GrantAsync(userId, company, DataScope.Company,
+            PurchasingPermissions.OrderSubmit, PurchasingPermissions.OrderView);
         await GrantAsync(approverId, company, DataScope.Company, SystemPermissions.ApprovalProcess);
         var md = await SeedMasterDataAsync(company, userId);
         await using (var db = Context(company, userId))
@@ -194,6 +195,16 @@ public sealed class PurchaseOrderSubmitHttpTests(TestDatabase database) : IAsync
         ok = await DecideAsync(http, rejectedInstance, "reject", "Wrong price", rejectedVersion, approverToken, company);
         Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
         await AssertOrderAsync(company, rejected.Id, "Rejected", false, (source, 14m));
+        var detailResponse = await SendAsync(http, HttpMethod.Get,
+            $"/api/v1/pur/purchase-orders/{rejected.Id}", null, token, company);
+        Assert.Equal(HttpStatusCode.OK, detailResponse.StatusCode);
+        var detail = await detailResponse.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal("Rejected", detail.GetProperty("status").GetString());
+        var approvalHistory = Assert.Single(detail.GetProperty("approvalHistory").EnumerateArray());
+        Assert.Equal(rejectedInstance, approvalHistory.GetProperty("instanceId").GetInt64());
+        Assert.Equal("Rejected", approvalHistory.GetProperty("status").GetString());
+        Assert.Equal("Wrong price", Assert.Single(approvalHistory.GetProperty("steps").EnumerateArray())
+            .GetProperty("comment").GetString());
         // Repeating the decision on the completed instance cannot release a second time.
         await AssertProblemAsync(await DecideAsync(http, rejectedInstance, "reject", "Again",
                 (await InstanceAsync(company, rejected.Id)).Version, approverToken, company),

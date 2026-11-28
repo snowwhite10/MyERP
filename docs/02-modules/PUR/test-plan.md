@@ -1745,3 +1745,13 @@ WU-PUR-005f2a2 阻擋核對（2026-10-23T11:17:26+08:00）：按 `myerp-test-sce
 | PUR-PO-LIST-002 | 權限／關聯 | 公司、本人、部門、分店範圍及軟刪過濾；列表不洩漏他公司或已刪資料；缺 VIEW 403，匿名 401。 | I | REQ_F4114.1.1 | PASS（真實 SQL 1/1、JWT HTTP 1/1） |
 | PUR-PO-LIST-003 | 邊界／錯誤 | 反向日期、零供應商／請購行 ID、未知狀態／排序、非法頁碼回 400，無資料變更；空結果回 200、總數 0。 | I | REQ_F4114.1.1 | PASS（真實 SQL 1/1、JWT HTTP 1/1） |
 | PUR-PO-LIST-NA | 重複／狀態／部分結果／檔案 | 本單元僅唯讀列表：無版本衝突、批次部分寫入或檔案；五種已保存狀態皆可讀。CSV、詳情及畫面錯誤由 006e2～e4 驗。 | — | REQ_F4114.1.1 | N/A |
+
+## WU-PUR-006e2 VIEW 採購單詳情
+
+| ID | 類別 | 情境與預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-PO-DETAIL-001 | 正常／邊界 | 保存決標行顯示詢價單號、決標 ID、請購單號及行號、原量、六位小數已轉量及餘量；數值來自目前保存的請購行，零餘量可讀。 | I（真實 SQL） | REQ_F4114.1.1, BR-PUR-026 | PASS（PurchaseOrderListTests.DetailShowsSavedAwardAndCurrentRequisitionQuantities） |
+| PUR-PO-DETAIL-002 | 關聯／狀態 | 人工行無請購或決標來源時欄位為 null；已停用或軟刪的歷史來源仍可追溯；Draft、PendingApproval、Approved、Rejected、Cancelled 只讀不變更。 | I（真實 SQL） | REQ_F4114.1.1 | PASS（同上，保存軟刪來源；五狀態只讀由既有 GET 契約） |
+| PUR-PO-DETAIL-003 | 審批／重複 | SYS 歷次提交依最新在前，保留各輪核准、駁回及逐步意見；未送審回空陣列；不直接查 SYS 表。 | I（真實 SQL）／I（HTTP） | REQ_F4114.1.1 | PASS（PurchaseOrderSubmitHttpTests.SysDecisionsOverHttpKeepReleaseOrRollBackTogether 駁回意見；全輪次排序由 IApprovalHistoryReader 既有契約） |
+| PUR-PO-DETAIL-004 | 權限／衝突 | 匿名 401、缺 VIEW 403、他公司／範圍外／軟刪 404；通過訂單授權後才讀來源及審批；詳情不按版本拒絕，因無寫入。 | I（HTTP） | REQ_F4114.1.1, BR-PUR-026 | PASS（PurchaseOrderHttpTests.MissingPermissionsAre403AndEditDoesNotFollowViewOrCreate／OtherCompanyIs404；PurchaseOrderListTests.ListFiltersAndPagesOnlySavedVisibleOrders） |
+| PUR-PO-DETAIL-NA | 部分結果／錯誤／檔案／畫面 | 單筆純讀，無批次部分成功、400／409／422 寫入衝突或檔案。ID 非正回 400；SQL／SYS 故障依共用 500 ProblemDetails（traceId）。前端錯誤、逾時與畫面留 006e4。 | — | REQ_F4114.1.1 | N/A |

@@ -1176,3 +1176,8 @@ SQL 守衛 DEFER；沒有執行真實 SQL Up／Down、交易、HTTP 或競態驗
 - myerp-ux-review 檢視 4.15 成功、衝突、空決標、500 的亮暗截圖及三語正常截圖；發現成功訊息只是普通文字，改用共用 nz-alert success 樣式並重拍。衝突顯示全批拒絕及各行單號，500 顯示 traceId，未見遮擋或未翻譯 key。截圖位於 tests/qa/PUR/screenshots/4.15-convert-*.png。
 - web-design-guidelines 審查 4.15：複選框已有包裹 label，補每行 name；按鈕／連結可鍵盤操作且有可見焦點，成功訊息有 aria-live，標題換行與長單號斷行已處理。業務日期按 ui-conventions 固定 yyyy-MM-dd；無動畫、圖片或檔案輸入。
 - 2026-11-28T03:05:49+08:00 全量模擬 Playwright 711 通過／54 略過／1 失敗，唯一失敗為已登記的 WU-P0-E2E-FLAKE-MENU：FI-COLL-UI-101 切換亮色後選單仍開啟。該情境定向重跑 1/1 通過；比價轉單 17/17 通過。全量產生的 551 張其他介面截圖已還原，只保留本頁 QA 截圖。
+
+## WU-PUR-006e2 詳情來源與審批（2026-11-28T08:19:41+08:00）
+
+- 檢查：原 GET 先套 VIEW 資料範圍，但只回決標 ID 與請購行 ID；缺請購原量、已轉量、餘量及 SYS 審批輪次。修改：在授權訂單後查同公司 PUR 保存來源；軟刪來源以 `IgnoreQueryFilters` 讀歷史單號並保留公司條件；SYS 歷史只走 `IApprovalHistoryReader`。效果：無來源保持 null，查他公司／範圍外先 404，沒有跨模組直讀 SYS 表。
+- 測試夾具首次真實 SQL 失敗：`Rfq` 模型未註冊、`ck_pur_rfq_sent` 缺 `sent_at`、報價缺邀請 FK；用既有 RFQ／報價模型及有效保存鏈補齊。以單一 `DetailShowsSavedAwardAndCurrentRequisitionQuantities` 回饋迴圈重跑通過，產品代碼無需遷移。HTTP 定向 `SysDecisionsOverHttpKeepReleaseOrRollBackTogether` 驗駁回意見通過。

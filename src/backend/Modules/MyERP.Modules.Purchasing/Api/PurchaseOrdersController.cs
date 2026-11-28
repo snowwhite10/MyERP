@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyERP.Modules.Purchasing.Application;
+using MyERP.Shared.Approvals;
 using MyERP.Shared.Infrastructure.Security;
 using MyERP.Shared.Paging;
 
@@ -13,7 +14,7 @@ namespace MyERP.Modules.Purchasing.Api;
 [Tags("PUR - Purchase Orders")]
 public sealed class PurchaseOrdersController(PurchaseOrderDraftService drafts,
     PurchaseOrderQueryService queries, PurchaseOrderSubmissionService submissions,
-    PurchaseOrderLifecycleService lifecycle) : ControllerBase
+    PurchaseOrderLifecycleService lifecycle, IApprovalHistoryReader history) : ControllerBase
 {
     /// <summary>按單號、業務日、供應商、狀態及請購來源篩選 VIEW 範圍內的保存採購單；以 ID 穩定排序分頁。</summary>
     [HttpGet]
@@ -25,14 +26,19 @@ public sealed class PurchaseOrdersController(PurchaseOrderDraftService drafts,
     public Task<PagedResult<PurchaseOrderSummary>> List([FromQuery] PurchaseOrderQuery query, CancellationToken token) =>
         queries.ListAsync(query, token);
 
-    /// <summary>讀取目前公司與 VIEW 資料範圍內的已保存詳情，包括決標來源 ID。</summary>
+    /// <summary>讀取 VIEW 範圍內的保存行、詢價與決標來源、請購原量／已轉量／餘量及 SYS 歷次審批；先驗單據範圍。</summary>
     [HttpGet("{id:long}")]
     [RequirePermission(PurchasingPermissions.OrderView)]
     [ProducesResponseType<PurchaseOrderReadDetail>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public Task<PurchaseOrderReadDetail> Get(long id, CancellationToken token) => queries.GetAsync(id, token);
+    public async Task<PurchaseOrderReadDetail> Get(long id, CancellationToken token)
+    {
+        var detail = await queries.GetAsync(id, token);
+        return detail with { ApprovalHistory = await history.GetHistoryAsync(
+            PurchaseOrderSubmissionService.DocumentType, detail.Id, token) };
+    }
 
     /// <summary>只有 EDIT 權限者可讀其動作範圍內的保存資料；不要求 VIEW 權限。</summary>
     [HttpGet("{id:long}/edit")]

@@ -80,14 +80,14 @@ WU-PUR-007a4 的 `PurchaseReceiptApprovalPlan` 是最終核准離線計畫；SYS
 
 WU-PUR-007a6 的 `PurchaseReceiptReservationAssembly.ForSubmit/ForReject` 只以請求公司／收貨單 ID 及呼叫端提供的保存快照組裝轉移計畫；SUBMIT／SYS 駁回端點必須在固定鎖序內取得權威行、本單預留及版本，重新組裝並同交易比對原值後提交。此離線切片沒有 HTTP 端點或權限驗收。
 
-### WU-PUR-006d 採購單 API 設計（006e1 已開放 VIEW 列表；詳情擴充與匯出待 006e2～e4）
+### WU-PUR-006d 採購單 API 設計（006e1 列表、006e2 詳情；匯出與畫面待 006e3～e4）
 
 基址 `/api/v1/pur/purchase-orders`，Swagger 標籤 `PUR - Purchase Orders`。每個端點先驗目前公司、獨立 `PUR.ORDER.*` 權限及 SYS 動作資料範圍。人工 POST 不接受公司、單號、擁有人、金額合計或審計欄位；行使用 `itemId, requisitionLineId?, quantity, unitPrice, currencyCode, taxRateId`，數量／單價以十進位值或保真十進位字串傳遞。來源決標草稿仍由 005e4 的 `POST /rfqs/{id}/orders` 建立，訂單 POST 不接受 `awardId`。取得編輯詳情、MD 選項及請購來源需各自以 CREATE／EDIT 動作守衛，不能要求額外 MD.VIEW 或 ORDER.VIEW；先查訂單動作範圍再查保存引用，避免洩漏。
 
 | Method | Path | 用途／回應 | 權限 | 主要錯誤 |
 |---|---|---|---|---|
 | GET | `/` | `keyword,from,to,supplierId,status,requisitionLineId,page,pageSize,sort`；穩定分頁；同排序鍵以 ID 破同序，行數來自已保存行。006e1 已實作 | `PUR.ORDER.VIEW` | 400、401、403 |
-| GET | `/{id}` | 保存行、決標／請購來源、餘量、版本及 SYS 全輪次歷史 | `PUR.ORDER.VIEW` | 403、404 |
+| GET | `/{id}` | 先查 VIEW 範圍訂單；保存行含 `awardId`、`requisitionLineId`、請購單 ID／單號／行號、`requisitionQuantity`／`requisitionOrderedQuantity`／`requisitionRemainingQuantity`；表頭含 `rfqId`／`rfqDocumentNo`、版本、`approvalHistory`（SYS 公開契約，最新輪次在前）。無來源欄位為 null，歷史軟刪來源仍可讀。006e2 已實作 | `PUR.ORDER.VIEW` | 400、401、403、404 |
 | GET | `/create-options` | 目前公司有效供應商、物料、幣別及日期有效進項稅率的分頁選項 | `PUR.ORDER.CREATE` | 400、403 |
 | GET | `/{id}/edit` | EDIT 動作範圍內可修訂詳情和保存引用狀態 | `PUR.ORDER.EDIT` | 403、404、422 |
 | GET | `/requisition-options` | 依物料／單號查同公司已核准且餘量大於零的請購行，並回原量／已轉量／餘量 | `PUR.ORDER.CREATE` 或 `PUR.ORDER.EDIT` | 400、403 |

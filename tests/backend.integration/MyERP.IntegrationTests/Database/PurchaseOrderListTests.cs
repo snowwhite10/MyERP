@@ -20,7 +20,8 @@ public sealed class PurchaseOrderListTests(TestDatabase database)
         return new MyErpDbContext(new DbContextOptionsBuilder<MyErpDbContext>()
             .UseMyErpSqlServer(database.ConnectionString)
             .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
-            [new RequisitionDbModel(), new PurchaseInvoiceSourceDbModel()], company);
+            [new RequisitionDbModel(), new RfqDbModel(), new QuotationDbModel(), new RfqAwardDbModel(),
+                new PurchaseInvoiceSourceDbModel()], company);
     }
 
     private static PurchaseOrderQueryService Query(MyErpDbContext db, long companyId, DataScope scope = DataScope.Company)
@@ -67,9 +68,13 @@ public sealed class PurchaseOrderListTests(TestDatabase database)
         Assert.Equal(1, (await Query(db, companyId, DataScope.Self).ListAsync(new PurchaseOrderQuery(), Ct)).TotalCount);
         Assert.Equal(2, (await Query(db, companyId, DataScope.Department).ListAsync(new PurchaseOrderQuery(), Ct)).TotalCount);
         Assert.Equal(2, (await Query(db, companyId, DataScope.Branch).ListAsync(new PurchaseOrderQuery(), Ct)).TotalCount);
+        Assert.Equal(second.Id, (await Query(db, companyId).GetAsync(second.Id, Ct)).Id);
+        await Assert.ThrowsAsync<NotFoundException>(() => Query(db, companyId, DataScope.Self).GetAsync(second.Id, Ct));
+        await Assert.ThrowsAsync<NotFoundException>(() => Query(db, companyId).GetAsync(deleted.Id, Ct));
         var otherCompanyId = TestCompanies.Next();
         await using var other = Context(otherCompanyId);
         Assert.Empty((await Query(other, otherCompanyId).ListAsync(new PurchaseOrderQuery(), Ct)).Items);
+        await Assert.ThrowsAsync<NotFoundException>(() => Query(other, otherCompanyId).GetAsync(first.Id, Ct));
     }
 
     [Fact]
@@ -86,6 +91,81 @@ public sealed class PurchaseOrderListTests(TestDatabase database)
         var noGrant = new PurchaseOrderQueryService(db, new RequisitionCompanyAccess(new FixedCompany(companyId)),
             new FixedAuthorization(new UserCompanyAuthorization(7, companyId, 10, 20, false, new Dictionary<string, DataScope>())));
         await Assert.ThrowsAsync<ForbiddenException>(() => noGrant.ListAsync(new PurchaseOrderQuery(), Ct));
+    }
+
+    [Fact]
+    public async Task DetailShowsSavedAwardAndCurrentRequisitionQuantities()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var req = new Requisition { CompanyId = companyId, DocumentNo = "REQ-DETAIL", BusinessDate = new DateOnly(2028, 2, 29),
+            RequesterId = 7, Status = RequisitionStatus.Approved };
+        req.Lines.Add(new RequisitionLine { CompanyId = companyId, LineNo = 2, ItemId = 11,
+            RequiredDate = new DateOnly(2028, 3, 1), Quantity = 10.000001m, OrderedQuantity = 4.000001m });
+        var rfq = new Rfq { CompanyId = companyId, DocumentNo = "RFQ-DETAIL", BusinessDate = new DateOnly(2028, 2, 29),
+            ReplyDeadline = new DateOnly(2028, 3, 2), OwnerId = 7, Status = RfqStatus.Sent,
+            SentAt = new DateTime(2028, 2, 29) };
+        rfq.Lines.Add(new RfqLine { CompanyId = companyId, LineNo = 1, ItemId = 11,
+            RequisitionLineId = null, RequiredDate = new DateOnly(2028, 3, 2), Quantity = 2m });
+        rfq.Invitations.Add(new RfqInvitation { CompanyId = companyId, SupplierId = 101 });
+        var order = NewOrder(companyId, "PO-DETAIL", 7, 10, 20, new DateOnly(2028, 2, 29), "Approved", 101);
+        db.AddRange(req, rfq, order);
+        await db.SaveChangesAsync(Ct);
+        order.RfqId = rfq.Id;
+        var revision = new QuotationRevision { CompanyId = companyId, RevisionNo = 1,
+            QuoteDate = new DateOnly(2028, 2, 29), ValidUntil = new DateOnly(2028, 3, 31) };
+        revision.Lines.Add(new QuotationLine { CompanyId = companyId, RfqLineId = rfq.Lines[0].Id,
+            UnitPrice = 3m, CurrencyCode = "TWD", TaxRateId = 51 });
+        var quote = new SupplierQuotation { CompanyId = companyId, RfqId = rfq.Id, SupplierId = 101,
+            CurrentRevisionNo = 1, Status = SupplierQuotationStatus.Awarded };
+        quote.Revisions.Add(revision);
+        db.Add(quote);
+        await db.SaveChangesAsync(Ct);
+        var award = new RfqAward { CompanyId = companyId, RfqId = rfq.Id, RfqLineId = rfq.Lines[0].Id,
+            QuotationId = quote.Id, QuotationLineId = revision.Lines[0].Id, SupplierId = 101,
+            Reason = "Award", Quantity = 2m, UnitPrice = 3m, CurrencyCode = "TWD", BaseCurrencyCode = "TWD",
+            TaxRateId = 51, TaxRateFrom = new DateOnly(2028, 1, 1), ExchangeRate = 1m,
+            ExchangeRateFrom = new DateOnly(2028, 1, 1), ComparisonDate = new DateOnly(2028, 2, 29),
+            BaseNet = 6m, BaseGross = 6m };
+        db.Add(award);
+        await db.SaveChangesAsync(Ct);
+        var line = new PurchaseOrderSourceLine { CompanyId = companyId, PurchaseOrderId = order.Id, LineNo = 1,
+            MaterialId = 11, RequisitionLineId = req.Lines[0].Id, Quantity = 2m, UnitPrice = 3m, TaxRatePercent = 0m };
+        db.Add(line);
+        await db.SaveChangesAsync(Ct);
+        db.Add(new PurchaseOrderAwardSource { CompanyId = companyId, PurchaseOrderLineId = line.Id, AwardId = award.Id });
+        await db.SaveChangesAsync(Ct);
+
+        var detail = await Query(db, companyId).GetAsync(order.Id, Ct);
+        Assert.Equal("RFQ-DETAIL", detail.RfqDocumentNo);
+        var read = Assert.Single(detail.Lines);
+        Assert.Equal(award.Id, read.AwardId);
+        Assert.Equal(req.Id, read.RequisitionId);
+        Assert.Equal("REQ-DETAIL", read.RequisitionDocumentNo);
+        Assert.Equal(2, read.RequisitionLineNo);
+        Assert.Equal(10.000001m, read.RequisitionQuantity);
+        Assert.Equal(4.000001m, read.RequisitionOrderedQuantity);
+        Assert.Equal(6m, read.RequisitionRemainingQuantity);
+
+        req.Status = RequisitionStatus.Draft;
+        req.IsDeleted = true;
+        req.DeletedAt = new DateTime(2028, 3, 1);
+        rfq.Status = RfqStatus.Draft;
+        rfq.SentAt = null;
+        rfq.IsDeleted = true;
+        rfq.DeletedAt = new DateTime(2028, 3, 1);
+        await db.SaveChangesAsync(Ct);
+        var historic = await Query(db, companyId).GetAsync(order.Id, Ct);
+        Assert.Equal("RFQ-DETAIL", historic.RfqDocumentNo);
+        Assert.Equal("REQ-DETAIL", Assert.Single(historic.Lines).RequisitionDocumentNo);
+
+        db.Add(new PurchaseOrderSourceLine { CompanyId = companyId, PurchaseOrderId = order.Id, LineNo = 2,
+            MaterialId = 11, Quantity = 1m, UnitPrice = 3m, TaxRatePercent = 0m });
+        await db.SaveChangesAsync(Ct);
+        var manual = Assert.Single((await Query(db, companyId).GetAsync(order.Id, Ct)).Lines, x => x.LineNo == 2);
+        Assert.Null(manual.AwardId);
+        Assert.Null(manual.RequisitionQuantity);
+        Assert.Null(manual.RequisitionDocumentNo);
     }
 
     private static PurchaseOrderSource NewOrder(long companyId, string no, long owner, long branch, long department,
