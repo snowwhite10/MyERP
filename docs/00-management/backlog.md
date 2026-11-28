@@ -781,7 +781,13 @@
 | WU-PUR-007c4 | PUR/INV | 退貨 SUBMIT 預留可退量＋SYS 核准同交易呼叫 `PostPurchaseReturnAsync`、保存 OriginalUnitCost、轉已退量；駁回釋回；並發與 `PurchaseReturnInvoicedLimit`（BR-PUR-044） | P1 | DONE | 007c3 | ADR-225、PUR.RETURN.SUBMIT；PUR-RET-SUB-001～010 真實 SQL＋SYS＋INV 9/9（變異 4 紅）＋受權 HTTP；雙連線不超退、重放 409、INV 失敗回滾、重複決定 409；2026-11-28T21:12:59+08:00。 |
 | WU-PUR-007c5 | PUR | 退貨 LIST／CSV（PUR.RETURN.EXPORT） | P1 | DONE | 007c3 | ADR-226：LIST（VIEW 範圍、keyword／from／to／purchaseOrderId／status、穩定排序分頁、本位幣退貨金額 Posted 原成本／未過帳收貨成本標暫估）、`/export` CSV（EXPORT∩VIEW、快照、10000 行 422、BOM／CRLF／三語／公式防護）；明確 !IsDeleted；PUR-RET-LST-001～005、U01～U03（成本優先序變異 2 紅）；2026-11-28T21:34:33+08:00。 |
 | WU-PUR-007a11 | PUR | 收貨 LIST keyword 軟刪洩漏：`PurchaseReceiptQueryService` keyword 子查詢對採購單 IgnoreQueryFilters 會關閉整個查詢的軟刪篩選 | P1 | DONE | 007a10 | 007c5 發現（ADR-226 後果）：先寫真實 SQL 紅燈（軟刪 Draft 收貨以採購單號 keyword 搜尋不得出現，LIST 與 CSV），再在基底查詢加明確 !IsDeleted；同時檢查 PO／發票查詢服務是否有同樣模式。 |
-| WU-PUR-007e | PUR | 收貨與退貨列表／表單、三語亮暗、CSV／列印及 Playwright QA | P1 | TODO | 007a10、007b、007c | 介面 4.4～4.6、4.16～4.18；前端 skills 必用。 |
+| WU-PUR-007e | PUR | 收貨與退貨列表／表單、三語亮暗、CSV／列印及 Playwright QA | P1 | 拆 e1～e6（父項不計） | 007a10、007b、007c | 2026-11-28T21:57:23+08:00 ADR-228 依 90 分鐘邊界拆分；介面 4.4～4.6、4.16～4.18；前端 skills 必用。 |
+| WU-PUR-007e1 | PUR | 介面 4.4 收貨列表／唯讀詳情（行、倉庫、成本、批序號、狀態庫存說明）／CSV／列印、選單與前端服務 | P1 | DONE | 007a10 | 2026-11-28T21:57:23+08:00 前端單元 PUR-RECV-UI-001～009 12/12（變異 1 紅）、前端全量 1391/1391、建置通過、模擬 E2E E01～E05 5/5（相鄰 4.1 5/5）、21 張三語亮暗截圖 UX 審查 P1/P2 0。 |
+| WU-PUR-007e2 | PUR | 介面 4.4 詳情 SUBMIT／DELETE 按鈕：確認框、停用原因、409／422 重新讀取、QUANTITY_EXCEEDED／TRACKING_REQUIRED／NOT_DELETABLE 逐項原因、逐態截圖 | P1 | TODO | 007e1 | 沿 006f1 模式；SUBMIT 確認框說明只有最終核准才入庫。 |
+| WU-PUR-007e3 | PUR | 介面 4.5／4.6 收貨建立／修訂表單（先確認或新增 CREATE／EDIT 範圍的 Approved 採購單行選項 API；批號／序號擷取） | P1 | TODO | 007e2 | 可能再拆 e3a 選項 API、e3b 表單。 |
+| WU-PUR-007e4 | PUR | 介面 4.16 退貨列表／詳情／CSV／列印＋SUBMIT／DELETE（returnAmount 與 amountEstimated 暫估標記） | P1 | TODO | 007e1 | 沿 007e1／e2 模式。 |
+| WU-PUR-007e5 | PUR | 介面 4.17／4.18 退貨建立／修訂表單（既有來源選項 API） | P1 | TODO | 007e4 | |
+| WU-PUR-007e6 | PUR | 4.4～4.6、4.16～4.18 逐態 Playwright 與真實 API（收貨 → 核准 → 過帳）UX QA | P1 | TODO | 007e1～e5 | |
 | WU-ARCH-SOFTDEL-AUDIT | 架構 | 審查各模組查詢中連接或子查詢使用 `IgnoreQueryFilters`（含具名 SoftDelete）之處，主實體軟刪篩選是否一併被解除；有洩漏者真實 SQL 先紅後綠並明確 `!IsDeleted` | P2 | TODO | 007a11 | ADR-227：PUR 已審；SD（SalesInvoiceIssuing、SalesInvoiceQueryService、SalesDeliveryQueryService 等）、FI、MD 未審。 |
 | WU-PUR-008 | PUR | 發票與訂單／收貨三單比對、差異處理 | P1 | 已拆分 | 007 | 008d 設計、008a PUR 發票與比對、008b FI 應付同交易、008c 前端；父項待全部驗收。 |
 | WU-PUR-008d | PUR/FI | 固定三單比對、差異覆核、退貨與 FI 應付公開契約及完整情境 | P1 | DONE | 006d、007d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4114.8.1～6、BR-PUR-036～043、PUR-MATCH-001～028；沒有表、端點、畫面或產品測試。 |

@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-007a11",
-    "lastCompletedWorkUnit":  "WU-PUR-007a11",
-    "nextAction":  "做 WU-PUR-007e 收貨與退貨列表／表單畫面（介面 4.4～4.6、4.16～4.18；前端 skills myerp-test-scenarios、myerp-ux-review、web-design-guidelines 必用）。範圍大，先拆 e1～eN 並寫 ADR：建議 e1 收貨列表頁（LIST／CSV，GET /api/v1/pur/purchase-receipts 與 /export）＋前端服務、e2 收貨表單／詳情、e3 退貨列表（含 returnAmount 與 amountEstimated 暫估標記）、e4 退貨表單／詳情、e5 Playwright QA。本輪 007a11 已修正收貨查詢軟刪洩漏（ADR-227），另列 P2 WU-ARCH-SOFTDEL-AUDIT。",
+    "currentWorkUnit":  "WU-PUR-007e1",
+    "lastCompletedWorkUnit":  "WU-PUR-007e1",
+    "nextAction":  "做 WU-PUR-007e2：介面 4.4 詳情 SUBMIT／DELETE 按鈕（沿 006f1 模式與 purchase-order-page 的 confirmed/act/actionFailure）。服務加 submit(id, version)（POST /api/v1/pur/purchase-receipts/{id}/submit body {version}）與 remove(id, version)（DELETE ?version=），錯誤碼 PUR.RECEIPT.NOT_SUBMITTABLE／QUANTITY_EXCEEDED／TRACKING_REQUIRED／NOT_DELETABLE／SOURCE_LOCKED／INVALID_SOURCE／COST_UNAVAILABLE／POSTING_CONFLICT＋COMMON.CONCURRENCY.CONFLICT 三語 errors.PUR.RECEIPT（先讀後端拋出處確認 422 body 欄位）；Draft 顯示送審＋刪除、Rejected 停用送審並說明須修訂、PendingApproval／Posted 文字說明；送審確認框說明只有最終核准才入庫，成功依回應狀態（Posted 零步驟 vs PendingApproval）；409／狀態 422 重新讀取、404 重新載入列表。前端 skills myerp-test-scenarios、myerp-ux-review、web-design-guidelines 必用；擴充 tests/e2e/specs/purchasing-receipt.spec.ts 截圖 4.4-actions-*。後續 e3～e6 見 backlog 與 ADR-228。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  225,
-                       "ADR":  227,
+                       "ADR":  228,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -59,7 +59,8 @@
                              "WU-PUR-007c3":  0,
                              "WU-PUR-007c4":  0,
                              "WU-PUR-007c5":  0,
-                             "WU-PUR-007a11":  0
+                             "WU-PUR-007a11":  0,
+                             "WU-PUR-007e1":  0
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -131,5 +132,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T21:55:21+08:00",
-    "updatedAt":  "2026-11-28T21:55:21+08:00"
+    "updatedAt":  "2026-11-28T22:06:38+08:00"
 }

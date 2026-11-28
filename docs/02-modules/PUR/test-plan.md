@@ -1,5 +1,22 @@
 # PUR 測試計劃
 
+## WU-PUR-007e1 介面 4.4 採購收貨列表／詳情／CSV／列印（2026-11-28T21:57:23+08:00）
+
+依 `myerp-test-scenarios`：`U` 為 Angular 單元（`purchase-receipt.spec.ts`，HttpTestingController 以原始 JSON 文字回應以驗證精確小數），`E` 為模擬後端 Playwright（`tests/e2e/specs/purchasing-receipt.spec.ts`，畫面與攔截到的請求／下載檔雙斷言）。後端 LIST／CSV／READ 已由 PUR-RECV-LST-001～006、PUR-RECV-DRF 系列驗收。
+
+| ID | 類別 | 情境與預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-RECV-UI-001 | 正常／邊界 | 列表顯示收貨單號、採購單號（缺號時顯示「採購單 ID n」）、狀態、行數、總量 12,345.123456；詳情逐行顯示 13 位整數＋6 位小數數量、0.000001 成本、批號含生產／有效日期、無日期批號、序號、無追蹤「—」；Posted 說明已入庫。 | U、E | REQ_F4114.2.1 | PASS |
+| PUR-RECV-UI-002 | 邊界／錯誤 | 尚未有資料、篩選無結果、列表 500（含 traceId）三種空狀態文字不同；起迄日倒置、無效日期（2/30）、閏年 2/29 邊界、採購單 ID 0／小數在送出前逐欄提示且不發請求；無明細的保存單顯示「此收貨單沒有明細」。 | U、E | REQ_F4114.2.1 | PASS |
+| PUR-RECV-UI-003 | 檔案 | CSV 只帶已套用篩選（keyword 去空白、status、from／to、purchaseOrderId、sort），不帶分頁；檔名 purchase-receipts.csv；成功提示行數＝檔案行數（含引號內逗號與換行）；0 行警告不下載；X-Export-Row-Count 不符拒絕不下載；三語表頭／狀態與後端 CSV 一致。 | U、E | REQ_F4114.2.1 | PASS（變異：漏送 purchaseOrderId → 紅） |
+| PUR-RECV-UI-004 | 正常／錯誤 | 列印每次先重新 GET 保存詳情並以新內容列印；讀取 500 顯示 traceId 不列印；404 顯示「找不到此採購收貨單」、關閉詳情並重新載入列表。 | U、E | REQ_F4114.2.1 | PASS |
+| PUR-RECV-UI-005 | 權限 | 無 PUR.RECEIPT.EXPORT 不顯示匯出按鈕與提示；選單與路由需 PUR.RECEIPT.VIEW（permissionGuard）。 | U | REQ_F4114.2.1 | PASS |
+| PUR-RECV-UI-006 | 狀態 | Draft／PendingApproval／Rejected／Posted 各有標籤及庫存說明（待審只預留、駁回已釋回、過帳已入庫）。 | U、E | REQ_F4114.2.1 | PASS |
+| PUR-RECV-UI-007 | 錯誤／逾時 | 匯出 422 上限、403、500 traceId、400 逐欄、逾時、斷線、429 各有提示；匯出中按鈕停用並說明；新搜尋取消進行中的匯出；0 筆時停用並說明原因。 | U、E | REQ_F4114.2.1 | PASS |
+| PUR-RECV-UI-008 | i18n | pur.receipt 全部 key 與 errors.PUR.RECEIPT 三語一致；E2E 守衛檢查未翻譯 key。 | U、E | REQ_F4114.2.1 | PASS |
+| PUR-RECV-UI-009 | 權限（跨公司） | 切換公司重新讀取列表並清除舊詳情與舊列。 | U | REQ_F4114.2.1 | PASS |
+| PUR-RECV-UI-NA | 重複／部分結果／409／422 動作 | 本切片唯讀：無寫入、批次或版本衝突；送審／刪除的 409／422 與確認框屬 007e2，表單屬 007e3。 | — | — | N/A |
+
 ## WU-PUR-007c5 退貨 LIST／CSV（2026-11-28T21:34:33+08:00）
 
 依 `myerp-test-scenarios`：`I` 為真實 SQL＋真實 SYS 核准＋真實 INV 過帳（取得 OriginalUnitCost），`H` 為受權 HTTP，`U` 為單元。測試類 `PurchaseReturnSubmissionTests`（partial `.Query.cs`）、`PurchaseOrderHttpTests.PurchaseReturnRoutes…`、`PurchaseReturnCsvTests`。種子：Draft d1（2＋1.5、收貨成本 4）、Posted d2（1、原入庫成本 4，過帳後收貨行成本改 5）、軟刪 Draft 一張。

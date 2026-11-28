@@ -56,6 +56,15 @@ WU-PUR-008c3c2（2026-11-26T23:37:15+08:00，ADR-203）：4.19 新增 4.19.7 匯
 | 4.17 | Purchase Return Create Interface | `/pur/purchase-returns/new` | REQ_F4114.7.2 | `PUR.RETURN.CREATE` |
 | 4.18 | Purchase Return Edit Interface | `/pur/purchase-returns/:id/edit` | REQ_F4114.7.2 | `PUR.RETURN.EDIT` |
 
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A4.4.1 | Receipt Filters (Input) | Filter saved receipts by receipt or purchase order number, business date range, status, purchase order ID and sort. | Find authorized receipts. | Text / date / enum / ID | Current company; end date ≥ start date; positive order ID | None | Developer | REQ_F4114.2.1 |
+| REQ_IO_A4.4.2 | Receipt List (Table) | Show saved number, date, purchase order number, supplier, status, currency, line count and total quantity with server paging. | Open a saved receipt. | Paged table | VIEW scope | REQ_IO_A4.4.1 | Developer | REQ_F4114.2.1 |
+| REQ_IO_A4.4.3 | Saved Receipt Detail (Panel) | Show status with its stock effect, lines with order line, item, warehouse, six-place quantity, saved base unit cost and lot / serial capture. | Explain what was received and whether stock changed. | Panel | VIEW scope | REQ_IO_A4.4.2 | Developer | REQ_F4114.2.1 |
+| REQ_IO_A4.4.4 | Export / Print (Button) | CSV uses applied filters and sort, all saved lines in VIEW ∩ EXPORT scope, 10000-line cap, BOM and formula guard; 0 rows or 422 downloads nothing. Print refetches the saved detail first and aborts on read error. | Share current saved receipts. | UTF-8 CSV / print | VIEW + EXPORT for CSV; VIEW for print | REQ_IO_A4.4.1 | Developer | REQ_F4114.2.1 |
+
+WU-PUR-007e1（2026-11-28T21:57:23+08:00，ADR-228）：4.4 已實作 `/pur/purchase-receipts`（選單「採購收貨」，需 VIEW）。篩選與排序寫入 URL；列表顯示採購單號（摘要缺號時顯示「採購單 ID n」）；詳情面板依狀態說明庫存影響（草稿未變動、待審只預留、駁回已釋回、過帳已入庫），逐行顯示採購單行、物料、倉庫、數量、本位幣單位成本（註明不可修改）與批號（生產／有效日期）或序號。匯出僅 EXPORT 時顯示，停用原因以提示文字說明；成功／0 行警告／不完整／422 上限／403／400／逾時各自提示。列印先重新 GET 詳情。送審／刪除留 007e2，表單留 007e3。截圖：`tests/qa/PUR/screenshots/4.4-*.png`（21 張）。
+
 列表顯示狀態、已保存行數、來源量／已收或已退／待審預留／可用量，空列表、搜尋無結果與無權分開說明。表單以授權選擇器選來源行，逐行顯示物料、倉儲、批序號、六位量及原成本來源；不可編輯來源與成本。按鈕停用須說明狀態／權限／無餘量；送審確認框說明只有最終核准才改庫存。成功提示只用已保存回應與重讀後的庫存／餘量；零變更、409、422、500／traceId、逾時和斷線皆有具體三語提示。換公司、篩選或錯誤時清除舊詳情與來源選項。每頁正常、空、驗證、伺服器錯誤、成功、整單拒絕的亮暗截圖與畫面／資料雙斷言由前端子單元完成。無檔案上傳；CSV 沿完整讀取、BOM、10000 行和公式防護規則。
 
 ## WU-PUR-006d 採購單介面設計（尚無畫面）

@@ -11,6 +11,8 @@ export const PUR_ROUTES: Routes = [
     loadComponent: () => import('./purchase-order-form').then(m => m.PurchaseOrderForm) },
   { path: 'purchase-orders', canActivate: [permissionGuard('PUR.ORDER.VIEW')],
     loadComponent: () => import('./purchase-order-page').then(m => m.PurchaseOrderPage) },
+  { path: 'purchase-receipts', canActivate: [permissionGuard('PUR.RECEIPT.VIEW')],
+    loadComponent: () => import('./purchase-receipt-page').then(m => m.PurchaseReceiptPage) },
   { path: 'rfqs/:id/comparison', canActivate: [permissionGuard('PUR.RFQ.COMPARE')],
     loadComponent: () => import('./comparison-page').then(m => m.ComparisonPage) },
   { path: 'rfqs/new', canActivate: [permissionGuard('PUR.RFQ.CREATE')], canDeactivate: [unsavedChangesGuard],

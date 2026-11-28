@@ -23,6 +23,7 @@
     "requisitions": "请购单",
     "rfqs": "询价单",
     "purchaseOrders": "采购单",
+    "purchaseReceipts": "采购收货",
     "purchaseInvoices": "采购发票",
     "inventory": "库存管理",
     "stockQuery": "库存查询",

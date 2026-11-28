@@ -23,6 +23,7 @@
     "requisitions": "Requisitions",
     "rfqs": "Requests for quotation",
     "purchaseOrders": "Purchase orders",
+    "purchaseReceipts": "Purchase receipts",
     "purchaseInvoices": "Purchase invoices",
     "inventory": "Inventory",
     "stockQuery": "Stock query",

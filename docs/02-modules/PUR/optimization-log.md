@@ -1,5 +1,12 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-28T22:06:38+08:00 — WU-PUR-007e1 介面 4.4 收貨列表／詳情
+
+- 檢查：web-design-guidelines 審查 `purchase-receipt-page.ts`——篩選欄皆包在 label 內、name／autocomplete、原生 select 明確背景與文字色、數字欄 tabular-nums、h1→h2→h3、批序號清單 overflow-wrap、匯出結果 aria-live、載入文字以省略號結尾；無需修改。
+- 一致性：zh-Hans 駁回狀態原寫「已驳回」，與後端 CSV「已拒绝」及採購單畫面不一致，改為「已拒绝」（E2E E01 斷言）。
+- 重用：列表／匯出／列印流程沿用 4.1 頁面模式與共用 `checkCsvExport`、`ApiErrorDisplay`、`StatusTag`；詳情無採購單號欄，改用列表摘要號碼並以 ID 後備（ADR-228），不為此新增後端欄位。
+- 測試：變異「漏送 purchaseOrderId」令 PUR-RECV-UI-003 紅，還原後綠。
+
 ## 2026-11-28T21:48:07+08:00 — WU-PUR-007a11 收貨查詢軟刪洩漏
 
 - 問題：新增真實 SQL PUR-RECV-LST-006 首跑紅——無任何篩選的 LIST 已回傳 2 筆 items（含軟刪 Draft），totalCount 卻為 1。原因：摘要投影以 `PurchaseOrderSource.IgnoreQueryFilters()` 讀採購單號，EF 對整個分頁查詢關閉全域篩選（不只 007c5 推測的 keyword 子查詢）；count 查詢不含投影故正確，造成筆數與頁面不一致；CSV 在 keyword 篩選時同樣洩漏。修改：基底查詢明確 `!IsDeleted`。效果：PUR 收貨／退貨／採購單真實 SQL 140/140 綠。
