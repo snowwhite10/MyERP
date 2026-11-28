@@ -14,7 +14,8 @@ namespace MyERP.Modules.Purchasing.Application;
 /// saved lines through INV as <c>PURCHASE_INBOUND</c> (saved base-currency unit cost and warehouse snapshot) and marks
 /// the receipt Posted. Any refusal throws, so SYS, PUR and INV changes roll back together.
 /// </summary>
-public sealed class PurchaseReceiptPosting(MyErpDbContext db, IExternalInventoryPostingService inventory)
+public sealed class PurchaseReceiptPosting(MyErpDbContext db, IExternalInventoryPostingService inventory,
+    PurchaseReceiptTracking tracking)
 {
     public const string PostingConflict = "PUR.RECEIPT.POSTING_CONFLICT";
 
@@ -48,8 +49,11 @@ public sealed class PurchaseReceiptPosting(MyErpDbContext db, IExternalInventory
             .OrderBy(x => x.LineNo).ToListAsync(token);
         foreach (var line in saved)
             line.PostedReceived = line.Quantity!.Value;
+        // Saved lot/serial captures (WU-PUR-007b2, ADR-221); INV still refuses an incomplete tracked line.
+        var captured = await tracking.LoadAsync(receipt.CompanyId, receipt.Id, token);
         var lines = saved.Select(x => new PurchaseInboundLine(x.LineNo, x.MaterialId, x.WarehouseId!.Value, null,
-            x.Quantity!.Value, x.UnitCost!.Value)).ToArray();
+            x.Quantity!.Value, x.UnitCost!.Value,
+            PurchaseReceiptTracking.ToInventory(captured.GetValueOrDefault(x.Id)))).ToArray();
 
         var result = await inventory.PostPurchaseInboundAsync(receipt.Id, businessDate, lines, token);
         // A replay means INV already holds stock for this receipt while PUR never recorded it: refuse, never re-count.

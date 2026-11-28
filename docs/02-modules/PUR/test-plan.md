@@ -1,5 +1,27 @@
 # PUR 測試計劃
 
+## WU-PUR-007b2 收貨行批號／序號擷取與入庫傳遞（2026-11-28T16:28:11+08:00）
+
+依 myerp-test-scenarios 列出；測試：`PurchaseReceiptTrackingTests`（I，真實 SQL＋MD＋SYS＋INV）、`PurchaseReceiptTrackingRulesTests`（U）、改寫 `PurchaseReceiptPostingTests`。
+
+| ID | 類別 | 情境 | 層級 | 需求 | 狀態 |
+|---|---|---|---|---|---|
+| PUR-RECV-TRK-001 | 正常／邊界 | 批號物料草稿 CREATE 兩批（" LOT-A " 2 含生產／有效日期、LOT-B 1，行量 5 未擷取完整）＋非追蹤行：保存去空白、seq 1/2、日期；READ 回相同擷取，非追蹤行空陣列。 | I | REQ_F4114.2.2 | PASS |
+| PUR-RECV-TRK-002 | 正常 | EDIT 整組替換擷取（OLD → NEW-1/NEW-2），移除的序號行連同擷取刪除；行 ID 保留、版本 +1。 | I | REQ_F4114.2.3 | PASS |
+| PUR-RECV-TRK-003 | 關聯 | 擷取與 MD 追蹤方式不符（非追蹤帶批號、批號物料帶序號、序號物料帶批號、序號物料 1.5 量）→ 422 TRACKING_MODE_MISMATCH lineNo=1，無收貨被保存。 | I | BR-PUR-030 | PASS |
+| PUR-RECV-TRK-004 | 重複與衝突 | 同物料同序號（不分大小寫、去空白）出現在兩行 → 422 SERIAL_DUPLICATE lineNo=2。 | I | BR-PUR-030 | PASS |
+| PUR-RECV-TRK-005 | 狀態／錯誤 | SUBMIT 時批號擷取 3 ≠ 行量 4 → 422 TRACKING_REQUIRED lineNo=2，整筆回滾（Draft、訂單行預留 0、無 SYS 實例、無異動）。 | I | REQ_F4114.2.4 | PASS |
+| PUR-RECV-TRK-006 | 正常 | 零步驟 SUBMIT：批號（含日期）／序號／非追蹤三行 → Posted；inv_lot 兩批含日期、inv_serial 兩筆、異動追蹤明細合計正確，非追蹤行無明細。 | I | REQ_F4114.2.5 | PASS |
+| PUR-RECV-TRK-007 | 正常 | 一步流程：SUBMIT PendingApproval → SYS 核准由處理器傳遞擷取，結果同 006。 | I | REQ_F4114.2.5 | PASS |
+| PUR-RECV-TRK-008 | 邊界 | 格式 400（欄位路徑）：兩者皆空／皆有、空白、50/51 與 100/101 字、量 0／負／7 位小數、序號量 2、序號帶日期、有效期限早於生產、混用、重複（大小寫）、合計超行量、1001 筆、null 項；合法批號／序號／未帶擷取通過。 | U | BR-PUR-030 | PASS |
+| PUR-RECV-TRK-009 | 重複與衝突 | 序號 SN-1 已入庫後另一收貨帶 "sn-1" SUBMIT → INV 拒絕，整筆回滾（Draft、預留不變、無異動）。 | I | BR-PUR-030 | PASS |
+| PUR-RECV-TRK-010 | 邊界 | 資料表 CHECK 拒絕：無號、雙號、空批號、序號量 2、序號帶日期、量 0、seq 0、有效期限早於生產、重複 seq；刪除收貨行串聯刪除擷取；migration Down／Up（正式 myerp）。 | I | REQ_DS43.222 | PASS |
+| PUR-RECV-TRK-011 | 邊界／關聯 | 改寫 PUR-RECV-POST-006：批號物料無擷取 SUBMIT → PUR 422 TRACKING_REQUIRED（先於 INV），整筆回滾。 | I | REQ_F4114.2.4 | PASS |
+| PUR-RECV-TRK-012 | 權限 | 不新增端點或權限；CREATE／EDIT／VIEW／SUBMIT 權限與範圍沿用 007a8／007a9 測試。 | — | — | N/A |
+| PUR-RECV-TRK-013 | 部分結果 | 整單原子，任一行擷取或 INV 拒絕整單回滾；部分成功不適用。 | — | — | N/A（005／009 覆蓋） |
+| PUR-RECV-TRK-014 | 錯誤（前端） | 400／422 lineNo 的畫面顯示留 007e。 | E | — | 待 007e |
+| PUR-RECV-TRK-015 | 檔案 | 無檔案輸入，不適用。 | — | — | N/A |
+
 ## WU-PUR-007b1 收貨最終核准／零步驟 SUBMIT 同交易 INV 入庫（2026-11-28T16:04:47+08:00）
 
 依 `myerp-test-scenarios` 逐類檢查。I＝真實 SQL＋真實 SYS 審批引擎＋真實 INV 過帳（`PurchaseReceiptPostingTests`）；S＝INV 以拒絕替身（`PurchaseReceiptSubmissionTests`）。批序號擷取留 007b2（ADR-220）；HTTP 回應形狀未變（SUBMIT 可回 `Posted`）；畫面留 007e。變異驗證：拿掉訂單行已收量轉移、收貨行 posted_received 與重放檢查 → 6 案中 5 紅。
@@ -11,7 +33,7 @@
 | PUR-RECV-POST-003 | 錯誤 | 核准時注入 INSERT inv_stock_movement 失敗 → 整筆回滾：SYS 實例仍 Pending、收貨 PendingApproval、預留 3 不變、收貨行已收 0、無異動；重試核准成功且只有 1 筆異動。 | I | BR-PUR-030 | PASS |
 | PUR-RECV-POST-004 | 重複與衝突／狀態 | Posted 後再送核准或駁回決定 → 409 APPROVAL_STATE_CHANGED，不二次過帳、不釋回。 | I | REQ_F4114.2.5 | PASS |
 | PUR-RECV-POST-005 | 重複與衝突 | INV 已有本收貨相同內容的 PURCHASE_INBOUND（重放）→ 409 PUR.RECEIPT.POSTING_CONFLICT，SUBMIT 整筆回滾（Draft、無預留、無 SYS 實例），異動仍只有原 1 筆。 | I | BR-PUR-030 | PASS |
-| PUR-RECV-POST-006 | 邊界／關聯 | 批號追蹤物料於 007b2 前無批序號 → INV 422 INV.TRACKING.REQUIRED，整筆回滾。 | I | REQ_F4114.2.5 | PASS（擷取留 007b2） |
+| PUR-RECV-POST-006 | 邊界／關聯 | 批號追蹤物料無擷取 → 007b2 起由 SUBMIT 422 PUR.RECEIPT.TRACKING_REQUIRED 整筆回滾（原 INV.TRACKING.REQUIRED，見 PUR-RECV-TRK-011）。 | I | REQ_F4114.2.5 | PASS（007b2 改寫） |
 | PUR-RECV-POST-007 | 錯誤 | INV 拒絕（替身）時零步驟 SUBMIT 與 SYS 核准皆整筆回滾；INV 收到保存行（收貨 ID、業務日、行號、物料、倉庫、量、成本）。改寫 PUR-RECV-SUB-006／008 的 007a9 拒絕斷言。 | S | REQ_F4114.2.4～5 | PASS |
 | PUR-RECV-POST-008 | 權限 | 不新增端點或權限；SUBMIT 權限／範圍沿用 SUB-004，SYS 核准權限由 SYS 引擎負責。不適用新測。 | — | — | N/A |
 | PUR-RECV-POST-009 | 部分結果 | 整單原子，任一行 INV 拒絕整單回滾；部分成功不適用。 | — | — | N/A（由 003／006 覆蓋） |

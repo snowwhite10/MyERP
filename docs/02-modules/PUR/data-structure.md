@@ -1,5 +1,7 @@
 # PUR 資料結構
 
+WU-PUR-007b2（2026-11-28T16:28:11+08:00，ADR-221）：新增 REQ_DS43.222 `pur_purchase_receipt_line_tracking`（migration `Purchasing_ReceiptLineTracking`，可逆）：`company_id`、`line_id`（FK `(company_id,line_id)` → `pur_purchase_receipt_line(company_id,id)` ON DELETE CASCADE）、`seq_no`、`lot_no nvarchar(50)`／`serial_no nvarchar(100)` 擇一、`quantity decimal(19,6)`、批號專用 `manufacture_date`／`expiry_date date` 與審計欄。CHECK：批號或序號擇一且非空、序號量 1 且無日期、量 > 0、seq_no > 0、有效期限 ≥ 生產日期；唯一索引 `(company_id,line_id,seq_no)` 兼作 FK 索引。草稿可不完整，SUBMIT 才要求合計等於行量；INV 過帳時建立 inv_lot／inv_serial。ER：`pur_purchase_receipt_line ||--o{ pur_purchase_receipt_line_tracking : "lot/serial capture"`。
+
 WU-PUR-007a8（2026-11-28T15:19:42+08:00，ADR-218）：migration `Purchasing_ReceiptDraftSnapshots` 於 `pur_purchase_receipt` 加可空 `owner_id`／`branch_id`／`department_id`（SYS 資料範圍快照，索引 `(company_id,owner_id,id)`），`pur_purchase_receipt_line` 加可空 `unit_cost decimal(19,6)`（本位幣未稅單位成本快照 = 訂單行 base_net ÷ quantity，六位四捨五入）。舊來源列保持 NULL，可逆。
 
 WU-PUR-008b4（2026-11-27T04:36:46+08:00，ADR-208）在 REQ_DS43.184 `pur_purchase_invoice` 增加可空欄位 `posted_at datetime2(6)`、`posted_from_version int`、`fi_purchase_source_id bigint`、`fi_payable_id bigint`、`fi_journal_id bigint`（FI 參照只存 ID，不建跨模組 FK）及 CHECK `ck_pur_invoice_posted`：status = Posted 時五欄皆有值且 ID／版本 > 0（以 `ISNULL(x,0) > 0` 避免 NULL 比較為 UNKNOWN 而通過），其他狀態五欄皆 NULL。Migration `20261126170236_Purchasing_InvoicePosting`（Down 刪 CHECK 與欄位）。
@@ -8,6 +10,7 @@ WU-PUR-008b4（2026-11-27T04:36:46+08:00，ADR-208）在 REQ_DS43.184 `pur_purch
 erDiagram
     pur_purchase_invoice ||--o{ pur_purchase_invoice_line : has
     pur_purchase_invoice_line }o--|| pur_purchase_receipt_line : "invoices (matched_reserved → posted_invoiced)"
+    pur_purchase_receipt_line ||--o{ pur_purchase_receipt_line_tracking : "lot/serial capture"
     pur_purchase_invoice ||..o| ap_purchase_source : "fi_purchase_source_id (FI, ID only)"
     pur_purchase_invoice ||..o| ap_posted_payable : "fi_payable_id (FI, ID only)"
     pur_purchase_invoice ||..o| gl_journal : "fi_journal_id (FI, ID only)"
@@ -253,6 +256,7 @@ erDiagram
 | REQ_DS43.187 | 1.3 | pur_purchase_order_line | This table stores order line price, tax, exchange, amounts, requisition source, and receipt capacity counters. | Developer | REQ_F4114.1.2, REQ_F4114.2.2, REQ_F4114.2.4, REQ_F4114.8.3 |
 | REQ_DS43.188 | 1.1 | pur_purchase_receipt | This table stores purchase receipt order, supplier, currency, optional draft document number and business date, and posting identity. | Developer | REQ_F4114.2.2, REQ_F4114.8.2 |
 | REQ_DS43.211 | 1.1 | pur_purchase_receipt_line | This table stores receipt line order references, optional draft quantity and warehouse, and committed quantity counters. | Developer | REQ_F4114.2.2, REQ_F4114.8.2 |
+| REQ_DS43.222 | 1.0 | pur_purchase_receipt_line_tracking | This table stores the lot or serial numbers (with optional lot manufacture and expiry dates) captured on a purchase receipt line; INV creates lots and serials from them when the receipt posts. | Developer | REQ_F4114.2.2, REQ_F4114.2.5 |
 
 Change record (2026-11-25T21:44:40+08:00, WU-P0-043): the receipt-line source row originally reused REQ_DS43.189, which ADR-106 assigns to FI `ar_sales_source`. The row now has the next unallocated ID, REQ_DS43.211; table identity, schema and related functional requirements are unchanged. The duplicate historical ID is not reused for another table.
 

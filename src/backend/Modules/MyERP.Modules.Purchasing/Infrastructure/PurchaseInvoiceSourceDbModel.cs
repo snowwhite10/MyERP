@@ -139,5 +139,28 @@ public sealed class PurchaseInvoiceSourceDbModel : IModuleDbModel
                 .HasForeignKey(x => new { x.CompanyId, x.PurchaseOrderLineId })
                 .HasPrincipalKey(x => new { x.CompanyId, x.Id }).OnDelete(DeleteBehavior.Restrict);
         });
+
+        // WU-PUR-007b2 (ADR-221): lot/serial capture per receipt line; deleting a Draft line removes its capture.
+        modelBuilder.Entity<PurchaseReceiptLineTracking>(e =>
+        {
+            e.ToTable("pur_purchase_receipt_line_tracking", t =>
+            {
+                t.HasCheckConstraint("ck_pur_receipt_line_tracking_target",
+                    "([lot_no] IS NOT NULL AND [serial_no] IS NULL AND LEN([lot_no]) > 0) OR ([lot_no] IS NULL AND [serial_no] IS NOT NULL AND LEN([serial_no]) > 0 AND [quantity] = 1 AND [manufacture_date] IS NULL AND [expiry_date] IS NULL)");
+                t.HasCheckConstraint("ck_pur_receipt_line_tracking_quantity", "[quantity] > 0");
+                t.HasCheckConstraint("ck_pur_receipt_line_tracking_seq_no", "[seq_no] > 0");
+                t.HasCheckConstraint("ck_pur_receipt_line_tracking_dates",
+                    "[manufacture_date] IS NULL OR [expiry_date] IS NULL OR [expiry_date] >= [manufacture_date]");
+            });
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.LotNo).HasMaxLength(PurchaseReceiptLineTracking.LotMaxLength);
+            e.Property(x => x.SerialNo).HasMaxLength(PurchaseReceiptLineTracking.SerialMaxLength);
+            e.Property(x => x.Quantity).HasPrecision(19, 6);
+            e.HasIndex(x => new { x.CompanyId, x.LineId, x.SeqNo }).IsUnique();
+            e.HasOne<PurchaseReceiptSourceLine>().WithMany()
+                .HasForeignKey(x => new { x.CompanyId, x.LineId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id }).OnDelete(DeleteBehavior.Cascade);
+        });
     }
 }

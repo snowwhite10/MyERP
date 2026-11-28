@@ -311,6 +311,7 @@ public sealed class PurchaseReceiptSubmissionTests(TestDatabase database)
         var services = new ServiceCollection();
         services.AddSingleton(db);
         services.AddSingleton<IExternalInventoryPostingService>(new RefusingInventory());
+        services.AddSingleton<MyERP.Modules.MasterData.Contracts.IInventoryReferenceGuard>(new UntrackedReferences());
         new PurchasingModule().AddServices(services, new ConfigurationBuilder().Build());
         return services.BuildServiceProvider().GetServices<IApprovalResultHandler>().ToArray();
     }
@@ -404,7 +405,23 @@ public sealed class PurchaseReceiptSubmissionTests(TestDatabase database)
             new UserCompanyAuthorization(user, s.CompanyId, branchId, 20, false, grants));
         var workflow = new ApprovalWorkflowService(db, new FixedClock(Today), new FixedUser(user), new AuditTrail(), []);
         return new PurchaseReceiptSubmissionService(db, new RequisitionCompanyAccess(new FixedCompany(s.CompanyId)),
-            authorization.Object, workflow, new PurchaseReceiptPosting(db, inventory ?? new RefusingInventory()));
+            authorization.Object, workflow, new PurchaseReceiptPosting(db, inventory ?? new RefusingInventory(),
+                new PurchaseReceiptTracking(db, new UntrackedReferences())),
+            new PurchaseReceiptTracking(db, new UntrackedReferences()));
+    }
+
+    /// <summary>Fixture materials are bare IDs without MD rows: every item reads as untracked (ADR-221).</summary>
+    private sealed class UntrackedReferences : MyERP.Modules.MasterData.Contracts.IInventoryReferenceGuard
+    {
+        public Task<T> RunAsync<T>(long itemId, long warehouseId, long? locationId, Func<Task<T>> action,
+            CancellationToken token = default) => action();
+
+        public Task<T> RunWithCodesAsync<T>(long itemId, long warehouseId, long? locationId,
+            Func<MyERP.Modules.MasterData.Contracts.InventoryReferenceCodes, Task<T>> action,
+            CancellationToken token = default) => action(new($"I{itemId}", $"W{warehouseId}", null));
+
+        public Task RequireWarehousesAsync(IReadOnlyCollection<long> warehouseIds, CancellationToken token = default) =>
+            Task.CompletedTask;
     }
 
     /// <summary>Records PUR's inbound calls and refuses them like INV would (for example an unknown item).</summary>

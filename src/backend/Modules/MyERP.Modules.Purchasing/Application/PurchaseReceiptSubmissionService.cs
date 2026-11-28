@@ -21,7 +21,8 @@ public sealed record PurchaseReceiptSubmissionResult(long Id, string DocumentNo,
 /// through <see cref="PurchaseReceiptPosting"/> (WU-PUR-007b1, ADR-220).
 /// </summary>
 public sealed class PurchaseReceiptSubmissionService(MyErpDbContext db, RequisitionCompanyAccess access,
-    ICurrentAuthorization authorization, IApprovalWorkflowService workflow, PurchaseReceiptPosting posting)
+    ICurrentAuthorization authorization, IApprovalWorkflowService workflow, PurchaseReceiptPosting posting,
+    PurchaseReceiptTracking tracking)
 {
     public const string DocumentType = PurchaseReceiptDraftService.DocumentType;
 
@@ -71,6 +72,12 @@ public sealed class PurchaseReceiptSubmissionService(MyErpDbContext db, Requisit
             foreach (var change in changes)
                 sources[change.PurchaseOrderLineId].PendingReceiptReserved = change.TargetPending;
             receipt.Status = "PendingApproval";
+
+            // ADR-221: a tracked line must carry lot/serial captures totalling its quantity before approval starts.
+            var captured = await tracking.LoadAsync(companyId, id, token);
+            await tracking.CheckAsync(rows.Select(x => new PurchaseReceiptTrackedLine(x.LineNo, x.MaterialId,
+                x.WarehouseId!.Value, x.Quantity!.Value,
+                PurchaseReceiptTracking.ToInput(captured.GetValueOrDefault(x.Id)))).ToArray(), true, token);
 
             decimal amount;
             try

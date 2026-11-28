@@ -28,7 +28,7 @@ namespace MyERP.IntegrationTests.Database;
 /// <summary>
 /// WU-PUR-007b1（REQ_F4114.2.5、BR-PUR-030、ADR-220，PUR-RECV-POST-001～006）：收貨最終核准與零步驟 SUBMIT 以真實 SQL、
 /// 真實 SYS 審批引擎與真實 INV 過帳驗收——同交易把本單待審量轉已收量、逐行寫 PURCHASE_INBOUND（保存的本位幣單位成本與倉庫）、
-/// 收貨 Posted；INV 失敗或重放整筆回滾；重複決定 409 不二次過帳；批序號物料在 007b2 前由 INV 拒絕。
+/// 收貨 Posted；INV 失敗或重放整筆回滾；重複決定 409 不二次過帳；未擷取批序號的追蹤物料由 SUBMIT 拒絕（007b2）。
 /// </summary>
 public sealed class PurchaseReceiptPostingTests(TestDatabase database)
 {
@@ -160,7 +160,7 @@ public sealed class PurchaseReceiptPostingTests(TestDatabase database)
     }
 
     [Fact]
-    public async Task LotTrackedItemIsRefusedByInventoryUntilTrackingCaptureExists()
+    public async Task LotTrackedItemWithoutCaptureIsRefusedAtSubmitBeforeInventory()
     {
         var s = await SeedAsync(withFlow: false);
         var (orderId, lineIds) = await SeedOrderAsync(s, (s.LotItem, 5m));
@@ -170,7 +170,7 @@ public sealed class PurchaseReceiptPostingTests(TestDatabase database)
         {
             var error = await Assert.ThrowsAsync<BusinessRuleException>(() =>
                 Submission(db, s).SubmitAsync(receipt.Id, receipt.Version, Ct));
-            Assert.Equal("INV.TRACKING.REQUIRED", error.ErrorCode);
+            Assert.Equal(PurchaseReceiptTracking.Required, error.ErrorCode); // 007b2: PUR refuses before SYS/INV
         }
         await using var check = NewDb(s);
         Assert.Equal("Draft", await StatusAsync(check, receipt.Id));
@@ -225,7 +225,9 @@ public sealed class PurchaseReceiptPostingTests(TestDatabase database)
     }
 
     private static PurchaseReceiptApprovalResultHandler Handler(MyErpDbContext db) =>
-        new(db, () => new PurchaseReceiptPosting(db, RealInventory(db)));
+        new(db, () => new PurchaseReceiptPosting(db, RealInventory(db), Tracking(db)));
+
+    private static PurchaseReceiptTracking Tracking(MyErpDbContext db) => new(db, new InventoryReferenceGuard(db));
 
     /// <summary>Real INV posting through its public contract, as the composed API would build it.</summary>
     private static ExternalInventoryPostingService RealInventory(MyErpDbContext db) =>
@@ -240,7 +242,7 @@ public sealed class PurchaseReceiptPostingTests(TestDatabase database)
                 new Dictionary<string, DataScope> { [PurchasingPermissions.ReceiptSubmit] = DataScope.Company }));
         var workflow = new ApprovalWorkflowService(db, new FixedClock(Today), new FixedUser(s.UserId), new AuditTrail(), []);
         return new PurchaseReceiptSubmissionService(db, new RequisitionCompanyAccess(new FixedCompany(s.CompanyId)),
-            authorization.Object, workflow, new PurchaseReceiptPosting(db, RealInventory(db)));
+            authorization.Object, workflow, new PurchaseReceiptPosting(db, RealInventory(db), Tracking(db)), Tracking(db));
     }
 
     private async Task<Seeded> SeedAsync(bool withFlow)

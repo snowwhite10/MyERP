@@ -1264,3 +1264,10 @@ SQL 守衛 DEFER；沒有執行真實 SQL Up／Down、交易、HTTP 或競態驗
 - 重新檢查 006f3 的程式、需求、測試計畫、截圖與 41 項未提交變更；沒有混入其他工作單元。依 myerp-test-scenarios 核對正常、邊界、版本衝突、狀態、權限、關聯與錯誤情境；剩餘逐態 Playwright 情境已列入 006f4。
 - 逐張開啟 10 張 4.3 截圖，按 UX 清單 A～E 審查修訂、成功、409、422 亮暗及 en／zh-Hans 文字；本單元新增 P1／P2 為 0。依 web-design-guidelines 複核新增表單的語義按鈕、欄位標籤、焦點、未儲存保護、錯誤與深色配色；沒有新增阻擋提交的發現。正常狀態的 en／zh-Hans 截圖與未覆蓋錯誤狀態留 006f4。
 - 本輪重跑前端全量 169 檔／1379 測試通過；相關模擬 Playwright 9/9（E11／E12、E09／E10、4.1 E01～E05），production 前端建置通過；`git diff --check` 通過。
+
+### 2026-11-28T16:28:11+08:00 WU-PUR-007b2 收貨批序號擷取複核
+
+- 問題：007b1 的追蹤物料只能等 INV 在最終核准時以 `INV.TRACKING.REQUIRED` 拒絕；多步流程要到最後核准人才發現。原因：收貨行沒有擷取資料。修改：SUBMIT 在建立 SYS 實例前以 MD 鎖內追蹤方式檢查擷取完整（422 `PUR.RECEIPT.TRACKING_REQUIRED`＋lineNo），過帳仍由 INV 把關。效果：錯誤提前到送審，`PurchaseReceiptTrackingTests` 驗證整筆回滾。
+- 問題：草稿每行都經 MD 鎖讀追蹤方式會多鎖、也令沒有 MD 列的舊測試替身失效。修改：草稿只檢查帶擷取的行（不完整草稿允許），SUBMIT 才檢查全部行。效果：草稿保存不增加無謂的鎖；舊 API 測試不變。
+- 問題：PUT 修訂時被刪除行的擷取。修改：PUT 先以 `ExecuteDelete` 清除本收貨所有擷取再重建，資料庫 FK 亦 ON DELETE CASCADE。效果：不會殘留孤兒列（schema 測試驗證串聯）。
+- 複核：新代碼無 `DateTime.Now`、無浮點、無跨模組資料表存取（MD 經 `IInventoryReferenceGuard`、INV 經 `IExternalInventoryPostingService`）；建置 0 警告。

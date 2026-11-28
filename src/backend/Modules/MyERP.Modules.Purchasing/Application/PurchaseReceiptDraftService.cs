@@ -11,18 +11,20 @@ using MyERP.Shared.Security;
 namespace MyERP.Modules.Purchasing.Application;
 
 public sealed record PurchaseReceiptSaveLine(int LineNumber, long PurchaseOrderLineId,
-    decimal Quantity, long WarehouseId);
+    decimal Quantity, long WarehouseId, IReadOnlyList<PurchaseReceiptTrackingInput>? Tracking = null);
 public sealed record PurchaseReceiptSaveInput(long PurchaseOrderId, DateOnly BusinessDate,
     IReadOnlyList<PurchaseReceiptSaveLine>? Lines);
 public sealed record PurchaseReceiptReadLine(long Id, int LineNumber, long PurchaseOrderLineId,
-    long MaterialId, decimal Quantity, long WarehouseId, decimal UnitCost);
+    long MaterialId, decimal Quantity, long WarehouseId, decimal UnitCost,
+    IReadOnlyList<PurchaseReceiptTrackingRead> Tracking);
 public sealed record PurchaseReceiptReadDetail(long Id, string DocumentNo, string Status, int Version,
     long PurchaseOrderId, long SupplierId, string Currency, DateOnly BusinessDate,
     IReadOnlyList<PurchaseReceiptReadLine> Lines);
 
 /// <summary>REQ_F4114.2.1–3: one locked transaction saves a receipt draft without reserving or posting stock.</summary>
 public sealed class PurchaseReceiptDraftService(MyErpDbContext db, RequisitionCompanyAccess access,
-    ICurrentAuthorization authorization, INumberGenerator numbers, IInventoryReferenceGuard references)
+    ICurrentAuthorization authorization, INumberGenerator numbers, IInventoryReferenceGuard references,
+    PurchaseReceiptTracking tracking)
 {
     public const string DocumentType = "PUR.RECEIPT";
 
@@ -45,13 +47,16 @@ public sealed class PurchaseReceiptDraftService(MyErpDbContext db, RequisitionCo
                 BusinessDate = validated.BusinessDate, Status = "Draft",
                 OwnerId = user.UserId, BranchId = user.BranchId, DepartmentId = user.DepartmentId
             };
+            var saved = BuildLines(companyId, 0, input.Lines!, lines, costs);
+            await CheckTrackingAsync(input.Lines!, saved, token);
             db.Add(receipt);
             await db.SaveChangesAsync(token);
-            var saved = BuildLines(companyId, receipt.Id, input.Lines!, lines, costs);
+            foreach (var row in saved) row.PurchaseReceiptId = receipt.Id;
             db.AddRange(saved);
             await db.SaveChangesAsync(token);
+            var captured = await SaveTrackingAsync(companyId, input.Lines!, saved, token);
             await tx.CommitAsync(token);
-            return Detail(receipt, saved);
+            return Detail(receipt, saved, captured);
         }
         catch (Exception ex) { await RollbackAsync(tx, ex); throw; }
     }
@@ -92,15 +97,19 @@ public sealed class PurchaseReceiptDraftService(MyErpDbContext db, RequisitionCo
             foreach (var entry in old.Where(x => !incoming.ContainsKey(x.LineNo)))
                 if (entry.PostedReceived != 0 || entry.PostedInvoiced != 0 || entry.MatchedReserved != 0)
                     throw new BusinessRuleException("PUR.RECEIPT.SOURCE_LOCKED", "Referenced receipt lines cannot be removed.");
-            await db.SaveChangesAsync(token);
             var saved = BuildLines(companyId, id, input.Lines!, lines, costs, kept);
+            await CheckTrackingAsync(input.Lines!, saved, token);
+            // Lot/serial capture is replaced as a whole (ADR-221); removed lines would cascade anyway.
+            await tracking.DeleteAsync(companyId, id, token);
+            await db.SaveChangesAsync(token);
             foreach (var row in saved.Where(x => x.Id == 0)) db.Add(row);
             receipt.BusinessDate = validated.BusinessDate;
             receipt.Status = "Draft";
             db.Entry(receipt).Property(x => x.BusinessDate).IsModified = true;
             await db.SaveChangesAsync(token);
+            var captured = await SaveTrackingAsync(companyId, input.Lines!, saved, token);
             await tx.CommitAsync(token);
-            return Detail(receipt, saved);
+            return Detail(receipt, saved, captured);
         }
         catch (Exception ex) { await RollbackAsync(tx, ex); throw; }
     }
@@ -124,7 +133,34 @@ public sealed class PurchaseReceiptDraftService(MyErpDbContext db, RequisitionCo
         var rows = await db.Set<PurchaseReceiptSourceLine>().AsNoTracking()
             .Where(x => x.CompanyId == companyId && x.PurchaseReceiptId == id)
             .OrderBy(x => x.LineNo).ToArrayAsync(token);
-        return Detail(receipt, rows);
+        return Detail(receipt, rows, await tracking.LoadAsync(companyId, id, token));
+    }
+
+    /// <summary>MD tracking mode for lines that carry captures; a Draft line without captures needs no check.</summary>
+    private Task CheckTrackingAsync(IReadOnlyList<PurchaseReceiptSaveLine> requested,
+        IReadOnlyList<PurchaseReceiptSourceLine> rows, CancellationToken token)
+    {
+        var byNo = requested.ToDictionary(x => x.LineNumber);
+        var tracked = rows.Where(x => byNo[x.LineNo].Tracking is { Count: > 0 })
+            .Select(x => new PurchaseReceiptTrackedLine(x.LineNo, x.MaterialId, x.WarehouseId!.Value,
+                x.Quantity!.Value, byNo[x.LineNo].Tracking!)).ToArray();
+        return tracked.Length == 0 ? Task.CompletedTask : tracking.CheckAsync(tracked, false, token);
+    }
+
+    private async Task<Dictionary<long, PurchaseReceiptLineTracking[]>> SaveTrackingAsync(long companyId,
+        IReadOnlyList<PurchaseReceiptSaveLine> requested, IReadOnlyList<PurchaseReceiptSourceLine> rows,
+        CancellationToken token)
+    {
+        var byNo = requested.ToDictionary(x => x.LineNumber);
+        var captured = rows.ToDictionary(x => x.Id,
+            x => PurchaseReceiptTracking.Build(companyId, x.Id, byNo[x.LineNo].Tracking));
+        var added = captured.Values.SelectMany(x => x).ToArray();
+        if (added.Length > 0)
+        {
+            db.AddRange(added);
+            await db.SaveChangesAsync(token);
+        }
+        return captured;
     }
 
     private async Task<(PurchaseOrderSource Order, Dictionary<long, PurchaseOrderSourceLine> Lines,
@@ -182,17 +218,20 @@ public sealed class PurchaseReceiptDraftService(MyErpDbContext db, RequisitionCo
         }).ToArray();
 
     private static PurchaseReceiptReadDetail Detail(PurchaseReceiptSource receipt,
-        IReadOnlyList<PurchaseReceiptSourceLine> rows) => new(receipt.Id, receipt.DocumentNo!, receipt.Status,
-        receipt.Version, receipt.PurchaseOrderId, receipt.SupplierId, receipt.Currency,
+        IReadOnlyList<PurchaseReceiptSourceLine> rows,
+        IReadOnlyDictionary<long, PurchaseReceiptLineTracking[]> captured) => new(receipt.Id, receipt.DocumentNo!,
+        receipt.Status, receipt.Version, receipt.PurchaseOrderId, receipt.SupplierId, receipt.Currency,
         receipt.BusinessDate!.Value, rows.OrderBy(x => x.LineNo)
             .Select(x => new PurchaseReceiptReadLine(x.Id, x.LineNo, x.PurchaseOrderLineId,
-                x.MaterialId, x.Quantity!.Value, x.WarehouseId!.Value, x.UnitCost!.Value)).ToArray());
+                x.MaterialId, x.Quantity!.Value, x.WarehouseId!.Value, x.UnitCost!.Value,
+                PurchaseReceiptTracking.ToRead(captured.GetValueOrDefault(x.Id)))).ToArray());
 
     private static PurchaseReceiptValidatedInput Validate(PurchaseReceiptSaveInput input)
     {
         if (input is null) throw new RequestValidationException("body", "Receipt body is required.");
         if (input.Lines?.Any(x => x is null || x.WarehouseId <= 0) == true)
             throw new RequestValidationException("lines", "Every line needs a warehouse.");
+        PurchaseReceiptTrackingRules.Validate(input.Lines);
         return PurchaseReceiptDraftInput.Validate(new(input.PurchaseOrderId, input.BusinessDate,
             input.Lines?.Select(x => new PurchaseReceiptDraftLine(x.LineNumber,
                 x.PurchaseOrderLineId, x.Quantity)).ToArray()));

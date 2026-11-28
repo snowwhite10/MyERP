@@ -771,9 +771,9 @@
 | WU-PUR-007a4 | PUR | 最終核准將本單待審量轉已收量的離線計畫 | P1 | DONE | 007a3；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T01:42:11+08:00：CS0246 紅燈後定向 7/7、補邊界後 Architecture 1812/1812；PUR Debug 零警告。PendingApproval 精確轉量、Posted 逐來源證據相符才零變更；SQL、INV 與 SYS 同交易仍待 007a／007b。 |
 | WU-PUR-007a5 | PUR | 最終核准保存快照與逐來源證據一致性的離線組裝 | P1 | DONE | 007a4；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T01:49:39+08:00：先 CS0246 紅燈；保存身份、行與來源證據離線組裝，Architecture 1820/1820、PUR Debug 零警告。SQL 權威與 INV movement 仍待 007a／007b。 |
 | WU-PUR-007a6 | PUR | SUBMIT／駁回保存快照與逐來源證據的離線組裝 | P1 | DONE | 007a3；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T01:55:56+08:00：CS0103 紅燈後組裝保存身份、行與本單預留證據；定向 4/4、Architecture 1824/1824、PUR Debug 零警告。權威 SQL 鎖、SYS 交易與 HTTP 留 007a／007b。 |
-| WU-PUR-007b | PUR/INV | SYS 最終核准／駁回與 INV PostPurchaseInboundAsync 同交易；批序號、成本、重放／回滾驗收 | P1 | 已拆 b1／b2（父項不計） | 007a、SQL 服務 | 2026-11-28T16:04:47+08:00 ADR-220 依 90 分鐘邊界拆 007b1（非批序號入庫過帳）／007b2（批序號擷取）。 |
+| WU-PUR-007b | PUR/INV | SYS 最終核准／駁回與 INV PostPurchaseInboundAsync 同交易；批序號、成本、重放／回滾驗收 | P1 | DONE（父項結清） | 007a、SQL 服務 | 2026-11-28T16:04:47+08:00 ADR-220 依 90 分鐘邊界拆 007b1（非批序號入庫過帳）／007b2（批序號擷取），2026-11-28T16:28:11+08:00 兩者皆 DONE（ADR-221）。 |
 | WU-PUR-007b1 | PUR/INV | 收貨最終核准與零步驟 SUBMIT 同交易 INV 入庫（保存成本、倉庫）、已收量轉移、重放／回滾／重複決定 | P1 | DONE | 007a9 | 2026-11-28T16:04:47+08:00 真實 SQL＋真實 SYS＋真實 INV 6/6（變異 5 紅）、007a9 改寫 2 案；移除 APPROVAL_FLOW_REQUIRED／POSTING_NOT_AVAILABLE。 |
-| WU-PUR-007b2 | PUR/INV | 收貨行批號／序號擷取（追蹤表＋migration、草稿 CREATE／EDIT 輸入與驗證、READ）並於過帳傳 PurchaseInboundLine.Tracking；真實 SQL 驗收 | P1 | TODO | 007b1 | ADR-220 拆出；完成後追蹤物料才可收貨；沿用 SD 出貨 tracking 表模式（ADR-145）。 |
+| WU-PUR-007b2 | PUR/INV | 收貨行批號／序號擷取（追蹤表＋migration、草稿 CREATE／EDIT 輸入與驗證、READ）並於過帳傳 PurchaseInboundLine.Tracking；真實 SQL 驗收 | P1 | DONE | 007b1 | 2026-11-28T16:28:11+08:00 完成（ADR-221）：REQ_DS43.222 `pur_purchase_receipt_line_tracking`＋可逆 migration；草稿 tracking 輸入／400 格式／422 MODE_MISMATCH、SERIAL_DUPLICATE；SUBMIT 422 TRACKING_REQUIRED；零步驟與 SYS 核准傳 INV 建立批號（含日期）／序號；PUR-RECV-TRK-001～015。 |
 | WU-PUR-007c | PUR/INV | 退貨專用 INV 出庫來源契約、退貨表與行、草稿／審批／原成本出庫真實驗收 | P1 | TODO | 007b、SQL 服務 | 先擴充 INV 專用 PostPurchaseReturnAsync；不可借用銷售出庫或直接讀寫 INV 表。 |
 | WU-PUR-007e | PUR | 收貨與退貨列表／表單、三語亮暗、CSV／列印及 Playwright QA | P1 | TODO | 007a10、007b、007c | 介面 4.4～4.6、4.16～4.18；前端 skills 必用。 |
 | WU-PUR-008 | PUR | 發票與訂單／收貨三單比對、差異處理 | P1 | 已拆分 | 007 | 008d 設計、008a PUR 發票與比對、008b FI 應付同交易、008c 前端；父項待全部驗收。 |

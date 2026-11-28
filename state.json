@@ -1,12 +1,12 @@
-{
+﻿{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-007b1",
-    "lastCompletedWorkUnit":  "WU-PUR-007b1",
-    "nextAction":  "做 WU-PUR-007b2：收貨行批號／序號擷取（ADR-220）。先讀 ADR-220、PurchaseReceiptPosting.cs（過帳目前不傳 Tracking，追蹤物料由 INV 422 INV.TRACKING.REQUIRED 拒絕）、PurchaseReceiptDraftService.cs 與 SD 出貨追蹤模式（SalesDeliveryLineTracking、ADR-145、SalesDeliveryPosting.ToInventoryTracking）。以 myerp-test-scenarios 先寫真實 SQL 紅燈：新增 pur_purchase_receipt_line_tracking（company_id＋line_id＋seq_no，lot_no／serial_no／quantity，CHECK 與 FK）及可逆 migration；草稿 CREATE／EDIT 可帶 lines[].tracking（依 MD 物料追蹤方式驗證：非追蹤不可帶、序號整數且唯一、草稿可不完整）並於 READ 回傳；SUBMIT／核准過帳時傳 PurchaseInboundLine.Tracking，批號／序號物料入庫成功並在 INV 追蹤表可查，不完整仍 422 整筆回滾。改寫 PurchaseReceiptPostingTests.LotTrackedItemIsRefusedByInventoryUntilTrackingCaptureExists。之後 007a10（DELETE／LIST／CSV）→ 007c → 007e。勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
+    "currentWorkUnit":  "WU-PUR-007b2",
+    "lastCompletedWorkUnit":  "WU-PUR-007b2",
+    "nextAction":  "做 WU-PUR-007a10：收貨 Draft 實體刪除（DELETE，帶版本，只限 Draft，連同 pur_purchase_receipt_line_tracking 串聯刪除，整單回滾）、LIST（keyword/from/to/purchaseOrderId/status 篩選、白名單排序、穩定分頁、SYS VIEW 資料範圍）與伺服器 CSV（VIEW+EXPORT，沿用 PurchaseOrderCsv／PurchaseInvoiceCsv 模式與公式注入防護），真實 SQL／HTTP。先讀 PurchaseReceiptDraftService.cs、PurchaseReceiptsController.cs、PurchaseOrderQueryService.cs／PurchaseOrderCsv.cs 與 docs/02-modules/PUR/api.md 收貨段；以 myerp-test-scenarios 先寫紅燈。之後 007c（退貨，可讀 ADR-221 擷取表）→ 007e（畫面需提供 tracking 輸入與 lineNo 錯誤顯示）。勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -25,8 +25,8 @@
                     "SCM":  "IN_PROGRESS"
                 },
     "idCounters":  {
-                       "REQ_DS43":  221,
-                       "ADR":  220,
+                       "REQ_DS43":  222,
+                       "ADR":  221,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -124,5 +124,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T16:12:11+08:00",
-    "updatedAt":  "2026-11-28T16:12:11+08:00"
+    "updatedAt":  "2026-11-28T16:39:54+08:00"
 }

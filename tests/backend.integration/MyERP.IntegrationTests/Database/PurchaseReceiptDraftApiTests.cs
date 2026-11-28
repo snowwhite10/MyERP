@@ -217,6 +217,6 @@ public sealed class PurchaseReceiptDraftApiTests(TestDatabase database)
             .ReturnsAsync("PR-001");
         var references = new Mock<IInventoryReferenceGuard>();
         return new PurchaseReceiptDraftService(db, new RequisitionCompanyAccess(new FixedCompany(company)),
-            authorization.Object, numbers.Object, references.Object);
+            authorization.Object, numbers.Object, references.Object, new PurchaseReceiptTracking(db, references.Object));
     }
 }
