@@ -94,6 +94,8 @@ const EMPTY_FILTER: PurchaseOrderFilter = { keyword: '', from: '', to: '', statu
           <erp-status-tag [status]="tag(d.status)" [labelKey]="statusLabel(d.status)" testId="pur-order-detail-status" />
           <span class="spacer"></span>
           @if (d.status === 'Draft' || d.status === 'Rejected') {
+            <a *erpHasPermission="'PUR.ORDER.EDIT'" nz-button [routerLink]="['/pur/purchase-orders', d.id, 'edit']"
+              data-testid="pur-order-edit">{{ 'pur.order.edit' | translate }}</a>
             <button *erpHasPermission="'PUR.ORDER.SUBMIT'" nz-button nzType="primary" type="button" [disabled]="submitBlocked(d)"
               [attr.aria-describedby]="actionHint(d) ? 'pur-order-action-hint' : null" [attr.aria-busy]="busy()" (click)="submit(d)"
               data-testid="pur-order-submit">{{ 'pur.order.submit' | translate }}</button>

@@ -1811,4 +1811,13 @@ WU-PUR-005f2a2 阻擋核對（2026-10-23T11:17:26+08:00）：按 `myerp-test-sce
 | PUR-PO-UI-019 | 權限 | 列表「新增採購單」只在有 CREATE 時顯示並連到 `/new`；`?id=` 在列表首次載入後開啟該單詳情一次；路由 `/new` 由 `permissionGuard('PUR.ORDER.CREATE')`＋`unsavedChangesGuard` 保護。 | U | REQ_IO_A4.2.3 | PASS（2 案例） |
 | PUR-PO-UI-E09 | 正常（E2E） | 列表按「新增採購單」→ 選供應商、日期、物料、請購來源、數量、單價、稅率 → 儲存；畫面提示單號與 1 行並顯示詳情（含 PR-0004）；後端收到的 body 與保存筆數一致。三語亮暗截圖。 | E | REQ_IO_A4.2.1～3 | PASS |
 | PUR-PO-UI-E10 | 驗證／錯誤（E2E） | 空白儲存逐欄原因且 0 次 POST；422 供應商未核准欄位＋摘要；500 traceId；輸入保留、後端保存 0 筆；en／zh-Hans 截圖。 | E | REQ_IO_A4.2.3 | PASS |
+| PUR-PO-UI-020 | 邊界 | 修訂 body：決標行保留保存行號（伺服器以行號對應決標行），其他行按畫面順序取下一個未用行號；欄位集合與建立相同（不送公司、單號、金額）。 | U | REQ_IO_A4.3.1、BR-PUR-022 | PASS |
+| PUR-PO-UI-021 | 正常／關聯 | `/pur/purchase-orders/:id/edit` 經 `GET /{id}/edit`（只需 EDIT）讀保存單；標題含單號；駁回單提示「儲存後回草稿需重送」；供應商／物料無選項時顯示 `#ID`；請購來源顯示原量／已轉量／餘量精確文字；含決標行時供應商停用並說明、幣別唯讀、決標行物料／來源／數量／單價／稅率唯讀並說明，移除停用附原因；業務日期稅率清單不清除決標行稅率與決標幣別；載入後無未保存變更；有 VIEW 時返回連結到 `?id=`。 | U＋E | REQ_IO_A4.3.1 | PASS（E11 畫面） |
+| PUR-PO-UI-022 | 正常 | 以載入版本 `PUT /{id}?version=` 保存（備註去空白、決標行原行號）；駁回單成功提示「修訂已儲存並回到草稿，共 n 行；請重新送審」，草稿為「修訂已儲存，共 n 行」；有 VIEW 導向保存詳情；無 VIEW 留在本頁顯示結果並重讀保存單，下一次保存用新版本。 | U＋E | REQ_IO_A4.3.2 | PASS（2 案例；E11 後端收到 version 3、決標行號 2、保存後 Draft／version 4，詳情狀態「草稿」） |
+| PUR-PO-UI-023 | 狀態／權限 | 待審／已核准／已取消唯讀：顯示目前狀態及只可修訂草稿或駁回單，不顯示輸入與儲存，不發 PUT；404（刪除、他公司、範圍外）顯示找不到原因且不載入 context；路由 `permissionGuard('PUR.ORDER.EDIT')`＋`unsavedChangesGuard`。 | U＋E | REQ_IO_A4.3.1、REQ_F4114.1.3 | PASS（2 案例；E12 已核准唯讀三語） |
+| PUR-PO-UI-024 | 重複與衝突／錯誤 | 409 保留輸入、附「採購單未儲存」並顯示「重新載入保存資料」，確認後重讀並清除錯誤；422 `AWARD_LINE_LOCKED`／`NOT_EDITABLE` 三語原因後立即重讀（後者轉唯讀）；500 顯示 traceId、保留輸入、不提供重新載入；皆無成功提示、不導向。 | U＋E | REQ_IO_A4.3.2 | PASS（2 案例；E12 409 後端版本不變、重讀；422 後唯讀） |
+| PUR-PO-UI-025 | 權限／狀態 | 4.1 詳情「修改」只在 Draft／Rejected 且有 EDIT 時顯示並連到 `/pur/purchase-orders/:id/edit`；已核准或無 EDIT 隱藏。 | U＋E | REQ_IO_A4.1.4、REQ_IO_A4.3.1 | PASS（3 案例；E11 由詳情進入） |
+| PUR-PO-UI-E11 | 正常（E2E） | 詳情按「修改」→ 駁回含決標單 → 改人工行數量與備註 → 儲存修訂；畫面提示回草稿與 2 行、詳情狀態草稿；後端收到 version 3、決標行原行號與不變快照，保存 Draft／version 4；亮暗截圖。 | E | REQ_IO_A4.3.1～2 | PASS |
+| PUR-PO-UI-E12 | 衝突／狀態（E2E） | 409 保留輸入、後端版本不變、確認重新載入後恢復保存值；422 NOT_EDITABLE 原因＋唯讀說明、無儲存按鈕；兩次 PUT 皆 version 3；亮暗＋en／zh-Hans 截圖。 | E | REQ_IO_A4.3.2 | PASS |
+| PUR-PO-UI-NA3 | 部分結果／檔案／邊界 | 不適用：整單一次保存無部分成功；無檔案；欄位邊界與 4.2 共用 `purchaseOrderFieldErrors`（PUR-PO-UI-014）。逾時沿用共用錯誤攔截器。 | - | - | 不適用 |
 | PUR-PO-UI-NA2 | 重複／部分結果／檔案 | 不適用：建立不帶版本（無 409 版本衝突；單號重複由 SYS 發號回 409 時以通用衝突訊息顯示）、整單一次保存無部分成功、無檔案上傳；4.3 修訂的 409 屬 006f3。 | — | — | N/A |

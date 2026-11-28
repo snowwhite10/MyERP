@@ -69,7 +69,7 @@ describe('PUR-PO-UI rules', () => {
     expect(en.length).toBeGreaterThan(60);
     expect(keys(hantPur.order).sort()).toEqual(en);
     expect(keys(hansPur.order).sort()).toEqual(en);
-    for (const errors of [enErrors, hantErrors, hansErrors]) expect(Object.keys(errors.PUR.ORDER).sort()).toEqual(['AMOUNT_OVERFLOW', 'BASE_CURRENCY_INACTIVE', 'CURRENCY_UNAVAILABLE', 'EMPTY', 'EXPORT_LIMIT', 'HAS_RECEIPTS', 'INVALID_RATE', 'INVALID_REQUISITION_SOURCE', 'NOT_CANCELLABLE', 'NOT_DELETABLE', 'NOT_FOUND', 'NOT_SUBMITTABLE', 'NO_BASE_CURRENCY', 'REQUISITION_INSUFFICIENT']);
+    for (const errors of [enErrors, hantErrors, hansErrors]) expect(Object.keys(errors.PUR.ORDER).sort()).toEqual(['AMOUNT_OVERFLOW', 'AWARD_LINE_LOCKED', 'BASE_CURRENCY_INACTIVE', 'CURRENCY_UNAVAILABLE', 'EMPTY', 'EXPORT_LIMIT', 'HAS_RECEIPTS', 'INVALID_RATE', 'INVALID_REQUISITION_SOURCE', 'NOT_CANCELLABLE', 'NOT_DELETABLE', 'NOT_EDITABLE', 'NOT_FOUND', 'NOT_SUBMITTABLE', 'NO_BASE_CURRENCY', 'REQUISITION_INSUFFICIENT']);
   });
 });
 

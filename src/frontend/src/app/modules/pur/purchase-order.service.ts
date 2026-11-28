@@ -23,7 +23,8 @@ export type PurchaseOrderSort = (typeof PURCHASE_ORDER_SORTS)[number];
 export const PURCHASE_ORDER_ERROR_CODES = ['PUR.ORDER.NOT_FOUND', 'PUR.ORDER.EXPORT_LIMIT', 'COMMON.PERMISSION.DENIED',
   'COMMON.CONCURRENCY.CONFLICT', 'PUR.ORDER.NOT_SUBMITTABLE', 'PUR.ORDER.NOT_DELETABLE', 'PUR.ORDER.NOT_CANCELLABLE',
   'PUR.ORDER.HAS_RECEIPTS', 'PUR.ORDER.EMPTY', 'PUR.ORDER.INVALID_REQUISITION_SOURCE', 'PUR.ORDER.REQUISITION_INSUFFICIENT',
-  'MD.SUPPLIER.NOT_FOUND', 'MD.SUPPLIER.NOT_APPROVED', 'MD.ITEM.NOT_FOUND', 'MD.ITEM.INACTIVE'];
+  'MD.SUPPLIER.NOT_FOUND', 'MD.SUPPLIER.NOT_APPROVED', 'MD.ITEM.NOT_FOUND', 'MD.ITEM.INACTIVE', 'PUR.ORDER.NOT_EDITABLE',
+  'PUR.ORDER.AWARD_LINE_LOCKED'];
 /** Errors meaning the saved order changed underneath the screen: show the reason, then re-read the saved detail. */
 const RELOAD_DETAIL_CODES = ['COMMON.CONCURRENCY.CONFLICT', 'PUR.ORDER.NOT_SUBMITTABLE', 'PUR.ORDER.NOT_DELETABLE',
   'PUR.ORDER.NOT_CANCELLABLE', 'PUR.ORDER.HAS_RECEIPTS', 'PUR.ORDER.EMPTY'];
@@ -69,8 +70,12 @@ export interface PurchaseOrderCreateContext { businessDate: string; currencies: 
 /** An approved requisition line with remaining quantity; quantities keep the server's exact digits. */
 export interface PurchaseOrderRequisitionOption { id: number; requisitionId: number; documentNo: string; lineNo: number;
   itemId: number; requiredDate: string; quantity: string; orderedQuantity: string; remainingQuantity: string }
+/**
+ * One screen line. `awardId` / `lineNo` are only set for a saved awarded line in revision mode (介面 4.3): the server matches
+ * awarded rows by line number, so that number must be sent unchanged.
+ */
 export interface PurchaseOrderLineDraft { itemId: number | null; requisitionLineId: number | null; quantity: string;
-  unitPrice: string; taxRateId: number | null }
+  unitPrice: string; taxRateId: number | null; awardId?: number | null; lineNo?: number | null }
 export interface PurchaseOrderDraft { supplierId: number | null; businessDate: string; currencyCode: string; remark: string;
   lines: PurchaseOrderLineDraft[] }
 /** 201 / 200 reply of POST / PUT: the saved order with server-computed amounts (exact decimal text). */
@@ -86,8 +91,16 @@ export interface PurchaseOrderSaved { id: number; documentNo: string; status: Pu
  */
 export function purchaseOrderBody(draft: PurchaseOrderDraft): object {
   const currencyCode = draft.currencyCode.trim().toUpperCase();
+  // Fixed (awarded) line numbers are reserved first; every other line takes the next unused number in screen order.
+  const used = new Set(draft.lines.map(line => line.lineNo).filter((n): n is number => !!n));
+  let next = 1;
+  const numberOf = (line: PurchaseOrderLineDraft) => {
+    if (line.lineNo) return line.lineNo;
+    while (used.has(next)) next++;
+    used.add(next); return next;
+  };
   return { supplierId: draft.supplierId, businessDate: draft.businessDate, remark: draft.remark.trim() || null,
-    lines: draft.lines.map((line, index) => ({ lineNo: index + 1, itemId: line.itemId, requisitionLineId: line.requisitionLineId,
+    lines: draft.lines.map(line => ({ lineNo: numberOf(line), itemId: line.itemId, requisitionLineId: line.requisitionLineId,
       quantity: line.quantity.trim(), unitPrice: line.unitPrice.trim(), currencyCode, taxRateId: line.taxRateId })) };
 }
 
@@ -210,6 +223,15 @@ export class PurchaseOrderService {
   /** POST / creates a manual Draft atomically (201 with the saved order); 400 / 422 bodies keep field and MD reasons. */
   create(draft: PurchaseOrderDraft): Observable<PurchaseOrderSaved> {
     return this.read(this.http.post(API, purchaseOrderBody(draft), { responseType: 'text' }));
+  }
+  /** GET /{id}/edit: the saved order within the EDIT scope (VIEW is not required), lines with award and requisition sources. */
+  getForEdit(id: number): Observable<PurchaseOrderDetail> {
+    return this.read<PurchaseOrderDetail>(this.http.get(`${API}/${id}/edit`, { responseType: 'text' }));
+  }
+  /** PUT /{id}?version= replaces the whole Draft / Rejected order (Rejected returns to Draft); 409 stale, 422 not editable. */
+  update(id: number, version: number, draft: PurchaseOrderDraft): Observable<PurchaseOrderSaved> {
+    return this.read(this.http.put(`${API}/${id}`, purchaseOrderBody(draft),
+      { params: new HttpParams().set('version', version), responseType: 'text' }));
   }
   /** Error bodies are parsed with shortage quantities kept as exact decimal text. */
   private act(request: Observable<string>): Observable<PurchaseOrderActionResult> {

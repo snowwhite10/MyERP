@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-006f3",
-    "lastCompletedWorkUnit":  "WU-PUR-006f2b",
-    "nextAction":  "做 WU-PUR-006f3：介面 4.3 修訂表單 /pur/purchase-orders/:id/edit（路由 permissionGuard PUR.ORDER.EDIT＋unsavedChangesGuard）。以 006f2b 的 purchase-order-form.ts 擴充（id 存在時為修訂模式）：先查 006a3 的 GET /{id}/edit（或沿用 GET /{id}）與 PUT /{id} 是否已有前端客戶端，沒有就在 purchase-order.service.ts 加 getForEdit／update（PUT body 沿用 purchaseOrderBody＋version）；只有 Draft／Rejected 可編輯，其他狀態唯讀並說明；決標行（awardId 非空）物料／來源／數量／單價／稅率唯讀並說明不可改；Rejected 儲存後回 Draft 要在成功提示說明；409 版本衝突保留輸入、顯示重新載入按鈕（確認後重讀）；422 PUR.ORDER.NOT_EDITABLE／AWARD_LINE_LOCKED 三語並重讀；保存選項標籤（供應商、物料、來源）要能顯示已保存值（無則 #ID）。4.1 詳情加「修改」按鈕（EDIT，Draft／Rejected）。先估時，超過 90 分鐘再拆。用 myerp-test-scenarios、myerp-ux-review、web-design-guidelines，先寫測試，畫面訊息與保存資料雙斷言。勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
+    "currentWorkUnit":  "WU-PUR-006f4",
+    "lastCompletedWorkUnit":  "WU-PUR-006f3",
+    "nextAction":  "做 WU-PUR-006f4：4.2／4.3 逐態 Playwright 與三語亮暗 UX QA，作為 006f 父項結清條件。已有模擬 E2E：E09／E10（4.2 正常、驗證、422、500）與 E11／E12（4.3 正常、409 重新載入、422 NOT_EDITABLE 唯讀）。補齊尚未覆蓋的狀態：4.2 的 409（SYS 發號衝突）與 400 逐欄；4.3 的 400 逐欄、422 AWARD_LINE_LOCKED（原因加重讀）、500 traceId、無 VIEW 時留在本頁的成功、404 找不到；4.1 詳情「修改」按鈕的亮暗截圖。每個狀態截淺色與深色（zh-Hant），en／zh-Hans 各截正常狀態一張；斷言畫面訊息與後端保存資料一致。可考慮真實 API 一個修訂情境（real-api-*，需記憶體守衛 PASS，DEFER 就只做模擬並記錄）。用 myerp-ux-review、web-design-guidelines，結果寫入 optimization-log。完成後 006f 父項結清。勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -51,7 +51,8 @@
                              "WU-PUR-006e4":  0,
                              "WU-PUR-006f1":  0,
                              "WU-PUR-006f2a":  0,
-                             "WU-PUR-006f2b":  0
+                             "WU-PUR-006f2b":  0,
+                             "WU-PUR-006f3":  0
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -123,5 +124,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T11:16:12+08:00",
-    "updatedAt":  "2026-11-28T11:16:12+08:00"
+    "updatedAt":  "2026-11-28T12:37:26+08:00"
 }

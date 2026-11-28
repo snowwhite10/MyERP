@@ -87,6 +87,8 @@ WU-PUR-006f2b（2026-11-28T11:14:15+08:00，ADR-217）：4.2 已實作 `/pur/pur
 | REQ_IO_A4.3.1 | Order Revision (Form) | Edit eligible manual lines with version; show award lines as immutable. | Prevent changing awarded evidence. | Form / rows | Draft or revised rejection | REQ_IO_A4.1.3 | Developer | REQ_F4114.1.3 |
 | REQ_IO_A4.3.2 | Save Revision (Button) | Show stale version, inactive reference and saved result distinctly. | Prevent lost updates. | Button | EDIT | REQ_IO_A4.3.1 | Developer | REQ_F4114.1.3 |
 
+WU-PUR-006f3（2026-11-28T11:30:57+08:00）交付 4.3：與 4.2 共用表單元件，路由帶 `:id` 即修訂模式，經 `GET /{id}/edit` 載入（只需 EDIT）。標題含單號；駁回單說明保存後回草稿需重送；含決標行時供應商停用、幣別唯讀，決標行以唯讀文字顯示物料／數量／單價／稅率並保留原行號，不可移除。非 Draft／Rejected 只顯示狀態原因、不提供輸入。409 保留輸入並經確認重新載入；422 `NOT_EDITABLE`／`AWARD_LINE_LOCKED` 說明後重讀；成功有 VIEW 時開保存詳情，否則留在本頁顯示結果並重讀。4.1 詳情在 Draft／Rejected 且有 EDIT 時顯示「修改」。供應商／物料沒有選項資料時顯示 `#ID`。
+
 ## WU-PUR-005a 詢價／報價／比價介面預案（005f 才交付畫面）
 
 介面按 BlueWhale 4.1～4.7 及既有請購 4.8～4.10 後追加，不改舊編號。預計所有畫面三語、亮暗；列表空、無搜尋結果、無權、驗證錯誤、伺服器錯誤、成功與無變更均有獨立提示。此切片只固定規格，截圖與 E2E 留 005f。

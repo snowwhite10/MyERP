@@ -1220,3 +1220,18 @@ SQL 守衛 DEFER；沒有執行真實 SQL Up／Down、交易、HTTP 或競態驗
 - 發現：POST 可回 `CURRENCY_UNAVAILABLE`、`NO_BASE_CURRENCY`、`BASE_CURRENCY_INACTIVE`、`INVALID_RATE`、`AMOUNT_OVERFLOW`，但前端沒有翻譯，只會顯示通用錯誤。改法：三語補上，並把 4.1 錯誤代碼集合的測試擴充為 14 個代碼。
 - UX 截圖審查：英文成功文字「with 1 lines」單複數錯誤（P3），改為「(lines: n)」。web-design-guidelines 只有 P3 項目：代碼與名稱沒有加 `translate="no"`，供應商、物料、來源以按鈕加 aria-label 取代 `<label>`。其餘按 ui-conventions 處理，不改。
 - 效果：前端單元 9 個新案例，模擬 E2E E09／E10 加上相鄰 4.1 的 8 個，共 10/10；建置 0 警告。
+
+## 2026-11-28T11:30:57+08:00 WU-PUR-006f3 介面 4.3 修訂表單
+
+- 審查：修訂沿用 4.2 的 `PurchaseOrderForm`（路由帶 `:id` 即修訂模式），沒有另寫一個表單，驗證、逐欄伺服器錯誤、日期相依 context 與公司切換重設都共用。
+- 發現：後端 PUT 以**行號**對應決標行（`pur_order_source` 引用該行 ID），但建立 body 以畫面索引 +1 編號。如果移除決標行之前的人工行，決標行號會位移，伺服器回 `AWARD_LINE_LOCKED`。改法：草稿行可帶 `lineNo`（只有決標行設定），`purchaseOrderBody` 先保留這些行號，其他行按畫面順序取下一個未用的號碼；建立模式行為不變（PUR-PO-UI-020）。
+- 發現：日期 context 會清除不在清單中的稅率與幣別。決標行的稅率與決標幣別是快照，不能被清除，否則修訂必然被拒。改法：`apply()` 跳過決標行稅率，含決標行時不清除幣別；幣別改為唯讀文字。
+- 發現：`NOT_EDITABLE`、`AWARD_LINE_LOCKED` 沒有翻譯。改法：三語補上，並加入 4.1 錯誤代碼集合（共 16 個，測試同步擴充）。
+- UX 截圖審查（10 張，三語，亮暗）：P1／P2 為 0。P3：淺色模式下停用的供應商選擇按鈕看起來和可用的一樣（雖然已有 title 與說明文字）。已加 `.picker:disabled{opacity:.6}`，重新截圖確認。web-design-guidelines：變更部分通過；不採用 Title Case，以 ui-conventions 為準。
+- 效果：前端單元新增 11 個案例，全量 1379/1379；模擬 E2E E11／E12 加上 E09／E10 與相鄰 4.1 共 7/7；建置 0 警告。
+
+### 2026-11-28T12:37:26+08:00 中斷收尾複核
+
+- 重新檢查 006f3 的程式、需求、測試計畫、截圖與 41 項未提交變更；沒有混入其他工作單元。依 myerp-test-scenarios 核對正常、邊界、版本衝突、狀態、權限、關聯與錯誤情境；剩餘逐態 Playwright 情境已列入 006f4。
+- 逐張開啟 10 張 4.3 截圖，按 UX 清單 A～E 審查修訂、成功、409、422 亮暗及 en／zh-Hans 文字；本單元新增 P1／P2 為 0。依 web-design-guidelines 複核新增表單的語義按鈕、欄位標籤、焦點、未儲存保護、錯誤與深色配色；沒有新增阻擋提交的發現。正常狀態的 en／zh-Hans 截圖與未覆蓋錯誤狀態留 006f4。
+- 本輪重跑前端全量 169 檔／1379 測試通過；相關模擬 Playwright 9/9（E11／E12、E09／E10、4.1 E01～E05），production 前端建置通過；`git diff --check` 通過。

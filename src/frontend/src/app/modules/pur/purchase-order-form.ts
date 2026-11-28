@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, effect, inject, 
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { CompanyContextService } from '../../core/company/company-context.service';
@@ -13,8 +13,9 @@ import { validIsoDate } from '../../shared/date';
 import { trimDecimalText } from '../../shared/decimal-text';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { HasUnsavedChanges } from '../../shared/document-page/unsaved-changes.guard';
-import { PURCHASE_ORDER_ERROR_CODES, PurchaseOrderCreateContext, PurchaseOrderDraft, PurchaseOrderItemOption,
-  PurchaseOrderLineDraft, PurchaseOrderRequisitionOption, PurchaseOrderService, PurchaseOrderSupplierOption } from './purchase-order.service';
+import { PURCHASE_ORDER_ERROR_CODES, PurchaseOrderCreateContext, PurchaseOrderDetail, PurchaseOrderDraft, PurchaseOrderItemOption,
+  PurchaseOrderLineDraft, PurchaseOrderRequisitionOption, PurchaseOrderService, PurchaseOrderStatus,
+  PurchaseOrderSupplierOption } from './purchase-order.service';
 
 /** Positive quantity: up to 13 integer digits and 6 decimals (decimal(19,6), BR-PUR-020). */
 const QUANTITY = /^(?:0|[1-9]\d{0,12})(?:\.\d{1,6})?$/;
@@ -37,6 +38,10 @@ const FOCUS_ID: Record<string, string> = { supplierId: 'supplier', businessDate:
 const newLine = (): PurchaseOrderLineDraft => ({ itemId: null, requisitionLineId: null, quantity: '', unitPrice: '', taxRateId: null });
 const newDraft = (): PurchaseOrderDraft => ({ supplierId: null, businessDate: '', currencyCode: '', remark: '', lines: [newLine()] });
 const positiveId = (value: number | null) => Number.isSafeInteger(value) && (value ?? 0) > 0;
+/** 422 refusals meaning the saved order no longer matches the screen: explain, then re-read the saved order. */
+const RELOAD_CODES = ['PUR.ORDER.NOT_EDITABLE', 'PUR.ORDER.AWARD_LINE_LOCKED'];
+const STATUS_LABEL: Record<PurchaseOrderStatus, string> = { Draft: 'draft', PendingApproval: 'pendingApproval', Approved: 'approved',
+  Rejected: 'rejected', Cancelled: 'cancelled' };
 
 /** Exact comparison of two plain nonnegative decimal texts (never a JavaScript double). */
 export function compareDecimalText(a: string, b: string): number {
@@ -75,13 +80,24 @@ export function purchaseOrderFieldErrors(draft: PurchaseOrderDraft): string[] {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="po-form" data-testid="pur-po-form">
-      <header><h1>{{ 'pur.order.form.createTitle' | translate }}</h1>
-        <a routerLink="/pur/purchase-orders">{{ 'pur.order.form.back' | translate }}</a></header>
+      <header>
+        @if (id) { <h1 data-testid="pur-po-form-title">{{ 'pur.order.form.editTitle' | translate:{ number: documentNo() ?? ('#' + id) } }}</h1>
+          @if (canView) { <a routerLink="/pur/purchase-orders" [queryParams]="{ id }" data-testid="pur-po-form-back">{{ 'pur.order.form.backToDetail' | translate }}</a> } }
+        @else { <h1>{{ 'pur.order.form.createTitle' | translate }}</h1>
+          <a routerLink="/pur/purchase-orders">{{ 'pur.order.form.back' | translate }}</a> }</header>
       @if (error()) { <erp-api-error-display [messageKey]="error()!" [traceId]="errorTrace()" [details]="errorDetails()" data-testid="pur-po-form-error" /> }
-      @if (saved(); as s) { <p role="status" class="success" data-testid="pur-po-form-success">{{ 'pur.order.form.saved' | translate:s }}</p> }
+      @if (conflicted()) { <div><button nz-button type="button" (click)="confirmReload()" data-testid="pur-po-form-reload">{{ 'pur.order.form.reload' | translate }}</button></div> }
+      @if (saved(); as s) { <p role="status" class="success" data-testid="pur-po-form-success">{{ savedKey() | translate:s }}</p> }
+      @if (loading()) { <p role="status" class="hint" data-testid="pur-po-form-loading">{{ 'pur.order.form.loading' | translate }}</p> }
+      @else if (loadError(); as e) { <erp-api-error-display [messageKey]="e.key" [traceId]="e.traceId" data-testid="pur-po-form-load-error" /> }
+      @else if (status() && !editable()) { <p role="status" class="warning notice" data-testid="pur-po-form-not-editable">{{ 'pur.order.form.notEditable' | translate:{ status: (statusLabel() | translate) } }}</p> }
+      @if (ready()) {
+      @if (status() === 'Rejected') { <p role="status" class="hint notice" data-testid="pur-po-form-rejected">{{ 'pur.order.form.rejectedHint' | translate }}</p> }
+      @if (awardLocked()) { <p role="status" class="hint notice" data-testid="pur-po-form-award-locked">{{ 'pur.order.form.awardLocked' | translate }}</p> }
       <div class="header-fields">
         <div><span class="label">{{ 'pur.order.form.supplier' | translate }} <span class="required" aria-hidden="true">*</span></span>
-          <button nz-button type="button" class="picker" (click)="chooseSupplier()" [disabled]="saving()" data-testid="pur-po-form-supplier"
+          <button nz-button type="button" class="picker" (click)="chooseSupplier()" [disabled]="saving() || awardLocked()" data-testid="pur-po-form-supplier"
+            [attr.title]="awardLocked() ? ('pur.order.form.awardLocked' | translate) : null"
             [attr.aria-label]="'pur.order.form.chooseSupplier' | translate" [attr.aria-invalid]="fieldError('supplierId')">{{ supplierLabel() }}</button>
           @if (fieldError('supplierId')) { <p class="field-error" role="alert" data-testid="pur-po-form-supplier-error">{{ 'pur.order.form.issue.supplierId' | translate }}</p> }
           @if (serverFieldError('supplierId'); as m) { <p class="field-error" role="alert" data-testid="pur-po-form-server-supplierId">{{ m }}</p> }</div>
@@ -90,6 +106,9 @@ export function purchaseOrderFieldErrors(draft: PurchaseOrderDraft): string[] {
             [disabled]="saving()" [attr.aria-invalid]="fieldError('businessDate')" data-testid="pur-po-form-date" /></label>
           @if (fieldError('businessDate')) { <p class="field-error" role="alert">{{ 'pur.order.form.issue.businessDate' | translate }}</p> }
           @if (serverFieldError('businessDate'); as m) { <p class="field-error" role="alert">{{ m }}</p> }</div>
+        @if (awardLocked()) { <div><span class="label">{{ 'pur.order.form.currency' | translate }}</span>
+          <span class="locked-value" data-testid="pur-po-form-currency-locked">{{ draft.currencyCode }}</span></div> }
+        @else {
         <div><label><span>{{ 'pur.order.form.currency' | translate }} <span class="required" aria-hidden="true">*</span></span>
           <select name="poCurrency" autocomplete="off" [(ngModel)]="draft.currencyCode" [disabled]="saving() || !context()"
             [attr.aria-invalid]="fieldError('currencyCode')" data-testid="pur-po-form-currency">
@@ -97,7 +116,7 @@ export function purchaseOrderFieldErrors(draft: PurchaseOrderDraft): string[] {
             @for (c of context()?.currencies ?? []; track c.code) { <option [value]="c.code">{{ c.code }} · {{ c.name }}</option> }
           </select></label>
           @if (fieldError('currencyCode')) { <p class="field-error" role="alert">{{ 'pur.order.form.issue.currencyCode' | translate }}</p> }
-          @if (serverFieldError('currencyCode'); as m) { <p class="field-error" role="alert" data-testid="pur-po-form-server-currencyCode">{{ m }}</p> }</div>
+          @if (serverFieldError('currencyCode'); as m) { <p class="field-error" role="alert" data-testid="pur-po-form-server-currencyCode">{{ m }}</p> }</div> }
         <div class="wide"><label>{{ 'pur.order.form.remark' | translate }}
           <input name="poRemark" autocomplete="off" [(ngModel)]="draft.remark" [maxlength]="remarkMax + 1" [disabled]="saving()"
             [attr.aria-invalid]="fieldError('remark')" data-testid="pur-po-form-remark" /></label>
@@ -116,6 +135,9 @@ export function purchaseOrderFieldErrors(draft: PurchaseOrderDraft): string[] {
       @for (line of draft.lines; track line; let i = $index) {
         <fieldset class="line" [attr.data-testid]="'pur-po-form-line-' + i">
           <legend>{{ 'pur.order.form.lineNo' | translate:{ number: i + 1 } }}</legend>
+          @if (line.awardId) { <p class="award-line numeric" [attr.data-testid]="'pur-po-form-award-' + i">{{ 'pur.order.form.awardLine' | translate:{
+            item: itemLabel(line.itemId), quantity: plain(line.quantity), price: plain(line.unitPrice), rate: lockedRate(line) } }}</p> }
+          @else {
           <div><span class="label">{{ 'pur.order.form.item' | translate }} <span class="required" aria-hidden="true">*</span></span>
             <button nz-button type="button" class="picker" (click)="chooseItem(line)" [disabled]="saving()" [attr.data-testid]="'pur-po-form-item-' + i"
               [attr.aria-label]="'pur.order.form.chooseItem' | translate" [attr.aria-invalid]="fieldError('lines.' + i + '.itemId')">{{ itemLabel(line.itemId) }}</button>
@@ -150,9 +172,10 @@ export function purchaseOrderFieldErrors(draft: PurchaseOrderDraft): string[] {
               @for (r of context()?.taxRates ?? []; track r.id) { <option [ngValue]="r.id">{{ r.code }} · {{ r.name }} ({{ plain(r.ratePercent) }}%)</option> }
             </select></label>
             @if (fieldError('lines.' + i + '.taxRateId')) { <p class="field-error" role="alert">{{ 'pur.order.form.issue.taxRateId' | translate }}</p> }
-            @if (serverFieldError('lines.' + i + '.taxRateId'); as m) { <p class="field-error" role="alert">{{ m }}</p> }</div>
-          <button nz-button type="button" class="remove" (click)="removeLine(i)" [disabled]="draft.lines.length <= 1 || saving()"
-            [attr.title]="draft.lines.length <= 1 ? ('pur.order.form.minLine' | translate) : null" [attr.data-testid]="'pur-po-form-remove-' + i">
+            @if (serverFieldError('lines.' + i + '.taxRateId'); as m) { <p class="field-error" role="alert">{{ m }}</p> }</div> }
+          <button nz-button type="button" class="remove" (click)="removeLine(i)" [disabled]="draft.lines.length <= 1 || saving() || !!line.awardId"
+            [attr.title]="line.awardId ? ('pur.order.form.awardLineRemove' | translate) : draft.lines.length <= 1 ? ('pur.order.form.minLine' | translate) : null"
+            [attr.data-testid]="'pur-po-form-remove-' + i">
             {{ 'pur.order.form.removeLine' | translate }}</button>
         </fieldset>
       }
@@ -162,8 +185,9 @@ export function purchaseOrderFieldErrors(draft: PurchaseOrderDraft): string[] {
           {{ 'pur.order.form.addLine' | translate }}</button>
         <button nz-button nzType="primary" type="button" (click)="save()" [disabled]="saving()"
           [attr.title]="saving() ? ('pur.order.actionBusy' | translate) : null" data-testid="pur-po-form-save">
-          {{ (saving() ? 'pur.order.actionBusy' : 'pur.order.form.save') | translate }}</button>
+          {{ (saving() ? 'pur.order.actionBusy' : (id ? 'pur.order.form.saveRevision' : 'pur.order.form.save')) | translate }}</button>
       </div>
+      }
     </section>`,
   styles: `.po-form{display:grid;gap:16px;color:var(--erp-color-text)}header,.actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
     header{justify-content:space-between}h1{margin:0;font-size:20px;text-wrap:balance}h2{margin:0;font-size:16px}
@@ -176,10 +200,11 @@ export function purchaseOrderFieldErrors(draft: PurchaseOrderDraft): string[] {
     input,select,.picker{min-height:32px;width:100%;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}
     input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary)}
     .picker{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}.source-pick{display:flex;gap:4px;align-items:center}
-    button:disabled{cursor:not-allowed}input[inputmode=decimal],.numeric{font-variant-numeric:tabular-nums}
+    button:disabled{cursor:not-allowed}.picker:disabled{opacity:.6}input[inputmode=decimal],.numeric{font-variant-numeric:tabular-nums}
     [aria-invalid=true]{border-color:var(--erp-color-error-text)}.field-error{color:var(--erp-color-error-text);margin:2px 0;font-size:12px}
     .hint{margin:0;font-size:12px;color:var(--erp-color-text-secondary,inherit)}.warning{margin:2px 0;font-size:12px;color:var(--erp-color-warning-text,#ad6800)}
-    .success{color:var(--erp-color-success);margin:0}.remove{align-self:end}
+    .success{color:var(--erp-color-success);margin:0}.remove{align-self:end}.notice{font-size:13px}
+    .award-line{grid-column:1/-2;margin:0;align-self:center}.locked-value{min-height:32px;display:flex;align-items:center}
     @media(max-width:1100px){.line{grid-template-columns:repeat(2,minmax(0,1fr))}.header-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}`,
 })
 export class PurchaseOrderForm implements HasUnsavedChanges {
@@ -190,7 +215,17 @@ export class PurchaseOrderForm implements HasUnsavedChanges {
   private readonly company = inject(CompanyContextService);
   private readonly permissions = inject(PermissionService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly route = inject(ActivatedRoute);
+  /** Revision mode (介面 4.3) when the route carries a saved order ID. */
+  readonly id = Number(this.route.snapshot.paramMap.get('id')) || null;
+  readonly canView = this.permissions.has('PUR.ORDER.VIEW');
   readonly maxLines = MAX_LINES; readonly remarkMax = MAX_REMARK;
+  readonly status = signal<PurchaseOrderStatus | null>(null); readonly documentNo = signal<string | null>(null);
+  readonly loading = signal(false); readonly loadError = signal<{ key: string; traceId: string | null } | null>(null);
+  readonly conflicted = signal(false); readonly savedKey = signal('pur.order.form.saved');
+  private version = 0;
+  /** Saved tax rate of each awarded line (shown read-only; such a rate may no longer be in the business-date list). */
+  private readonly lockedRates = new WeakMap<PurchaseOrderLineDraft, string>();
   readonly error = signal<string | null>(null); readonly errorTrace = signal<string | null>(null);
   readonly errorDetails = signal<string[]>([]); readonly fieldErrors = signal<string[]>([]);
   readonly serverFieldErrors = signal<Record<string, string>>({});
@@ -221,13 +256,66 @@ export class PurchaseOrderForm implements HasUnsavedChanges {
     this.context.set(null); this.contextLoading.set(false); this.contextError.set(null);
     this.staleTaxLines.set(null); this.staleCurrency.set(false);
     this.clearErrors(); this.fieldErrors.set([]); this.saving.set(false);
+    this.status.set(null); this.documentNo.set(null); this.loadError.set(null); this.conflicted.set(false); this.version = 0;
     this.baseline = JSON.stringify(this.draft); this.cdr.markForCheck();
+    if (this.id) this.load();
   }
 
-  supplierLabel(): string { const s = this.supplier;
-    return s && s.id === this.draft.supplierId ? `${s.code} · ${s.name}` : this.translate.instant('pur.order.form.chooseSupplier'); }
+  /** Create mode, or a loaded Draft / Rejected order: only then are the inputs and the save button shown. */
+  ready(): boolean { return !this.id || (!this.loading() && !this.loadError() && this.editable()); }
+  editable(): boolean { const s = this.status(); return s === 'Draft' || s === 'Rejected'; }
+  statusLabel(): string { const s = this.status(); return s ? `pur.order.state.${STATUS_LABEL[s]}` : ''; }
+  /** Orders converted from awards keep the award supplier and currency snapshot (BR-PUR-022). */
+  awardLocked(): boolean { return this.draft.lines.some(line => !!line.awardId); }
+  lockedRate(line: PurchaseOrderLineDraft): string { return `${this.lockedRates.get(line) ?? '—'}%`; }
+
+  /** Reads the saved order through the EDIT-only endpoint; labels without a chosen option show the saved #ID. */
+  private load(): void {
+    const revision = this.revision;
+    this.loading.set(true); this.loadError.set(null);
+    this.api.getForEdit(this.id!).subscribe({
+      next: detail => { if (revision !== this.revision) return; this.loading.set(false); this.fill(detail); this.cdr.markForCheck(); },
+      error: (e: unknown) => { if (revision !== this.revision) return; this.loading.set(false);
+        this.loadError.set({ key: apiErrorKey(e, PURCHASE_ORDER_FORM_ERROR_CODES), traceId: apiErrorTraceId(e) }); this.cdr.markForCheck(); },
+    });
+  }
+  private fill(detail: PurchaseOrderDetail): void {
+    ++this.contextRevision;
+    this.version = detail.version; this.status.set(detail.status); this.documentNo.set(detail.documentNo);
+    this.supplier = null; this.items.clear(); this.dropped.clear(); this.fieldErrors.set([]);
+    this.context.set(null); this.contextError.set(null); this.staleTaxLines.set(null); this.staleCurrency.set(false);
+    this.draft = { supplierId: detail.supplierId, businessDate: detail.businessDate ?? '', currencyCode: detail.currency,
+      remark: detail.remark ?? '', lines: detail.lines.map(saved => {
+        const line: PurchaseOrderLineDraft = { itemId: saved.itemId, requisitionLineId: saved.requisitionLineId,
+          quantity: saved.quantity, unitPrice: saved.unitPrice, taxRateId: saved.taxRateId };
+        if (saved.awardId) {
+          Object.assign(line, { awardId: saved.awardId, lineNo: saved.lineNo });
+          this.lockedRates.set(line, trimDecimalText(saved.taxRatePercent));
+        }
+        if (saved.requisitionLineId && saved.requisitionId && saved.requisitionDocumentNo && saved.requisitionLineNo)
+          this.sources.set(line, { id: saved.requisitionLineId, requisitionId: saved.requisitionId, documentNo: saved.requisitionDocumentNo,
+            lineNo: saved.requisitionLineNo, itemId: saved.itemId, requiredDate: '', quantity: saved.requisitionQuantity ?? '0',
+            orderedQuantity: saved.requisitionOrderedQuantity ?? '0', remainingQuantity: saved.requisitionRemainingQuantity ?? '0' });
+        return line;
+      }) };
+    this.baseline = JSON.stringify(this.draft);
+    if (this.editable() && validIsoDate(this.draft.businessDate)) this.changeDate(this.draft.businessDate);
+  }
+
+  /** 409: the user decides to drop the input and re-read the saved order (confirmed first). */
+  confirmReload(): void {
+    if (!this.id) return;
+    this.dialogs.confirm({ titleKey: 'pur.order.form.reloadConfirm', contentKey: 'pur.order.form.reloadWarning',
+      okKey: 'pur.order.form.reload' }).subscribe(confirmed => {
+      if (!confirmed) return;
+      this.clearErrors(); this.conflicted.set(false); this.load(); this.cdr.markForCheck();
+    });
+  }
+
+  supplierLabel(): string { const s = this.supplier; const id = this.draft.supplierId;
+    return s && s.id === id ? `${s.code} · ${s.name}` : id ? `#${id}` : this.translate.instant('pur.order.form.chooseSupplier'); }
   itemLabel(id: number | null): string { const item = id ? this.items.get(id) : null;
-    return item ? `${item.code} · ${item.name}` : this.translate.instant('pur.order.form.chooseItem'); }
+    return item ? `${item.code} · ${item.name}` : id ? `#${id}` : this.translate.instant('pur.order.form.chooseItem'); }
   sourceOf(line: PurchaseOrderLineDraft): PurchaseOrderRequisitionOption | null {
     const s = this.sources.get(line); return s && s.id === line.requisitionLineId ? s : null; }
   plain(value: string): string { return trimDecimalText(value); }
@@ -298,31 +386,33 @@ export class PurchaseOrderForm implements HasUnsavedChanges {
   private apply(context: PurchaseOrderCreateContext): void {
     this.context.set(context);
     const codes = context.currencies.map(c => c.code);
-    const lostCurrency = !!this.draft.currencyCode && !codes.includes(this.draft.currencyCode);
+    // The award snapshot currency is never re-chosen (BR-PUR-022), so it is not cleared by the business-date list.
+    const lostCurrency = !this.awardLocked() && !!this.draft.currencyCode && !codes.includes(this.draft.currencyCode);
     if (lostCurrency) this.draft.currencyCode = '';
     if (!this.draft.currencyCode && codes.length === 1) this.draft.currencyCode = codes[0];
     this.staleCurrency.set(lostCurrency && !this.draft.currencyCode);
     const rates = new Set(context.taxRates.map(r => r.id));
     const stale: number[] = [];
     this.draft.lines.forEach((line, index) => {
-      if (line.taxRateId !== null && !rates.has(line.taxRateId)) { line.taxRateId = null; stale.push(index + 1); }
+      if (!line.awardId && line.taxRateId !== null && !rates.has(line.taxRateId)) { line.taxRateId = null; stale.push(index + 1); }
     });
     this.staleTaxLines.set(stale.length ? stale.join(', ') : null);
   }
 
   addLine(): void { if (this.draft.lines.length < MAX_LINES) this.draft.lines.push(newLine()); }
   removeLine(index: number): void {
-    if (this.draft.lines.length <= 1) return;
+    if (this.draft.lines.length <= 1 || this.draft.lines[index]?.awardId) return;
     const [line] = this.draft.lines.splice(index, 1); this.dropped.delete(line);
   }
 
   save(): void {
-    if (this.saving()) return;
+    if (this.saving() || !this.ready()) return;
     const errors = purchaseOrderFieldErrors(this.draft); this.fieldErrors.set(errors);
-    this.clearErrors();
+    this.clearErrors(); this.conflicted.set(false);
     if (errors.length) { this.error.set('pur.order.form.invalidForm'); this.focus(errors[0]); return; }
     this.saving.set(true);
     const revision = this.revision;
+    if (this.id) { this.saveRevision(revision); return; }
     this.api.create(this.draft).subscribe({
       next: saved => { if (revision !== this.revision) return;
         this.saving.set(false);
@@ -330,9 +420,35 @@ export class PurchaseOrderForm implements HasUnsavedChanges {
         this.baseline = JSON.stringify(this.draft);
         this.dialogs.success('pur.order.form.saved', result);
         if (this.permissions.has('PUR.ORDER.VIEW')) { void this.router.navigateByUrl(`/pur/purchase-orders?id=${saved.id}`); return; }
-        this.reset(); this.saved.set(result);
+        this.reset(); this.savedKey.set('pur.order.form.saved'); this.saved.set(result);
       },
       error: (e: unknown) => { if (revision !== this.revision) return; this.saving.set(false); this.explain(e); this.cdr.markForCheck(); },
+    });
+  }
+
+  /**
+   * PUT with the loaded version. Success names the saved number and line count (and the Rejected → Draft return); 409 keeps
+   * the input and offers a reload; NOT_EDITABLE / AWARD_LINE_LOCKED explain and re-read the saved order.
+   */
+  private saveRevision(revision: number): void {
+    const wasRejected = this.status() === 'Rejected';
+    this.api.update(this.id!, this.version, this.draft).subscribe({
+      next: saved => { if (revision !== this.revision) return;
+        this.saving.set(false);
+        const result = { number: saved.documentNo, count: saved.lines?.length ?? 0 };
+        const key = wasRejected ? 'pur.order.form.updatedFromRejected' : 'pur.order.form.updated';
+        this.version = saved.version; this.status.set(saved.status);
+        this.baseline = JSON.stringify(this.draft);
+        this.dialogs.success(key, result);
+        if (this.canView) { void this.router.navigateByUrl(`/pur/purchase-orders?id=${saved.id}`); return; }
+        this.savedKey.set(key); this.saved.set(result); this.load(); this.cdr.markForCheck();
+      },
+      error: (e: unknown) => { if (revision !== this.revision) return;
+        this.saving.set(false); this.explain(e);
+        const code = e instanceof HttpErrorResponse ? (e.error as { errorCode?: unknown } | null)?.errorCode : undefined;
+        if (e instanceof HttpErrorResponse && e.status === 409) this.conflicted.set(true);
+        else if (RELOAD_CODES.includes(code as string)) this.load();
+        this.cdr.markForCheck(); },
     });
   }
 
