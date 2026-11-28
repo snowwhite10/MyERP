@@ -440,6 +440,10 @@ public sealed class PurchaseReceiptSubmissionTests(TestDatabase database)
         public Task<InventoryPostingResult> PostSalesOutboundAsync(long sourceId, DateOnly businessDate,
             IReadOnlyList<SalesOutboundLine> lines, CancellationToken token = default) => throw new NotSupportedException();
 
+        public Task<PurchaseReturnOutboundResult> PostPurchaseReturnAsync(long sourceId, DateOnly businessDate,
+            IReadOnlyList<PurchaseReturnOutboundLine> lines, CancellationToken token = default) =>
+            throw new NotSupportedException();
+
         public Task<SalesReturnInboundResult> PostSalesReturnInboundAsync(long sourceId, DateOnly businessDate,
             IReadOnlyList<SalesReturnInboundLine> lines, CancellationToken token = default) =>
             throw new NotSupportedException();

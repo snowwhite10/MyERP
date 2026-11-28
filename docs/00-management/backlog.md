@@ -774,7 +774,12 @@
 | WU-PUR-007b | PUR/INV | SYS 最終核准／駁回與 INV PostPurchaseInboundAsync 同交易；批序號、成本、重放／回滾驗收 | P1 | DONE（父項結清） | 007a、SQL 服務 | 2026-11-28T16:04:47+08:00 ADR-220 依 90 分鐘邊界拆 007b1（非批序號入庫過帳）／007b2（批序號擷取），2026-11-28T16:28:11+08:00 兩者皆 DONE（ADR-221）。 |
 | WU-PUR-007b1 | PUR/INV | 收貨最終核准與零步驟 SUBMIT 同交易 INV 入庫（保存成本、倉庫）、已收量轉移、重放／回滾／重複決定 | P1 | DONE | 007a9 | 2026-11-28T16:04:47+08:00 真實 SQL＋真實 SYS＋真實 INV 6/6（變異 5 紅）、007a9 改寫 2 案；移除 APPROVAL_FLOW_REQUIRED／POSTING_NOT_AVAILABLE。 |
 | WU-PUR-007b2 | PUR/INV | 收貨行批號／序號擷取（追蹤表＋migration、草稿 CREATE／EDIT 輸入與驗證、READ）並於過帳傳 PurchaseInboundLine.Tracking；真實 SQL 驗收 | P1 | DONE | 007b1 | 2026-11-28T16:28:11+08:00 完成（ADR-221）：REQ_DS43.222 `pur_purchase_receipt_line_tracking`＋可逆 migration；草稿 tracking 輸入／400 格式／422 MODE_MISMATCH、SERIAL_DUPLICATE；SUBMIT 422 TRACKING_REQUIRED；零步驟與 SYS 核准傳 INV 建立批號（含日期）／序號；PUR-RECV-TRK-001～015。 |
-| WU-PUR-007c | PUR/INV | 退貨專用 INV 出庫來源契約、退貨表與行、草稿／審批／原成本出庫真實驗收 | P1 | TODO | 007b、SQL 服務 | 先擴充 INV 專用 PostPurchaseReturnAsync；不可借用銷售出庫或直接讀寫 INV 表。 |
+| WU-PUR-007c | PUR/INV | 退貨專用 INV 出庫來源契約、退貨表與行、草稿／審批／原成本出庫真實驗收 | P1 | 已拆分 | 007b、SQL 服務 | 2026-11-28T17:06:20+08:00 ADR-223 依 90 分鐘邊界拆 c1～c5，父項不計；不可借用銷售出庫或直接讀寫 INV 表。 |
+| WU-PUR-007c1 | INV/PUR | INV 專用 `PostPurchaseReturnAsync`（`PURCHASE_RETURN` Out）：驗原 `PURCHASE_INBOUND` 異動、物料、單次合計、批序號來自原入庫，回傳原入庫單位成本；真實 SQL | P1 | DONE | 007b | ADR-223、REQ_F4115.22.7、BR-INV-071、INV-PRET-001～007 真實 SQL 6/6（變異 1 紅）。 |
+| WU-PUR-007c2 | PUR | `pur_purchase_return`／line（原收貨行、原 movement、OriginalUnitCost 快照）／tracking 表與可逆 migration；收貨行 `pending_return_reserved`／`returned_quantity` 與 SQL CHECK（可退量非負）；真實 SQL schema 驗收 | P1 | TODO | 007c1 | 分配 REQ_DS43；同公司 FK、FK 索引、唯一單號、Posted 不可變。 |
+| WU-PUR-007c3 | PUR | 退貨草稿 CREATE／EDIT／READ／DELETE、來源選項（Posted 收貨行可退量）與權限 PUR.RETURN.*；真實 SQL＋HTTP | P1 | TODO | 007c2 | 不可退量 422 帶行號；跨公司／範圍外 404；軟刪。 |
+| WU-PUR-007c4 | PUR/INV | 退貨 SUBMIT 預留可退量＋SYS 核准同交易呼叫 `PostPurchaseReturnAsync`、保存 OriginalUnitCost、轉已退量；駁回釋回；並發與 `PurchaseReturnInvoicedLimit`（BR-PUR-044） | P1 | TODO | 007c3 | 雙連線不超退；重放／回滾／重複決定。 |
+| WU-PUR-007c5 | PUR | 退貨 LIST／CSV（PUR.RETURN.EXPORT） | P1 | TODO | 007c3 | 沿 ADR-222 收貨列表／CSV 模式。 |
 | WU-PUR-007e | PUR | 收貨與退貨列表／表單、三語亮暗、CSV／列印及 Playwright QA | P1 | TODO | 007a10、007b、007c | 介面 4.4～4.6、4.16～4.18；前端 skills 必用。 |
 | WU-PUR-008 | PUR | 發票與訂單／收貨三單比對、差異處理 | P1 | 已拆分 | 007 | 008d 設計、008a PUR 發票與比對、008b FI 應付同交易、008c 前端；父項待全部驗收。 |
 | WU-PUR-008d | PUR/FI | 固定三單比對、差異覆核、退貨與 FI 應付公開契約及完整情境 | P1 | DONE | 006d、007d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4114.8.1～6、BR-PUR-036～043、PUR-MATCH-001～028；沒有表、端點、畫面或產品測試。 |

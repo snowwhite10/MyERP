@@ -83,7 +83,7 @@ WU-PUR-007a7（2026-11-28T13:01:04+08:00）：訂單行 `posted_received` 與 `p
 | BR-PUR-030 | 收貨量為基本單位正數且最多六位；倉儲、物料追蹤類型與批序號經 INV 公開契約驗證。批號各分量合計等於收貨量；序號逐件且同公司不可重複。成本按保存的採購單未稅本位幣行金額／基本單位量計算，DECIMAL(19,6) 溢位須拒絕，退貨沿用原入庫 movement 成本，不按今日匯率重算。 | REQ_F4114.2.2, REQ_F4114.7.2～3 |
 | BR-PUR-031 | SYS 最終核准處理器在已有 SQL 交易中檢查 PendingApproval、版本及預留，從 PUR 已保存快照組成 `PurchaseInboundLine`，呼叫 INV `PostPurchaseInboundAsync(receiptId, businessDate, lines)`，再將 PUR 標為 Posted；SYS、PUR、INV 及稽核一起提交或回滾。相同快照重放由 INV 返回原 movement，差異回 409；不接受用戶端宣稱核准或提交任意成本。 | REQ_F4114.2.4 |
 | BR-PUR-032 | 退貨僅可引用同公司 Posted 入庫行；`可退量 = 原入庫量 - 已過帳退貨量 - 待審退貨預留量`。按來源入庫行升冪鎖定及聚合，整單守住餘量。原入庫單與 INV 異動保持不可變；採購單已有 Posted 入庫即不可取消，即使全部退貨也不釋回請購已轉量。 | REQ_F4114.1.6, REQ_F4114.7.1～3 |
-| BR-PUR-033 | 退貨最終核准需要 INV 新增 `PostPurchaseReturnAsync` 專用契約及固定 `PURCHASE_RETURN` 出庫來源；輸入包含保存的退貨行、原入庫 movement ID、倉儲與批序號，INV 按原來源成本及目前庫存檢查後追加反向異動。現有外部契約只有採購入庫與銷售出庫，實作前先擴充 INV；PUR 不可呼叫通用 `PostAsync` 或寫 INV 表。 | REQ_F4114.7.3 |
+| BR-PUR-033 | 退貨最終核准需要 INV 新增 `PostPurchaseReturnAsync` 專用契約及固定 `PURCHASE_RETURN` 出庫來源；輸入包含保存的退貨行、原入庫 movement ID、倉儲與批序號，INV 按原來源成本及目前庫存檢查後追加反向異動。現有外部契約只有採購入庫與銷售出庫，實作前先擴充 INV；PUR 不可呼叫通用 `PostAsync` 或寫 INV 表。 2026-11-28 WU-PUR-007c1（ADR-223）已交付契約：出庫按移動平均離池、INV 回傳原入庫單位成本 `OriginalUnitCost`，PUR 退貨行（007c4）須保存此值作退貨成本；倉儲可與原入庫不同，批序號須來自原入庫（BR-INV-071）。 | REQ_F4114.7.3 |
 | BR-PUR-034 | 收貨／退貨的公司、動作權限及 SYS 資料範圍分別守衛；匿名 401、缺權 403、跨公司或範圍外 404、舊版 409、狀態或餘量 422。任一行失敗整單零變更，不回部分成功；錯誤須指出行號、可用量與原因。 | REQ_F4114.2.1～6, REQ_F4114.7.1～3 |
 | BR-PUR-035 | 採購入庫與退貨只處理庫存；FI 應付和三單比對由 WU-PUR-008 以其公開契約處理，不在收貨核准時隱含產生應付。 | REQ_F4114.2.4, REQ_F4114.7.3 |
 

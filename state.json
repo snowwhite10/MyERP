@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-007a10",
-    "lastCompletedWorkUnit":  "WU-PUR-007a10",
-    "nextAction":  "做 WU-PUR-007c（退貨）：預估超過 90 分鐘，先在 backlog 拆小（建議 c1 INV 專用 PostPurchaseReturnAsync 出庫契約，以原 PURCHASE_INBOUND movement 成本與批序號為來源，真實 SQL；c2 pur_purchase_return／line（＋tracking）migration 與 SQL CHECK；c3 退貨草稿 CREATE／EDIT／READ／DELETE；c4 SUBMIT 預留收貨行 pending_return_reserved＋SYS 核准同交易出庫／駁回釋回；c5 LIST／CSV）。先讀 ADR-221、ADR-222、PurchaseReceiptPosting.cs、PurchaseReturnInvoicedLimit.cs、INV IExternalInventoryPostingService 與 docs/02-modules/PUR/api.md 007d 退貨段；以 myerp-test-scenarios 先寫紅燈。不可借用銷售出庫或直接讀寫 INV 表。之後 007e（收貨／退貨畫面，需 tracking 輸入、lineNo 錯誤顯示、PUR.RECEIPT.DELETE／EXPORT 按鈕權限）。勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
+    "currentWorkUnit":  "WU-PUR-007c1",
+    "lastCompletedWorkUnit":  "WU-PUR-007c1",
+    "nextAction":  "做 WU-PUR-007c2（退貨 schema）：先讀 ADR-223、ADR-218（收貨草稿 schema 切片）、ADR-221（追蹤表）、PurchaseReceiptSource／Line DbModel 與 docs/02-modules/PUR/data-structure.md。新增 pur_purchase_return（REQ_DS43.223，公司＋唯一單號、來源採購單、業務日、狀態 Draft/PendingApproval/Rejected/Posted、版本、軟刪、custom_fields）、pur_purchase_return_line（REQ_DS43.224，原收貨行 FK、原 INV movement ID、物料／倉儲、數量 DECIMAL(19,6) CHECK > 0、OriginalUnitCost 快照可空待 c4 寫入）、pur_purchase_return_line_tracking（REQ_DS43.225），收貨行加 pending_return_reserved／returned_quantity（CHECK 非負且 reserved+returned <= received）；可逆 migration、帶資料 Down/Up；以 myerp-test-scenarios 先寫真實 SQL schema 紅燈（同公司 FK、FK 索引、唯一、CHECK 拒絕）。不做服務或端點（c3）。之後 c3 草稿 CRUD、c4 SUBMIT/SYS 核准呼叫 INV PostPurchaseReturnAsync 並保存 OriginalUnitCost、c5 LIST/CSV，再 007e 畫面。勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  222,
-                       "ADR":  222,
+                       "ADR":  223,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -53,7 +53,8 @@
                              "WU-PUR-006f2a":  0,
                              "WU-PUR-006f2b":  0,
                              "WU-PUR-006f3":  0,
-                             "WU-PUR-007a10":  0
+                             "WU-PUR-007a10":  0,
+                             "WU-PUR-007c1":  0
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -125,5 +126,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T17:01:43+08:00",
-    "updatedAt":  "2026-11-28T17:01:43+08:00"
+    "updatedAt":  "2026-11-28T17:19:48+08:00"
 }

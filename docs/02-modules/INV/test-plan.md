@@ -328,3 +328,17 @@
 | INV-SRET-005 | REQ_F4115.22.6 | 同一時間戳的入庫、出庫、後續入庫 | 只計 id 較小的入庫：成本 3，不受同時間戳後續 100 元入庫影響 | 通過 |
 
 權限、狀態、檔案：不適用（無 HTTP；SD 008a5／008a6 驗收 SYS 核准、權限與 HTTP）。並發：沿用 StockPostingService 來源鎖及物料鎖（INV-XMOD-002／003）。
+
+## WU-PUR-007c1 採購退貨出庫（ADR-223，真實 SQL `PurchaseReturnInventoryPostingTests`）
+
+| Test Case ID | Related REQ_F | Description | Expected Result | Status |
+|---|---|---|---|---|
+| INV-PRET-001 | REQ_F4115.22.7 | 正常＋冪等：10@2、10@4 後對第二張入庫退兩行（3＋1） | 無交易 `TRANSACTION_REQUIRED`；Out 兩筆、成本 null、行號升冪、`OriginalUnitCost` 4；結存 16、估值 48（按平均 3 離池）；相同快照重放 ID 不變；不同數量 409 不新增 | 通過 |
+| INV-PRET-002 | REQ_F4115.22.7 | 原入庫驗證：他公司、不存在、原為銷售出庫、物料不同、同一原入庫兩行合計 10.5 > 10 | `ORIGINAL_NOT_FOUND`(2)／(3)、`ORIGINAL_NOT_RECEIPT`(4)、`ITEM_MISMATCH`(5)、`QUANTITY_EXCEEDED`(6,7，另一原入庫行 8 不列)，422 帶 lineNos，零異動與引用；兩張原入庫各恰好退足成功、成本 4／2 | 通過 |
+| INV-PRET-003 | REQ_F4115.22.7 | 目前位置結存：原入庫在 A、退貨指定 B；銷售耗用後退量超過剩餘 | `INV.STOCK.INSUFFICIENT` 帶行號、零異動；剩餘量內成功 | 通過 |
+| INV-PRET-004 | REQ_F4115.22.7 | 批序號來源：他單批號、兩行同批（大小寫不同）合計超原批量、他單序號、批號物料未給批號；成功退 L-1／L-2／s-2；已由銷售出庫的原序號 | `TRACKING_NOT_FROM_ORIGINAL`(1)／(2,3)／(4)、`INV.TRACKING.REQUIRED`；成功後追蹤明細正確；已出庫序號 `INV.SERIAL.NOT_AVAILABLE` | 通過 |
+| INV-PRET-005 | REQ_F4115.22.7 | 邊界：originalMovementId 0、null 行、數量 0、物料／倉庫 0、重複行號、空行、null 清單、sourceId 0 | 400 指出各欄位，SQL 前拒絕 | 通過 |
+| INV-PRET-006 | REQ_F4115.22.7 | 呼叫端回滾後重試 | 回滾零異動；重試非重放、成本 2、結存 18 | 通過 |
+| INV-PRET-007 | REQ_F4115.22.7 | 變異：停用批序號來源檢查 | INV-PRET-004 失敗（1 紅），還原後 6/6 | 通過 |
+
+權限、狀態、檔案：不適用（無 HTTP；007c4 驗收 SYS 核准、權限與 HTTP）。並發：沿用 StockPostingService 來源鎖、物料估值鎖與結存鍵鎖（INV-XMOD-002／003）；跨退貨累計量由 PUR 007c4 在來源鎖內驗收。

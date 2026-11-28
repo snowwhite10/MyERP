@@ -261,3 +261,11 @@ BlueWhale REQ_F4115.7.1 原文誤寫為 inventory transfer，MyERP 改為 stockt
 | REQ_F4115.22.6 | 1.0 | System should enable approved sales returns to post inventory receipts at the original issue cost exactly once. | Developer | SD 銷退於呼叫端交易內以固定來源 `SALES_RETURN` 寫入全部 In 異動；每行引用同公司 `SALES_OUTBOUND` 出庫異動、物料相同、同一原出庫的本次合計不超過原數量，否則整單 422 並帶行號；單位成本為原出庫前移動平均（按 (posted_at,id) 排序，六位小數），原出庫成本不明時為 null；(公司, 來源, 銷退 ID, 行號) 冪等，相同快照重放回原異動，不同快照 409；呼叫端回滾則無異動。 |
 
 追溯 BR-SD-045、BR-INV-070；`REQ_DS43.135`（異動帳）不變，新增 SP `usp_inv_movement_issue_cost`。測試 INV-SRET-001～005。批序號物料銷退待後續工作單元（ADR-184 第 6 點）。
+
+## WU-PUR-007c1 PUR 採購退貨出庫（ADR-223）
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4115.22.7 | 1.0 | System should enable approved purchase returns to post inventory issues against the original purchase receipt exactly once. | Developer | PUR 退貨於呼叫端交易內以固定來源 `PURCHASE_RETURN` 寫入全部 Out 異動（不帶成本，按移動平均離池）；每行引用同公司 `PURCHASE_INBOUND` 入庫異動、物料相同，同一原入庫的本次合計及每個批號合計不超過原入庫，序號須曾在原入庫，否則整單 422 並帶行號；目前位置結存與批序號可用量不足 422；回傳每行原入庫單位成本作退貨成本；(公司, 來源, 退貨 ID, 行號) 冪等，相同快照重放回原異動，不同快照 409；呼叫端回滾則無異動。 |
+
+追溯 BR-PUR-030、BR-PUR-033、BR-INV-071；`REQ_DS43.135`（異動帳）與 SP 不變。測試 INV-PRET-001～007。

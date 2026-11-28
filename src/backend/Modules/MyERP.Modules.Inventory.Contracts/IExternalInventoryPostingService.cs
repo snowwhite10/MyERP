@@ -6,6 +6,7 @@ public static class ExternalInventorySourceTypes
     public const string PurchaseInbound = "PURCHASE_INBOUND";
     public const string SalesOutbound = "SALES_OUTBOUND";
     public const string SalesReturn = "SALES_RETURN";
+    public const string PurchaseReturn = "PURCHASE_RETURN";
 }
 
 /// <summary>已保存的 PUR 收貨行；數量為物料基本單位，單價為保存時的成本快照。</summary>
@@ -31,6 +32,20 @@ public sealed record SalesReturnInboundMovement(int LineNo, long MovementId, lon
 public sealed record SalesReturnInboundResult(bool Replayed, IReadOnlyList<SalesReturnInboundMovement> Movements);
 
 /// <summary>
+/// 已保存的 PUR 退貨行（ADR-223）：<paramref name="LineNo"/> 為退貨單內永久唯一行號，
+/// <paramref name="OriginalMovementId"/> 為原收貨的 <c>PURCHASE_INBOUND</c> 入庫異動；數量為物料基本單位。
+/// 倉庫／儲位為目前出庫位置（可與原入庫不同）；批號／序號必須來自原入庫。PUR 不得傳入成本。
+/// </summary>
+public sealed record PurchaseReturnOutboundLine(int LineNo, long OriginalMovementId, long ItemId, long WarehouseId,
+    long? LocationId, decimal Quantity, IReadOnlyList<InventoryTrackingLine>? Tracking = null);
+
+/// <summary>採購退貨出庫證據：新出庫異動 ID 與原入庫保存的單位成本（退貨成本，BR-PUR-030）。</summary>
+public sealed record PurchaseReturnOutboundMovement(int LineNo, long MovementId, long OriginalMovementId, decimal OriginalUnitCost);
+
+/// <summary>採購退貨出庫結果；<see cref="Movements"/> 按行號升冪。</summary>
+public sealed record PurchaseReturnOutboundResult(bool Replayed, IReadOnlyList<PurchaseReturnOutboundMovement> Movements);
+
+/// <summary>
 /// 僅供 PUR／SD 最終核准處理器使用。呼叫端須先開始包含 SYS 決定與來源狀態的交易，
 /// 並從目前公司的已保存單據明細建立行資料；本契約不代表對單據核准狀態的授權。
 /// </summary>
@@ -49,4 +64,12 @@ public interface IExternalInventoryPostingService
     /// </summary>
     Task<SalesReturnInboundResult> PostSalesReturnInboundAsync(long sourceId, DateOnly businessDate,
         IReadOnlyList<SalesReturnInboundLine> lines, CancellationToken token = default);
+
+    /// <summary>
+    /// PUR 採購退貨出庫（ADR-223）：原異動須屬目前公司、為 <c>PURCHASE_INBOUND</c> 入庫且物料相同；同一原入庫的本次合計數量
+    /// 及各批號數量不得超過原入庫，序號須曾在原入庫。出庫異動不帶成本（按移動平均離池），回傳原入庫單位成本作退貨成本。
+    /// 以 (公司, PURCHASE_RETURN, 退貨 ID, 行號) 冪等。跨多張退貨的累計可退量由 PUR 在來源鎖內控制（BR-PUR-032）。
+    /// </summary>
+    Task<PurchaseReturnOutboundResult> PostPurchaseReturnAsync(long sourceId, DateOnly businessDate,
+        IReadOnlyList<PurchaseReturnOutboundLine> lines, CancellationToken token = default);
 }

@@ -121,3 +121,7 @@
 ## SD 銷退入庫（WU-SD-008a3；ADR-188）
 
 - BR-INV-070：`SALES_RETURN` 只經 `IExternalInventoryPostingService.PostSalesReturnInboundAsync` 在呼叫端交易內過帳，方向固定 In，呼叫端不得傳成本。INV 先按物料 ID 升冪取估值鎖，再讀原出庫：不存在或屬他公司 `INV.SALES_RETURN.ORIGINAL_NOT_FOUND`、非 `SALES_OUTBOUND` 出庫 `ORIGINAL_NOT_ISSUE`、物料不同 `ITEM_MISMATCH`、同一原出庫的本次合計超過原數量 `QUANTITY_EXCEEDED`（皆 422，帶 `lineNo`／`lineNos`，零寫入）。單位成本＝原出庫之前（(posted_at,id) 嚴格先於）移動平均池的 `ROUND(價值/數量,6)`；池未定價或為空時為 null，入庫按一般未定價規則處理。跨多張銷退的累計可退量由 SD 控制；INV 只檢查單次請求。
+
+## PUR 採購退貨出庫（WU-PUR-007c1；ADR-223）
+
+- BR-INV-071：`PURCHASE_RETURN` 只經 `IExternalInventoryPostingService.PostPurchaseReturnAsync` 在呼叫端交易內過帳，方向固定 Out，呼叫端不得傳成本。INV 先按物料 ID 升冪取估值鎖，再讀原入庫：不存在或屬他公司 `INV.PURCHASE_RETURN.ORIGINAL_NOT_FOUND`、非 `PURCHASE_INBOUND` 已定價入庫 `ORIGINAL_NOT_RECEIPT`、物料不同 `ITEM_MISMATCH`、同一原入庫的本次合計超過原數量 `QUANTITY_EXCEEDED`、批號不在原入庫或同一原入庫同批號（不分大小寫）合計超過原入庫該批量、序號不在原入庫 `TRACKING_NOT_FROM_ORIGINAL`（皆 422，帶 `lineNo`／`lineNos`，零寫入）。倉庫／儲位可與原入庫不同；目前結存、批序號可用量與追蹤完整性按一般出庫規則（`INV.STOCK.INSUFFICIENT`、`INV.LOT.INSUFFICIENT`、`INV.SERIAL.NOT_AVAILABLE`、`INV.TRACKING.REQUIRED`）。出庫異動不帶成本、按移動平均離池（帳本不變式不改）；回傳原入庫保存的單位成本作退貨成本（BR-PUR-030），差額留在平均池，INV 目前無 GL 價差分錄。跨多張退貨的累計可退量由 PUR 控制；INV 只檢查單次請求。
