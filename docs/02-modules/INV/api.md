@@ -262,3 +262,5 @@ WU-SD-004c2b2d（ADR-154）：`IInventoryPostingService.PostAsync`／`IExternalI
 ## WU-PUR-007c1 採購退貨出庫 Application 契約（ADR-223）
 
 `IExternalInventoryPostingService.PostPurchaseReturnAsync(long sourceId, DateOnly businessDate, IReadOnlyList<PurchaseReturnOutboundLine> lines)`：行為 `PurchaseReturnOutboundLine(LineNo, OriginalMovementId, ItemId, WarehouseId, LocationId?, Quantity, Tracking?)`；回傳 `PurchaseReturnOutboundResult(Replayed, Movements)`，每行 `PurchaseReturnOutboundMovement(LineNo, MovementId, OriginalMovementId, OriginalUnitCost)` 按行號升冪。無呼叫端交易 `INV.POSTING.TRANSACTION_REQUIRED`；形狀錯誤 400（`sourceId`、`lines`、`lines[i].originalMovementId`、`itemId`、`warehouseId`、`quantity`）；原入庫與批序號來源拒絕 422（BR-INV-071）；不同快照 409 `INV.POSTING.CONFLICT`。不提供 HTTP 端點。
+
+`IPurchaseInboundEvidenceQuery.FindAsync(IReadOnlyCollection<long> receiptIds)`（WU-PUR-007c3，ADR-224）：唯讀，回目前公司 `PURCHASE_INBOUND` In 異動 `PurchaseInboundEvidence(ReceiptId, LineNo, MovementId, ItemId, WarehouseId, LocationId?, Quantity, UnitCost?)`，按收貨 ID、行號升冪；IDs 須為正數且 ≤ 1000（否則 400 `receiptIds`），空集合回空；他公司或不存在者不回傳。不提供 HTTP 端點。

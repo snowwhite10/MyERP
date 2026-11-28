@@ -1,5 +1,12 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-28T20:32:39+08:00 — WU-PUR-007c3 退貨草稿 CRUD 與來源選項
+
+- 設計：收貨過帳未保存 INV movement ID；不回填 PUR 欄位（需跨模組讀 inv_ 表），改由 INV 新增唯讀 `IPurchaseInboundEvidenceQuery` 以冪等鍵（收貨 ID、行號）取得，既有已過帳收貨無需遷移（ADR-224）。
+- 問題：首次真實 SQL 5/5 紅——007c2 的 Posted 不可變 trigger 令 EF 的 `OUTPUT` 插入失敗。修正：DbModel 宣告 `HasTrigger`，以空 schema 的 `Purchasing_ReturnTriggerMetadata` migration 同步模型快照。效果：插入改用不帶 OUTPUT 的批次，trigger 保留。
+- 測試證據：變異「可退量不扣待審預留」與「批號不比對擷取量」各令對應案例紅（2 紅），還原後綠；SourceLines 對「PUR Posted 但無 INV 證據」的資料仍列出，測試改為明示此為參考選項、保存時拒絕。
+- 審查：錯誤一律帶 `lineNo`／`lineNos`，超量另附收貨行、請求量與可退量供畫面說明；EDIT 與 DELETE 走與 SUBMIT 相同鎖序；讀取後回傳由提交後重讀組成，避免回應與保存不一致。
+
 ## 2026-11-28T18:31:36+08:00 — WU-PUR-007c2 退貨 schema
 
 - 審查：收貨行的 `pending_return_reserved`、`posted_returned` 及容量 CHECK 已由前單元建立；重建會破壞既有發票限量規則，沿用原約束。退貨行的 INV movement／MD 參照只存 ID，PUR 內部以公司複合 FK 保護。

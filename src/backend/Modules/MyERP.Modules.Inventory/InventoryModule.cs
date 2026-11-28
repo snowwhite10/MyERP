@@ -33,6 +33,7 @@ public sealed class InventoryModule : IErpModule
         services.AddScoped<IStockBalanceQuery, StockBalanceQuery>();
         services.AddScoped<IInventoryValuationQuery, InventoryValuationQuery>();
         services.AddScoped<IStockTrackingAvailabilityQuery, StockTrackingAvailabilityQuery>();
+        services.AddScoped<IPurchaseInboundEvidenceQuery, PurchaseInboundEvidenceQuery>();
         services.AddScoped<AssemblyCostSnapshot>();
         services.AddScoped<StockQueryService>();
         services.AddScoped<StockFlowReportService>();

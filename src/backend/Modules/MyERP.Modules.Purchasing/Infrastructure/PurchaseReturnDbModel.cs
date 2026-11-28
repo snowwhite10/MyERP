@@ -14,6 +14,7 @@ public sealed class PurchaseReturnDbModel : IModuleDbModel
             {
                 t.HasCheckConstraint("ck_pur_return_status", "[status] IN ('Draft','PendingApproval','Rejected','Posted')");
                 t.HasCheckConstraint("ck_pur_return_order", "[purchase_order_id] > 0");
+                t.HasTrigger("trg_pur_purchase_return_posted_immutable");
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();
@@ -36,6 +37,7 @@ public sealed class PurchaseReturnDbModel : IModuleDbModel
             {
                 t.HasCheckConstraint("ck_pur_return_line_quantity",
                     "[purchase_return_id] > 0 AND [receipt_line_id] > 0 AND [original_movement_id] > 0 AND [line_no] > 0 AND [material_id] > 0 AND [warehouse_id] > 0 AND [quantity] > 0 AND ([original_unit_cost] IS NULL OR [original_unit_cost] >= 0)");
+                t.HasTrigger("trg_pur_purchase_return_line_posted_immutable");
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();
@@ -62,6 +64,7 @@ public sealed class PurchaseReturnDbModel : IModuleDbModel
                 t.HasCheckConstraint("ck_pur_return_tracking_target",
                     "([lot_no] IS NOT NULL AND [serial_no] IS NULL AND LEN([lot_no]) > 0 AND [quantity] > 0) OR ([lot_no] IS NULL AND [serial_no] IS NOT NULL AND LEN([serial_no]) > 0 AND [quantity] = 1)");
                 t.HasCheckConstraint("ck_pur_return_tracking_seq", "[seq_no] > 0");
+                t.HasTrigger("trg_pur_purchase_return_tracking_posted_immutable");
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();

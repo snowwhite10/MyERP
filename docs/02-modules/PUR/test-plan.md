@@ -1,5 +1,21 @@
 # PUR 測試計劃
 
+## WU-PUR-007c3 退貨草稿 CRUD 與來源選項（2026-11-28T20:32:39+08:00）
+
+依 `myerp-test-scenarios`：`I` 為真實 SQL（真實 INV 入庫異動與 MD 倉庫），`H` 為受權 HTTP（真實 JWT、角色、SQL）。每筆拒絕均驗零寫入。測試類 `PurchaseReturnDraftApiTests`、`PurchaseOrderHttpTests.PurchaseReturnRoutes…`。
+
+| ID | 類別 | 情境與預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-RET-DRF-001 | 正常 | 來源選項列 Posted 收貨行可退量與成本；建立 Draft 保存原 INV movement ID、預設收貨行倉庫或改用其他倉庫、OriginalUnitCost 為 null；收貨行預留／已退仍 0，無 PURCHASE_RETURN 異動；EDIT 保留同行號行 ID、刪行加行、版本遞增；舊版 409 且保存版本不變。 | I | REQ_F4114.7.1～2、BR-PUR-030 | PASS |
+| PUR-RET-DRF-002 | 邊界／部分結果 | 可退量＝已收 − 已退 − 待審預留（5 − 1 − 1.5 = 2.5）；同收貨行兩行合計 2.500001 整單 422 QUANTITY_EXCEEDED、lineNos [1,2]、訊息含可退量；恰 2.5 成功且草稿不預留；全數退回的行不列入來源選項；七位小數 422 INVALID_LINES。 | I | BR-PUR-032／034 | PASS（變異：不扣待審預留 → 紅） |
+| PUR-RET-DRF-003 | 關聯／權限 | Draft 收貨行、他採購單收貨行、他公司收貨行同單 422 INVALID_SOURCE lineNos [2,3,4]；他公司採購單 422；PUR 標 Posted 但 INV 無異動 422 SOURCE_EVIDENCE_MISSING [2]；零寫入。來源選項只看 PUR 狀態（參考用）。 | I | BR-PUR-032、ADR-224 | PASS |
+| PUR-RET-DRF-004 | 關聯（批序號） | 批號超擷取量、未收批號、兩行同批（不分大小寫）合計超量 [1,2]、批號行填序號、未追蹤收貨行帶批號均 422 TRACKING_NOT_FROM_RECEIPT；序號量 2 為 400 欄位路徑；部分擷取草稿可保存並去空白；來源選項回收貨擷取批號。 | I | REQ_F4114.7.2、BR-PUR-030 | PASS（變異：不比對擷取量 → 紅） |
+| PUR-RET-DRF-005 | 狀態／衝突 | PendingApproval 修訂 422 STATUS_NOT_EDITABLE；Rejected 刪除 422 NOT_DELETABLE、修訂回 Draft；改採購單 422 SOURCE_LOCKED；刪除舊版 409、正確版本軟刪後 GET／DELETE 404，單號保留不重用。 | I | REQ_F4114.7.2 | PASS |
+| PUR-RET-DRF-006 | 權限 | 匿名 401；只有收貨權限時 GET／edit／DELETE／source-lines／POST 均 403；VIEW 只開 GET（404 NOT_FOUND），edit 仍 403；EDIT 可讀來源選項，缺 purchaseOrderId 400；CREATE 後不存在採購單 422 INVALID_SOURCE、空行 422 INVALID_LINES，資料表 0 列。 | H | BR-PUR-034 | PASS |
+| PUR-RET-DRF-007 | 權限（範圍） | Self 範圍讀／edit／PUT／DELETE 他人草稿 404，本人可讀；只有 VIEW 時建立與來源選項 403。 | I | BR-PUR-034 | PASS |
+| PUR-RET-DRF-008 | 併發 | 鎖序 採購單 → 退貨 → 收貨行升冪與 007c4 SUBMIT 相同；草稿不預留，跨單超退由 SUBMIT 鎖內重驗（雙連線測試屬 007c4）。 | — | BR-PUR-032 | 設計（007c4 驗收） |
+| PUR-RET-DRF-NA | 錯誤／檔案／E2E | 500／逾時沿全域 ProblemDetails 與既有測試；無檔案；畫面與三語訊息屬 007e。 | — | — | N/A |
+
 ## WU-PUR-007c2 退貨 schema（2026-11-28T18:31:36+08:00）
 
 依 `myerp-test-scenarios`：本切片只建 schema，退貨命令、授權與畫面由 007c3～c5 驗收。`I` 為真實 SQL；每筆拒絕均驗原資料不變。

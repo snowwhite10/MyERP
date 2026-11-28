@@ -98,6 +98,55 @@ public sealed class PurchaseOrderHttpTests(TestDatabase database) : IAsyncLifeti
         Assert.Equal("attachment; filename=\"purchase-receipts.csv\"", exported.Content.Headers.ContentDisposition!.ToString());
     }
 
+    /// <summary>WU-PUR-007c3 PUR-RET-DRF-006: return routes need their own grants; missing returns are 404, bad input 400／422.</summary>
+    [Fact]
+    public async Task PurchaseReturnRoutesRequireIndependentPermissionsAndHideMissingDocuments()
+    {
+        const string returns = "/api/v1/pur/purchase-returns";
+        var company = await NewCompanyAsync("return HTTP");
+        using var http = factory.CreateClient();
+        var (userId, token) = await CreateUserAsync(http);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await http.GetAsync(returns + "/999999", Ct)).StatusCode);
+        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.ReceiptView,
+            PurchasingPermissions.ReceiptCreate, PurchasingPermissions.ReceiptEdit, PurchasingPermissions.ReceiptDelete);
+        foreach (var (method, path) in new[] { (HttpMethod.Get, "/999999"), (HttpMethod.Get, "/999999/edit"),
+                     (HttpMethod.Delete, "/999999?version=1"), (HttpMethod.Get, "/source-lines?purchaseOrderId=1") })
+            await AssertProblemAsync(await SendAsync(http, method, returns + path, null, token, company),
+                HttpStatusCode.Forbidden, "COMMON.PERMISSION.DENIED");
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Post, returns,
+            new { purchaseOrderId = 1, businessDate = "2028-02-29", lines = new[] { new { lineNumber = 1, receiptLineId = 1, quantity = 1m } } },
+            token, company), HttpStatusCode.Forbidden, "COMMON.PERMISSION.DENIED");
+
+        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.ReturnView);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, returns + "/999999", null, token, company),
+            HttpStatusCode.NotFound, "PUR.RETURN.NOT_FOUND");
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, returns + "/999999/edit", null, token, company),
+            HttpStatusCode.Forbidden, "COMMON.PERMISSION.DENIED");
+        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.ReturnEdit,
+            PurchasingPermissions.ReturnDelete);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, returns + "/999999/edit", null, token, company),
+            HttpStatusCode.NotFound, "PUR.RETURN.NOT_FOUND");
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Delete, returns + "/999999?version=1", null, token, company),
+            HttpStatusCode.NotFound, "PUR.RETURN.NOT_FOUND");
+        // EDIT alone may load source options; the order filter is required.
+        var options = await SendAsync(http, HttpMethod.Get, returns + "/source-lines?purchaseOrderId=999999", null, token, company);
+        Assert.Equal(HttpStatusCode.OK, options.StatusCode);
+        Assert.Equal(0, (await options.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetArrayLength());
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, returns + "/source-lines", null, token, company),
+            HttpStatusCode.BadRequest, "COMMON.REQUEST.VALIDATION_FAILED");
+
+        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.ReturnCreate);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Post, returns,
+            new { purchaseOrderId = 999999, businessDate = "2028-02-29", lines = new[] { new { lineNumber = 1, receiptLineId = 1, quantity = 1m } } },
+            token, company), HttpStatusCode.UnprocessableEntity, "PUR.RETURN.INVALID_SOURCE");
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Post, returns,
+            new { purchaseOrderId = 999999, businessDate = "2028-02-29", lines = Array.Empty<object>() },
+            token, company), HttpStatusCode.UnprocessableEntity, "PUR.RETURN.INVALID_LINES");
+        await using var db = database.CreateRawContext();
+        Assert.Equal(0, await db.Database.SqlQuery<int>(
+            $"SELECT COUNT(*) AS [Value] FROM dbo.pur_purchase_return WHERE company_id={company}").SingleAsync(Ct));
+    }
+
     [Fact]
     public async Task ExportRequiresViewAndExportAndPrintReadOnlyNeedsView()
     {
