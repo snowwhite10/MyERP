@@ -35,6 +35,8 @@ public sealed class PurchasingModule : IErpModule
         services.AddScoped<PurchaseReceiptQueryService>();
         services.AddScoped<PurchaseReceiptLifecycleService>();
         services.AddScoped<PurchaseReturnDraftService>();
+        services.AddScoped<PurchaseReturnSubmissionService>();
+        services.AddScoped<PurchaseReturnPosting>();
         services.AddScoped<QuotationMutationService>();
         services.AddScoped<RfqDraftService>();
         services.AddScoped<RequisitionCreateService>();
@@ -47,6 +49,8 @@ public sealed class PurchasingModule : IErpModule
         // Deferred posting step (ADR-220): INV posting resolves MD services, which must not be built with the SYS workflow.
         services.AddScoped<IApprovalResultHandler>(sp => new PurchaseReceiptApprovalResultHandler(
             sp.GetRequiredService<MyErpDbContext>(), sp.GetRequiredService<PurchaseReceiptPosting>));
+        services.AddScoped<IApprovalResultHandler>(sp => new PurchaseReturnApprovalResultHandler(
+            sp.GetRequiredService<MyErpDbContext>(), sp.GetRequiredService<PurchaseReturnPosting>));
         services.AddSingleton<IModuleDbModel, RequisitionDbModel>();
         services.AddSingleton<IModuleDbModel, RfqDbModel>();
         services.AddSingleton<IModuleDbModel, QuotationDbModel>();
@@ -107,6 +111,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
     public const string ReturnCreate = "PUR.RETURN.CREATE";
     public const string ReturnEdit = "PUR.RETURN.EDIT";
     public const string ReturnDelete = "PUR.RETURN.DELETE";
+    public const string ReturnSubmit = "PUR.RETURN.SUBMIT";
     public const string InvoiceCreate = "PUR.INVOICE.CREATE";
     public const string InvoiceEdit = "PUR.INVOICE.EDIT";
     public const string InvoiceMatch = "PUR.INVOICE.MATCH";
@@ -152,6 +157,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
         new(ReturnCreate, PurchasingModuleContracts.ModuleCode),
         new(ReturnEdit, PurchasingModuleContracts.ModuleCode),
         new(ReturnDelete, PurchasingModuleContracts.ModuleCode),
+        new(ReturnSubmit, PurchasingModuleContracts.ModuleCode),
         new(InvoiceCreate, PurchasingModuleContracts.ModuleCode),
         new(InvoiceEdit, PurchasingModuleContracts.ModuleCode),
         new(InvoiceMatch, PurchasingModuleContracts.ModuleCode),

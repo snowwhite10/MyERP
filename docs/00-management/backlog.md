@@ -778,7 +778,7 @@
 | WU-PUR-007c1 | INV/PUR | INV 專用 `PostPurchaseReturnAsync`（`PURCHASE_RETURN` Out）：驗原 `PURCHASE_INBOUND` 異動、物料、單次合計、批序號來自原入庫，回傳原入庫單位成本；真實 SQL | P1 | DONE | 007b | ADR-223、REQ_F4115.22.7、BR-INV-071、INV-PRET-001～007 真實 SQL 6/6（變異 1 紅）。 |
 | WU-PUR-007c2 | PUR | `pur_purchase_return`／line（原收貨行、原 movement、OriginalUnitCost 快照）／tracking 表與可逆 migration；收貨行既有 `pending_return_reserved`／`posted_returned` 與 SQL CHECK；真實 SQL schema 驗收 | P1 | DONE | 007c1 | REQ_DS43.223～225；同公司 FK、FK 索引、唯一單號、Posted SQL trigger 不可變；真實 SQL 4/4、全量 4317/4317、帶資料 Up／Down／Up；2026-11-28T18:38:52+08:00。 |
 | WU-PUR-007c3 | PUR | 退貨草稿 CREATE／EDIT／READ／DELETE、來源選項（Posted 收貨行可退量）與權限 PUR.RETURN.*；真實 SQL＋HTTP | P1 | DONE | 007c2 | ADR-224：INV 唯讀 `IPurchaseInboundEvidenceQuery` 取原 movement；PUR-RET-DRF-001～007 真實 SQL 5/5（變異 2 紅）＋受權 HTTP；後端 Debug 全量 4323/4323（架構權限清單補 4 碼後重跑 2418/2418）、myerp migration 套用；2026-11-28T20:32:39+08:00。 |
-| WU-PUR-007c4 | PUR/INV | 退貨 SUBMIT 預留可退量＋SYS 核准同交易呼叫 `PostPurchaseReturnAsync`、保存 OriginalUnitCost、轉已退量；駁回釋回；並發與 `PurchaseReturnInvoicedLimit`（BR-PUR-044） | P1 | TODO | 007c3 | 雙連線不超退；重放／回滾／重複決定。 |
+| WU-PUR-007c4 | PUR/INV | 退貨 SUBMIT 預留可退量＋SYS 核准同交易呼叫 `PostPurchaseReturnAsync`、保存 OriginalUnitCost、轉已退量；駁回釋回；並發與 `PurchaseReturnInvoicedLimit`（BR-PUR-044） | P1 | DONE | 007c3 | ADR-225、PUR.RETURN.SUBMIT；PUR-RET-SUB-001～010 真實 SQL＋SYS＋INV 9/9（變異 4 紅）＋受權 HTTP；雙連線不超退、重放 409、INV 失敗回滾、重複決定 409；2026-11-28T21:12:59+08:00。 |
 | WU-PUR-007c5 | PUR | 退貨 LIST／CSV（PUR.RETURN.EXPORT） | P1 | TODO | 007c3 | 沿 ADR-222 收貨列表／CSV 模式。 |
 | WU-PUR-007e | PUR | 收貨與退貨列表／表單、三語亮暗、CSV／列印及 Playwright QA | P1 | TODO | 007a10、007b、007c | 介面 4.4～4.6、4.16～4.18；前端 skills 必用。 |
 | WU-PUR-008 | PUR | 發票與訂單／收貨三單比對、差異處理 | P1 | 已拆分 | 007 | 008d 設計、008a PUR 發票與比對、008b FI 應付同交易、008c 前端；父項待全部驗收。 |

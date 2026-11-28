@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-007c3",
-    "lastCompletedWorkUnit":  "WU-PUR-007c3",
-    "nextAction":  "做 WU-PUR-007c4（退貨 SUBMIT＋SYS 核准過帳／駁回釋回）：先讀 ADR-223／224、BR-PUR-030～034／044、PurchaseReturnDraftService（鎖序 採購單→退貨→收貨行升冪）與 PurchaseReceiptSubmissionService／PurchaseReceiptPosting 模式。用 myerp-test-scenarios 先寫紅燈真實 SQL＋真實 SYS＋真實 INV：PUR.RETURN.SUBMIT 權限；SUBMIT 鎖內重驗可退量並把本單量加到收貨行 pending_return_reserved、呼叫 PurchaseReturnInvoicedLimit（本單預留 0）、追蹤物料擷取須完整、建 SYS 實例（零步驟同交易過帳）；最終核准同交易以保存 original_movement_id 組 PurchaseReturnOutboundLine 呼叫 INV PostPurchaseReturnAsync，寫回 OriginalUnitCost 後轉 Posted，預留轉 posted_returned；駁回釋回；重放／INV 失敗回滾、重複決定 409、雙連線不超退。不得做 LIST／CSV（007c5）或畫面（007e）。",
+    "currentWorkUnit":  "WU-PUR-007c4",
+    "lastCompletedWorkUnit":  "WU-PUR-007c4",
+    "nextAction":  "做 WU-PUR-007c5（退貨 LIST／CSV，新權限 PUR.RETURN.EXPORT）：沿 ADR-222 收貨列表／CSV 模式（PurchaseReceiptQueryService、PurchaseReceiptCsv）新增 PurchaseReturnQueryService：GET /api/v1/pur/purchase-returns（VIEW 資料範圍、keyword 退貨或採購單號、from／to、purchaseOrderId、status、documentNo／businessDate 穩定排序分頁；摘要含採購單號、行數、總量、退貨金額＝Σ 行量×OriginalUnitCost（未過帳用收貨單位成本並標示））與 GET /export.csv（EXPORT∩VIEW、快照、10000 行上限 422、BOM／CRLF／三語／公式防護）。用 myerp-test-scenarios 先寫真實 SQL＋受權 HTTP 紅燈；PurchasingModuleTests 權限清單補 PUR.RETURN.EXPORT。不得做畫面（007e）。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  225,
-                       "ADR":  224,
+                       "ADR":  225,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -56,7 +56,8 @@
                              "WU-PUR-007a10":  0,
                              "WU-PUR-007c1":  0,
                              "WU-PUR-007c2":  0,
-                             "WU-PUR-007c3":  0
+                             "WU-PUR-007c3":  0,
+                             "WU-PUR-007c4":  0
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -128,5 +129,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T20:45:40+08:00",
-    "updatedAt":  "2026-11-28T20:45:40+08:00"
+    "updatedAt":  "2026-11-28T21:19:40+08:00"
 }

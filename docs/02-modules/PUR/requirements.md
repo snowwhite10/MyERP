@@ -134,6 +134,7 @@ WU-PUR-007a2 補足 REQ_F4114.2.2／2.4 的來源與可收量離線驗收：從�
 變更記錄：2026-10-24 WU-PUR-007d 首次固定 4.2.1～6 與新增 4.7.1～3；前者沿用 BlueWhale ID，後者追加且不重排既有子功能。REQ_DS43 於 migration 真實建表時分配，REQ_IO_A 於實際前端畫面時分配。
 
 變更記錄：2026-11-28T20:32:39+08:00 WU-PUR-007c3 以真實 SQL＋受權 HTTP 交付 REQ_F4114.7.1 詳情與 7.2 草稿 CREATE／EDIT／DELETE 及來源選項（PUR-RET-DRF-001～008，ADR-224）；需求版本不變，7.3 SUBMIT／過帳由 007c4 交付，列表／CSV 由 007c5 交付。
+變更記錄：2026-11-28T21:12:59+08:00 WU-PUR-007c4 以真實 SQL＋真實 SYS＋真實 INV＋受權 HTTP 交付 REQ_F4114.7.3 SUBMIT（PUR.RETURN.SUBMIT）、最終核准／零步驟過帳（原入庫成本）與駁回釋回（PUR-RET-SUB-001～010，ADR-225）；需求版本不變，列表／CSV 由 007c5 交付。
 
 ## WU-PUR-006d 採購單設計基線（尚未實作）
 

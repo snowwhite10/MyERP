@@ -1,5 +1,23 @@
 # PUR 測試計劃
 
+## WU-PUR-007c4 退貨 SUBMIT、SYS 核准過帳與駁回釋回（2026-11-28T21:12:59+08:00）
+
+依 `myerp-test-scenarios`：`I` 為真實 SQL＋真實 SYS 審批引擎＋真實 INV（`PostPurchaseReturnAsync`、MD 物料／倉庫），`H` 為受權 HTTP。測試類 `PurchaseReturnSubmissionTests`、`PurchaseOrderHttpTests.PurchaseReturnRoutesRequireIndependentPermissionsAndHideMissingDocuments`。每筆拒絕均驗零變更（預留、狀態、SYS 實例、INV 異動）。
+
+| ID | 類別 | 情境與預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-RET-SUB-001 | 正常 | 兩行退貨（2、3）SUBMIT → PendingApproval、版本遞增、收貨行 pending_return_reserved 2／3、無 PURCHASE_RETURN 異動、SYS 待審；核准 → Posted、預留轉 posted_returned、兩筆 Out 異動（不帶成本、業務日）、各行 OriginalUnitCost＝原入庫 4、可退量 3／0。 | I | REQ_F4114.7.3、BR-PUR-030／033 | PASS（變異：SUBMIT 不加預留 9 紅；不寫 OriginalUnitCost 2 紅） |
+| PUR-RET-SUB-002 | 正常（零步驟） | 無審批流程時 SUBMIT 同交易過帳：Posted、已退 1.5、單筆 Out、OriginalUnitCost 4。 | I | REQ_F4114.7.3 | PASS |
+| PUR-RET-SUB-003 | 狀態／重複 | 兩張退貨（2、1）送審後駁回其一只釋回本單（預留 3 → 1）、Rejected；之後重送 Approved／Rejected 決定均 409 APPROVAL_STATE_CHANGED 無副作用；EDIT 回 Draft 改 4 可再送審（預留 5）。 | I | BR-PUR-032／034 | PASS |
+| PUR-RET-SUB-004 | 權限／衝突／狀態／餘量 | 無 SUBMIT 403；舊版 409；Self 範圍他人退貨 404；不存在 404；已送審再送 422 NOT_SUBMITTABLE；草稿時合法但他單預留後超量 422 QUANTITY_EXCEEDED lineNos [2]；已開票 2 後退 2（可退未開票 1）422 INVOICED_QUANTITY_EXCEEDED lineNos [1]；預留、狀態、SYS 實例數不變。 | I | BR-PUR-032／034／044 | PASS |
+| PUR-RET-SUB-005 | 關聯（批序號） | 批號物料退 4 只擷取 L1 3 → 422 TRACKING_REQUIRED [1] 零預留；補 L2 1 後零步驟過帳，INV 異動批號明細 L1 3、L2 1。 | I | BR-PUR-030、BR-INV-071 | PASS（變異：略過完整性檢查 1 紅） |
+| PUR-RET-SUB-006 | 錯誤（回滾） | 核准時注入 `INSERT INTO [inv_stock_movement]` 失敗：SYS 實例仍 Pending、退貨 PendingApproval、預留 3／已退 0、無異動、OriginalUnitCost null；重試核准只過帳一次。 | I | BR-PUR-031／033 | PASS |
+| PUR-RET-SUB-007 | 衝突（重放） | INV 已有同退貨 PURCHASE_RETURN 異動時核准 409 POSTING_CONFLICT，整筆回滾（狀態、預留不變、仍只一筆異動）。 | I | ADR-223 第 4 點 | PASS |
+| PUR-RET-SUB-008 | 併發 | 收貨 5，兩連線同時 SUBMIT 各退 4：恰一成功、另一 422 QUANTITY_EXCEEDED，預留 4。 | I | BR-PUR-032 | PASS |
+| PUR-RET-SUB-009 | 邊界（自身預留） | 送審 3 後發票比對預留 2（5−3−2＝0 他用）：核准排除本單預留仍可退 3 並過帳。 | I | BR-PUR-044 | PASS（變異：不排除本單預留 4 紅） |
+| PUR-RET-SUB-010 | 權限（HTTP） | 匿名 SUBMIT 401；只有其他退貨權限 403；授 SUBMIT 後不存在 404 PUR.RETURN.NOT_FOUND（組合 API 解析服務與處理器）。 | H | BR-PUR-034 | PASS |
+| PUR-RET-SUB-NA | 部分結果／關聯／檔案／錯誤／畫面 | 部分結果不適用：退貨整單原子，任一行失敗零變更（001～009 已驗）。關聯：草稿後倉庫或物料停用由 MD 共享鎖守衛（`RunWithCodesAsync`）與 INV 過帳拒絕並回滾，沿 MD／INV 既有測試；INV 庫存不足（INV.STOCK.INSUFFICIENT）同理。檔案不適用：無上傳。500／逾時沿全域 ProblemDetails；三語畫面與提示屬 007e。 | — | — | N/A |
+
 ## WU-PUR-007c3 退貨草稿 CRUD 與來源選項（2026-11-28T20:32:39+08:00）
 
 依 `myerp-test-scenarios`：`I` 為真實 SQL（真實 INV 入庫異動與 MD 倉庫），`H` 為受權 HTTP（真實 JWT、角色、SQL）。每筆拒絕均驗零寫入。測試類 `PurchaseReturnDraftApiTests`、`PurchaseOrderHttpTests.PurchaseReturnRoutes…`。
@@ -13,7 +31,7 @@
 | PUR-RET-DRF-005 | 狀態／衝突 | PendingApproval 修訂 422 STATUS_NOT_EDITABLE；Rejected 刪除 422 NOT_DELETABLE、修訂回 Draft；改採購單 422 SOURCE_LOCKED；刪除舊版 409、正確版本軟刪後 GET／DELETE 404，單號保留不重用。 | I | REQ_F4114.7.2 | PASS |
 | PUR-RET-DRF-006 | 權限 | 匿名 401；只有收貨權限時 GET／edit／DELETE／source-lines／POST 均 403；VIEW 只開 GET（404 NOT_FOUND），edit 仍 403；EDIT 可讀來源選項，缺 purchaseOrderId 400；CREATE 後不存在採購單 422 INVALID_SOURCE、空行 422 INVALID_LINES，資料表 0 列。 | H | BR-PUR-034 | PASS |
 | PUR-RET-DRF-007 | 權限（範圍） | Self 範圍讀／edit／PUT／DELETE 他人草稿 404，本人可讀；只有 VIEW 時建立與來源選項 403。 | I | BR-PUR-034 | PASS |
-| PUR-RET-DRF-008 | 併發 | 鎖序 採購單 → 退貨 → 收貨行升冪與 007c4 SUBMIT 相同；草稿不預留，跨單超退由 SUBMIT 鎖內重驗（雙連線測試屬 007c4）。 | — | BR-PUR-032 | 設計（007c4 驗收） |
+| PUR-RET-DRF-008 | 併發 | 鎖序 採購單 → 退貨 → 收貨行升冪與 007c4 SUBMIT 相同；草稿不預留，跨單超退由 SUBMIT 鎖內重驗（雙連線測試屬 007c4）。 | — | BR-PUR-032 | PASS（007c4 PUR-RET-SUB-008） |
 | PUR-RET-DRF-NA | 錯誤／檔案／E2E | 500／逾時沿全域 ProblemDetails 與既有測試；無檔案；畫面與三語訊息屬 007e。 | — | — | N/A |
 
 ## WU-PUR-007c2 退貨 schema（2026-11-28T18:31:36+08:00）

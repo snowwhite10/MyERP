@@ -1,5 +1,12 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-28T21:12:59+08:00 — WU-PUR-007c4 退貨 SUBMIT、SYS 核准過帳與駁回釋回
+
+- 問題：首次真實 SQL 4/9 紅（駁回時「預留少於本單量」）。原因：收貨行鎖後讀取以 `join ... AsNoTracking()` 連收貨表頭，EF 對整個查詢套用不追蹤，SUBMIT 對 `pending_return_reserved` 的修改從未保存。修改：改為只查收貨行並以 `Any` 子查詢判斷 Posted 表頭。效果：預留隨 SYS 實例同交易提交，9/9 綠。
+- 設計：Posted 不可變 trigger 會在表頭已 Posted 時拒絕行更新，故過帳先保存行的 `OriginalUnitCost` 與收貨行計數，再把表頭改為 Posted（兩次 SaveChanges 同交易）。
+- 測試證據：四個變異（SUBMIT 不加預留、核准不排除本單預留、略過追蹤完整性、不寫 OriginalUnitCost）分別令 9／4／1／2 個案例紅，還原後綠。變異還原時 Copy-Item 保留舊時間戳令增量建置未重編，已以更新時間戳重建後重驗 32/32。
+- 審查：SUBMIT、核准、駁回共用 `PurchaseReturnSources`（鎖序、可退量、已開票限制、`lineNos`／`receiptLines` 擴充），錯誤訊息改用收貨行號而非內部 ID；處理器延遲解析過帳步驟避免 SYS↔MD DI 循環（同 ADR-220）。
+
 ## 2026-11-28T20:32:39+08:00 — WU-PUR-007c3 退貨草稿 CRUD 與來源選項
 
 - 設計：收貨過帳未保存 INV movement ID；不回填 PUR 欄位（需跨模組讀 inv_ 表），改由 INV 新增唯讀 `IPurchaseInboundEvidenceQuery` 以冪等鍵（收貨 ID、行號）取得，既有已過帳收貨無需遷移（ADR-224）。

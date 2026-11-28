@@ -142,6 +142,15 @@ public sealed class PurchaseOrderHttpTests(TestDatabase database) : IAsyncLifeti
         await AssertProblemAsync(await SendAsync(http, HttpMethod.Post, returns,
             new { purchaseOrderId = 999999, businessDate = "2028-02-29", lines = Array.Empty<object>() },
             token, company), HttpStatusCode.UnprocessableEntity, "PUR.RETURN.INVALID_LINES");
+
+        // WU-PUR-007c4 PUR-RET-SUB-009: SUBMIT needs its own grant; a missing return is 404 in the composed API.
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await http.PostAsJsonAsync(returns + "/999999/submit", new { version = 1 }, Ct)).StatusCode);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Post, returns + "/999999/submit", new { version = 1 },
+            token, company), HttpStatusCode.Forbidden, "COMMON.PERMISSION.DENIED");
+        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.ReturnSubmit);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Post, returns + "/999999/submit", new { version = 1 },
+            token, company), HttpStatusCode.NotFound, "PUR.RETURN.NOT_FOUND");
         await using var db = database.CreateRawContext();
         Assert.Equal(0, await db.Database.SqlQuery<int>(
             $"SELECT COUNT(*) AS [Value] FROM dbo.pur_purchase_return WHERE company_id={company}").SingleAsync(Ct));

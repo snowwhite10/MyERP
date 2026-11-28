@@ -7,11 +7,12 @@ namespace MyERP.Modules.Purchasing.Api;
 
 /// <summary>
 /// Purchase return drafts (WU-PUR-007c3). Drafts reference Posted receipt lines of one purchase order, keep the original
-/// inventory receipt movement and never reserve quantity or post stock; SUBMIT and posting follow in 007c4.
+/// inventory receipt movement and never reserve quantity or post stock; SUBMIT reserves and final approval posts (007c4).
 /// </summary>
 [ApiController]
 [Route("api/v1/pur/purchase-returns")]
-public sealed class PurchaseReturnsController(PurchaseReturnDraftService drafts) : ControllerBase
+public sealed class PurchaseReturnsController(PurchaseReturnDraftService drafts,
+    PurchaseReturnSubmissionService submissions) : ControllerBase
 {
     /// <summary>
     /// Posted receipt lines of <paramref name="purchaseOrderId"/> that still have returnable quantity, with saved
@@ -91,4 +92,26 @@ public sealed class PurchaseReturnsController(PurchaseReturnDraftService drafts)
         await drafts.DeleteAsync(id, version, token);
         return NoContent();
     }
+
+    /// <summary>
+    /// Submits a Draft with body <c>version</c>: one transaction rechecks the returnable and uninvoiced quantities,
+    /// requires complete lot/serial capture, reserves the quantity on the receipt lines and creates the SYS approval.
+    /// Final approval (or a zero-step flow) issues stock through INV at the original receipt cost; rejection releases.
+    /// Over the returnable quantity 422 <c>PUR.RETURN.QUANTITY_EXCEEDED</c>; invoiced quantity 422
+    /// <c>PUR.RETURN.INVOICED_QUANTITY_EXCEEDED</c>; incomplete capture 422 <c>PUR.RETURN.TRACKING_REQUIRED</c>.
+    /// </summary>
+    [HttpPost("{id:long}/submit")]
+    [RequirePermission(PurchasingPermissions.ReturnSubmit)]
+    [ProducesResponseType<PurchaseReturnSubmissionResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public Task<PurchaseReturnSubmissionResult> Submit(long id, [FromBody] PurchaseReturnSubmitInput input,
+        CancellationToken token) => submissions.SubmitAsync(id, input.Version, token);
 }
+
+/// <summary>SUBMIT request: the currently saved return version.</summary>
+public sealed record PurchaseReturnSubmitInput(int Version);
