@@ -1,5 +1,22 @@
 # PUR 測試計劃
 
+## WU-PUR-007a8 授權收貨草稿 CREATE／EDIT／READ（2026-11-28T15:19:42+08:00）
+
+依 `myerp-test-scenarios` 逐類檢查。I＝真實 SQL（服務層，真實交易與鎖）；H＝受權 HTTP。SUBMIT 預留、雙連線競態、DELETE 留 007a9／後續；畫面 4.4～4.6 留 007e。
+
+| ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-RECV-DRAFT-001 | 正常 | Approved 訂單建立閏日草稿：Draft、單號、本位幣單位成本 20/5=4、倉庫與擁有者快照；訂單行待審／已收仍為 0。 | I | REQ_F4114.2.2 | PASS |
+| PUR-RECV-DRAFT-002 | 正常／狀態 | EDIT 帶版本改量 2→3、倉庫 91→92、日期；單號不變。Rejected 修訂回 Draft、版本遞增、行號換新行；EDIT 讀取重讀保存行。 | I | REQ_F4114.2.3 | PASS |
+| PUR-RECV-DRAFT-003 | 邊界 | 零量、零倉庫、七位小數在發號／交易前拒絕且零保存；剛好等於訂單量 5 成功；月底跨年 2028-12-31→2029-01-01。 | I | REQ_F4114.2.2 | PASS |
+| PUR-RECV-DRAFT-004 | 重複／衝突 | 舊版本 EDIT → 409，保存行不變；同單同訂單行兩行合計 6>5 → 422 QUANTITY_EXCEEDED。 | I | REQ_F4114.2.3 | PASS |
+| PUR-RECV-DRAFT-005 | 部分結果 | 第二行超量整單拒絕：不留表頭、不留第一行；單據整單原子，部分成功不適用。 | I | REQ_F4114.2.2 | PASS |
+| PUR-RECV-DRAFT-006 | 權限 | 匿名 401；無公司成員 403 ACCESS_DENIED；只有 ORDER.VIEW 讀收貨 403；RECEIPT.VIEW 讀不存在 404；VIEW 不代替 EDIT 讀編輯上下文。本人範圍外他人讀／改 404。 | H, I | REQ_F4114.2.1～3 | PASS |
+| PUR-RECV-DRAFT-007 | 關聯 | 他公司訂單、本單引用他公司訂單行、非 Approved 訂單 → 422 INVALID_SOURCE；訂單行無本位幣未稅額 → 422 COST_UNAVAILABLE；兩公司均零收貨列。EDIT 改來源訂單 → 422 SOURCE_LOCKED。 | I | REQ_F4114.2.2～3 | PASS |
+| PUR-RECV-DRAFT-008 | 狀態 | PendingApproval 不可修訂 → 422 STATUS_NOT_EDITABLE，保存行不變；舊版發票專用來源列（無單號／日期）READ → 404。 | I | REQ_F4114.2.1, REQ_F4114.2.3 | PASS |
+| PUR-RECV-DRAFT-009 | 錯誤 | 400 驗證／409 版本／422 規則經既有例外中介軟體回 ProblemDetails；畫面顯示留 007e。 | H | REQ_F4114.2.2～3 | PASS（403／404 路由）；畫面 TODO（007e） |
+| PUR-RECV-DRAFT-010 | 檔案 | 無上傳，不適用。 | — | — | N/A |
+
 ## WU-PUR-007a7 收貨草稿資料庫基礎（2026-11-28T13:01:04+08:00）
 
 依 `myerp-test-scenarios` 逐類檢查。此切片只擴充既有表，無公開 API、批次操作、畫面或上傳；草稿寫入授權、來源狀態、HTTP 錯誤與雙連線競態分別留 007a8／007a9。I＝真實 SQL。

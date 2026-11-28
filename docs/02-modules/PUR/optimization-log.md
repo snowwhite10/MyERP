@@ -1,5 +1,12 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-28T15:19:42+08:00 — WU-PUR-007a8 授權收貨草稿 CREATE／EDIT／READ
+
+- 接手：上一輪（codex）額度中斷時已寫服務、控制器、migration 及 5 個真實 SQL／1 個 HTTP 測試但未提交；本輪檢查後建置 0 警告、定向測試綠燈，依 myerp-test-scenarios 補 2 個情境（他公司訂單／行、非 Approved、缺成本整單零保存；Rejected 回 Draft、跨年、等量、舊發票來源列 404）。
+- 審查：EDIT 先鎖訂單再鎖收貨，與取消及將來 SUBMIT 同序，避免死鎖；行號保留舊行 ID 以利後續引用。發號在來源驗證之後才呼叫，輸入錯誤不消耗單號（輸入驗證先於交易）。
+- 驗證：第一次後端全量 4253/4255，一個為本單元新增權限未同步架構測試清單（已補 PUR.RECEIPT.CREATE／EDIT／VIEW），另一個 PurchaseOrderHttpTests.MissingPermissionsAre403AndEditDoesNotFollowViewOrCreate 偶發 500，單獨重跑 7/7、全量重跑 4255/4255，未能重現。
+- 風險：收貨行對 INV 倉庫不建跨模組 FK，以 `IInventoryReferenceGuard.RequireWarehousesAsync` 鎖內驗證；HTTP 建立成功路徑與畫面留 007e 實跑。
+
 ## 2026-11-28T13:01:04+08:00 — WU-PUR-007a7 收貨草稿資料庫基礎
 
 - 需求／設計：沿用發票來源已存在的收貨表，新增草稿欄位及訂單行收貨容量；沒有新增跨模組 FK 或 API。真實 SQL 測試先因缺訂單行收貨計數而紅，migration 後通過。

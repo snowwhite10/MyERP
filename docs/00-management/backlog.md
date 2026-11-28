@@ -762,7 +762,7 @@
 | WU-PUR-007d | PUR | 收貨／採購入庫／退貨需求、INV 契約、交易邊界及完整測試情境設計 | P1 | DONE | 006d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4114.2.1～6、4.7.1～3、BR-PUR-028～035、PUR-RECV-001～028；無表、端點或畫面。 |
 | WU-PUR-007a | PUR | 收貨表與行、採購單已收／待審量、草稿 CRUD 與雙連線餘量驗收 | P1 | 已拆分 | 007d、006a～c、SQL 服務 | ADR-218 拆 007a7 資料庫基礎、007a8 草稿 API、007a9 SUBMIT 與競態；父項待全部驗收。 |
 | WU-PUR-007a7 | PUR | 擴充既有收貨來源表與訂單行：草稿欄、收貨計數、唯一單號、SQL 容量約束及可逆 migration | P1 | DONE | 007d、既有發票來源表 | 2026-11-28T13:01:04+08:00 真實 SQL 先紅後綠；保留舊 Posted 來源列。 |
-| WU-PUR-007a8 | PUR | 授權收貨草稿 CREATE／EDIT／READ，來源鎖內重讀、保存成本與倉儲快照，真實 SQL／HTTP 驗收 | P1 | TODO | 007a7 | 舊版／跨公司／權限／狀態與非法來源整單零變更；草稿不佔量、不寫 INV。 |
+| WU-PUR-007a8 | PUR | 授權收貨草稿 CREATE／EDIT／READ，來源鎖內重讀、保存成本與倉儲快照，真實 SQL／HTTP 驗收 | P1 | DONE | 007a7 | 2026-11-28T15:30:03+08:00 真實 SQL 8/8＋受權 HTTP 1/1、後端全量 4255/4255、migration Down／Up；草稿不佔量、不寫 INV。 |
 | WU-PUR-007a9 | PUR | 收貨 SUBMIT 同交易預留訂單行餘量，雙連線競態與 SYS 失敗回滾驗收 | P1 | TODO | 007a8 | 按來源行升冪鎖、聚合，同交易建立審批；不足 422。 |
 | WU-PUR-007a1 | PUR | 收貨草稿離線輸入形狀與 Draft／Rejected 修訂狀態契約 | P1 | DONE | 007d；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T01:22:59+08:00：先 CS0246 紅燈；補邊界後 Architecture 1785/1785、PUR Debug 零警告。真實 SQL／HTTP、Posted 收貨及 INV 接線仍屬 007a～c。 |
 | WU-PUR-007a2 | PUR | Approved 訂單行身份及整單可收量離線預檢 | P1 | DONE | 007a1；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T01:30:04+08:00：缺型別編譯紅燈後定向 9/9、Architecture 1794/1794、PUR Debug 零警告；SQL 鎖內權威與 HTTP 仍屬 007a。 |

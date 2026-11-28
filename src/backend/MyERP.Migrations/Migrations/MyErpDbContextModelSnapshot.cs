@@ -8875,6 +8875,10 @@ namespace MyERP.Migrations.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
+                    b.Property<long?>("BranchId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("branch_id");
+
                     b.Property<DateOnly?>("BusinessDate")
                         .HasColumnType("date")
                         .HasColumnName("business_date");
@@ -8903,6 +8907,10 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnType("datetime2(6)")
                         .HasColumnName("deleted_at");
 
+                    b.Property<long?>("DepartmentId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("department_id");
+
                     b.Property<string>("DocumentNo")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
@@ -8911,6 +8919,10 @@ namespace MyERP.Migrations.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit")
                         .HasColumnName("is_deleted");
+
+                    b.Property<long?>("OwnerId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("owner_id");
 
                     b.Property<long>("PurchaseOrderId")
                         .HasColumnType("bigint")
@@ -8950,6 +8962,9 @@ namespace MyERP.Migrations.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_pur_purchase_receipt_company_id_document_no")
                         .HasFilter("[document_no] IS NOT NULL");
+
+                    b.HasIndex("CompanyId", "OwnerId", "Id")
+                        .HasDatabaseName("ix_pur_purchase_receipt_company_id_owner_id_id");
 
                     b.HasIndex("CompanyId", "PurchaseOrderId", "Status", "Id")
                         .HasDatabaseName("ix_pur_purchase_receipt_company_id_purchase_order_id_status_id");
@@ -9028,6 +9043,11 @@ namespace MyERP.Migrations.Migrations
                         .HasPrecision(19, 6)
                         .HasColumnType("decimal(19,6)")
                         .HasColumnName("quantity");
+
+                    b.Property<decimal?>("UnitCost")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("unit_cost");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2(6)")

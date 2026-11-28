@@ -1,5 +1,7 @@
 # PUR API
 
+WU-PUR-007a8（2026-11-28T15:19:42+08:00，ADR-218）：新增 `PurchaseReceiptsController`（Swagger `/api/v1/pur/purchase-receipts`）。`POST`（PUR.RECEIPT.CREATE，201）以 `{purchaseOrderId,businessDate,lines:[{lineNumber,purchaseOrderLineId,quantity,warehouseId}]}` 建 Draft；`GET /{id}`（PUR.RECEIPT.VIEW）與 `GET /{id}/edit`（PUR.RECEIPT.EDIT）各按該動作 SYS 資料範圍讀取，範圍外／他公司／舊發票專用來源列 404 `PUR.RECEIPT.NOT_FOUND`；`PUT /{id}?version=`（PUR.RECEIPT.EDIT）整組替換 Draft／Rejected 行，舊版 409。回應 `{id,documentNo,status,version,purchaseOrderId,supplierId,currency,businessDate,lines:[{id,lineNumber,purchaseOrderLineId,materialId,quantity,warehouseId,unitCost}]}`。422 代碼：INVALID_SOURCE、QUANTITY_EXCEEDED、COST_UNAVAILABLE、SOURCE_LOCKED、STATUS_NOT_EDITABLE、INVALID_LINES／INVALID_HEADER。LIST、CSV、DELETE、SUBMIT 未交付。
+
 WU-PUR-007a7（2026-11-28T13:01:04+08:00，ADR-218）只交付收貨草稿資料庫基礎，沒有新增路由或 Swagger；`/api/v1/pur/purchase-receipts` 的 CREATE／EDIT／READ 留 007a8，SUBMIT 留 007a9。前端 4.4～4.6 留 007e。
 
 WU-PUR-008b6（2026-11-27T05:30:01+08:00）：`GET /api/v1/pur/invoices/{id}` 新增 `postedAt`、`fiPurchaseSourceId`、`fiPayableId`、`fiJournalId`（只在 Posted 有值，其餘 null），供 4.19 明細顯示財務參照。

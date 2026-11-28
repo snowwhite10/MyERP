@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-007a7",
-    "lastCompletedWorkUnit":  "WU-PUR-007a7",
-    "nextAction":  "做 WU-PUR-007a8：依 ADR-218 與 007d／007a1～a7，在既有收貨表建立授權草稿 CREATE／EDIT／READ。先以 myerp-test-scenarios 補完整情境並寫真實 SQL／HTTP 紅燈；按目前公司與 SYS 動作範圍守衛、於 SQL 鎖內重讀 Approved 採購單與同公司保存行，保存單號／日期／成本／倉儲快照，EDIT 帶版本只允許 Draft／Rejected 且來源身份不可改，草稿不佔量、不寫 INV。驗 400／403／404／409／422、無部分保存、建置／全量測試與 migration 相容；若超 90 分鐘再按可驗收邊界拆小。SUBMIT 與雙連線餘量留 007a9。勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
+    "currentWorkUnit":  "WU-PUR-007a8",
+    "lastCompletedWorkUnit":  "WU-PUR-007a8",
+    "nextAction":  "做 WU-PUR-007a9：依 ADR-218 與 007a3／a6 離線規則，為 PurchaseReceiptDraftService 加 SUBMIT（PUR.RECEIPT.SUBMIT，帶版本）：同交易先鎖採購單、收貨單，再按訂單行 ID 升冪 UPDLOCK，按保存行聚合重驗可收量並增加 pending_receipt_reserved、建立 SYS 審批（參考 PurchaseOrderSubmissionService）；SYS 駁回精確釋回本單預留。先以 myerp-test-scenarios 寫真實 SQL 紅燈：不足 422 整單零變更、舊版 409、雙連線同訂單行最多一單成功、SYS 失敗回滾。最終核准過帳 INV 留 007b；DELETE／LIST／CSV 另列。勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -124,5 +124,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T13:14:11+08:00",
-    "updatedAt":  "2026-11-28T13:14:11+08:00"
+    "updatedAt":  "2026-11-28T15:30:03+08:00"
 }

@@ -1,5 +1,7 @@
 # PUR 業務規則
 
+WU-PUR-007a8（2026-11-28T15:19:42+08:00）：收貨草稿 CREATE／EDIT 在單一 ReadCommitted 交易內先 UPDLOCK 採購單、再收貨單（EDIT）、再按 ID 升冪鎖訂單行，鎖內重讀同公司 Approved 訂單並按 007a2 規則驗可收量；任何拒絕整單回滾。草稿只寫 PUR 收貨表，不改訂單行待審／已收量、不呼叫 INV。EDIT 不可改來源訂單、同行號不可改訂單行或物料，供應商／幣別須與訂單一致；被開票／收貨引用的行不可移除。成本來自訂單行保存的本位幣未稅額，缺值或超 decimal(19,6) 422 COST_UNAVAILABLE。
+
 WU-PUR-008b4（BR-PUR-043d，ADR-208）：過帳命令在供應商應用鎖（與 Draft／MATCH／RESOLVE 共用）下，依發票表頭→採購單表頭→收貨行 ID 升冪→FI 來源鍵取得與讀取；PUR 預檢、指紋與匯率快照錯誤先於 FI 回 422。FI 回 Posted 前不得修改任何追蹤中的 PUR 實體（共用 DbContext，FI 的 SaveChanges 會一併寫出）。收據須證明公司、發票、供應商、版本、指紋、原幣／本位幣含稅金額與正數 FI ID，否則 500 回滾。成功時逐收貨行 `matched_reserved` 減本張量、`posted_invoiced` 加本張量，發票 Posted 並保存 `posted_at`、`posted_from_version`、FI 三個 ID（CHECK `ck_pur_invoice_posted` 保證 Posted ⇔ 五欄齊全）。Posted 不可變：以過帳版本或結果版本重送只回保存結果，不呼叫 FI。
 
 WU-PUR-008a51（BR-PUR-036j HTTP 接線）：已驗命令以服務端公司與凍結來源行 ID 建立交易 session；在鎖內讀權威訂單、收貨、價稅後才組裝 Draft，任何失效在 Prepare 前回滾。EDIT 必須載入同公司已保存 Draft；不存在回 404，版本不符回 409。即使表頭值不變，替換行也強制更新表頭，由稽核攔截器遞增版本。來源表無資料範圍歸屬欄位，分店／部門／本人授權一律拒絕。

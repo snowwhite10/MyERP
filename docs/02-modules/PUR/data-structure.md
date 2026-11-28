@@ -1,5 +1,7 @@
 # PUR 資料結構
 
+WU-PUR-007a8（2026-11-28T15:19:42+08:00，ADR-218）：migration `Purchasing_ReceiptDraftSnapshots` 於 `pur_purchase_receipt` 加可空 `owner_id`／`branch_id`／`department_id`（SYS 資料範圍快照，索引 `(company_id,owner_id,id)`），`pur_purchase_receipt_line` 加可空 `unit_cost decimal(19,6)`（本位幣未稅單位成本快照 = 訂單行 base_net ÷ quantity，六位四捨五入）。舊來源列保持 NULL，可逆。
+
 WU-PUR-008b4（2026-11-27T04:36:46+08:00，ADR-208）在 REQ_DS43.184 `pur_purchase_invoice` 增加可空欄位 `posted_at datetime2(6)`、`posted_from_version int`、`fi_purchase_source_id bigint`、`fi_payable_id bigint`、`fi_journal_id bigint`（FI 參照只存 ID，不建跨模組 FK）及 CHECK `ck_pur_invoice_posted`：status = Posted 時五欄皆有值且 ID／版本 > 0（以 `ISNULL(x,0) > 0` 避免 NULL 比較為 UNKNOWN 而通過），其他狀態五欄皆 NULL。Migration `20261126170236_Purchasing_InvoicePosting`（Down 刪 CHECK 與欄位）。
 
 ```mermaid

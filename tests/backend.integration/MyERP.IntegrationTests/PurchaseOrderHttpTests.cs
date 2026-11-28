@@ -45,6 +45,29 @@ public sealed class PurchaseOrderHttpTests(TestDatabase database) : IAsyncLifeti
     };
 
     [Fact]
+    public async Task PurchaseReceiptRoutesRequireIndependentPermissionsAndHideMissingDocuments()
+    {
+        const string receipts = "/api/v1/pur/purchase-receipts";
+        var company = await NewCompanyAsync("receipt HTTP");
+        using var http = factory.CreateClient();
+        var (userId, token) = await CreateUserAsync(http);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await http.GetAsync(receipts + "/999999", Ct)).StatusCode);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, receipts + "/999999", null, token, company),
+            HttpStatusCode.Forbidden, "COMMON.COMPANY.ACCESS_DENIED");
+        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.OrderView);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, receipts + "/999999", null, token, company),
+            HttpStatusCode.Forbidden, "COMMON.PERMISSION.DENIED");
+        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.ReceiptView);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, receipts + "/999999", null, token, company),
+            HttpStatusCode.NotFound, "PUR.RECEIPT.NOT_FOUND");
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, receipts + "/999999/edit", null, token, company),
+            HttpStatusCode.Forbidden, "COMMON.PERMISSION.DENIED");
+        await GrantAsync(userId, company, DataScope.Company, PurchasingPermissions.ReceiptEdit);
+        await AssertProblemAsync(await SendAsync(http, HttpMethod.Get, receipts + "/999999/edit", null, token, company),
+            HttpStatusCode.NotFound, "PUR.RECEIPT.NOT_FOUND");
+    }
+
+    [Fact]
     public async Task ExportRequiresViewAndExportAndPrintReadOnlyNeedsView()
     {
         var company = await NewCompanyAsync("PO export");

@@ -61,6 +61,9 @@ public sealed class PurchaseReceiptSource : BusinessEntity, ISoftDeletable
 {
     public string? DocumentNo { get; set; }
     public DateOnly? BusinessDate { get; set; }
+    public long? OwnerId { get; set; }
+    public long? BranchId { get; set; }
+    public long? DepartmentId { get; set; }
     public long PurchaseOrderId { get; set; }
     public long SupplierId { get; set; }
     public required string Currency { get; set; }
@@ -73,6 +76,7 @@ public sealed class PurchaseReceiptSourceLine : BusinessEntity
 {
     public decimal? Quantity { get; set; }
     public long? WarehouseId { get; set; }
+    public decimal? UnitCost { get; set; }
     public long PurchaseReceiptId { get; set; }
     public long PurchaseOrderLineId { get; set; }
     public int LineNo { get; set; }

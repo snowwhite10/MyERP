@@ -103,6 +103,7 @@ public sealed class PurchaseInvoiceSourceDbModel : IModuleDbModel
             e.Property(x => x.Currency).HasMaxLength(3).IsUnicode(false).IsFixedLength();
             e.Property(x => x.Status).HasMaxLength(30).IsUnicode(false);
             e.Property(x => x.DocumentNo).HasMaxLength(50);
+            e.HasIndex(x => new { x.CompanyId, x.OwnerId, x.Id });
             e.HasIndex(x => new { x.CompanyId, x.DocumentNo }).IsUnique().HasFilter("[document_no] IS NOT NULL");
             e.HasAlternateKey(x => new { x.CompanyId, x.Id }).HasName("ak_pur_purchase_receipt_company_id_id");
             e.HasIndex(x => new { x.CompanyId, x.PurchaseOrderId, x.Status, x.Id });
@@ -121,6 +122,7 @@ public sealed class PurchaseInvoiceSourceDbModel : IModuleDbModel
             e.Property(x => x.Id).ValueGeneratedOnAdd();
             e.Property(x => x.PostedReceived).HasPrecision(19, 6);
             e.Property(x => x.Quantity).HasPrecision(19, 6);
+            e.Property(x => x.UnitCost).HasPrecision(19, 6);
             e.Property(x => x.PostedReturned).HasPrecision(19, 6);
             e.Property(x => x.PendingReturnReserved).HasPrecision(19, 6);
             e.Property(x => x.PostedInvoiced).HasPrecision(19, 6);
