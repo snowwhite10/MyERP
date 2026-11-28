@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-007c5",
-    "lastCompletedWorkUnit":  "WU-PUR-007c5",
-    "nextAction":  "做 WU-PUR-007a11（收貨 LIST keyword 軟刪洩漏，ADR-226 後果）：先在 PurchaseReceiptQueryTests 寫真實 SQL 紅燈——軟刪 Draft 收貨以其採購單號 keyword 搜尋 LIST 與 CSV 都不得出現（PurchaseReceiptQueryService keyword 子查詢對 PurchaseOrderSource 用 IgnoreQueryFilters，EF 會關閉整個查詢的軟刪篩選）；修正為基底查詢明確 !IsDeleted；同時檢查 PurchaseOrderQueryService、發票查詢服務有無同樣模式，有則同樣補測試與修正。之後做 007e 收貨／退貨畫面（前端 skills 必用）。",
+    "currentWorkUnit":  "WU-PUR-007a11",
+    "lastCompletedWorkUnit":  "WU-PUR-007a11",
+    "nextAction":  "做 WU-PUR-007e 收貨與退貨列表／表單畫面（介面 4.4～4.6、4.16～4.18；前端 skills myerp-test-scenarios、myerp-ux-review、web-design-guidelines 必用）。範圍大，先拆 e1～eN 並寫 ADR：建議 e1 收貨列表頁（LIST／CSV，GET /api/v1/pur/purchase-receipts 與 /export）＋前端服務、e2 收貨表單／詳情、e3 退貨列表（含 returnAmount 與 amountEstimated 暫估標記）、e4 退貨表單／詳情、e5 Playwright QA。本輪 007a11 已修正收貨查詢軟刪洩漏（ADR-227），另列 P2 WU-ARCH-SOFTDEL-AUDIT。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  225,
-                       "ADR":  226,
+                       "ADR":  227,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -58,7 +58,8 @@
                              "WU-PUR-007c2":  0,
                              "WU-PUR-007c3":  0,
                              "WU-PUR-007c4":  0,
-                             "WU-PUR-007c5":  0
+                             "WU-PUR-007c5":  0,
+                             "WU-PUR-007a11":  0
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -130,5 +131,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T21:41:56+08:00",
-    "updatedAt":  "2026-11-28T21:41:56+08:00"
+    "updatedAt":  "2026-11-28T21:54:51+08:00"
 }

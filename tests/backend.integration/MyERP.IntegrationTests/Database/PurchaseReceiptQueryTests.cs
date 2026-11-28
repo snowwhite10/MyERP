@@ -236,6 +236,38 @@ public sealed class PurchaseReceiptQueryTests(TestDatabase database)
         Assert.Equal(PurchaseReceiptCsv.HeaderLine("en") + "\r\n", Encoding.UTF8.GetString(filtered.ToArray()[3..]));
     }
 
+    [Fact] // PUR-RECV-LST-006 (WU-PUR-007a11)
+    public async Task SoftDeletedReceiptStaysHiddenFromListKeywordAndExport()
+    {
+        // The purchase-order-number subqueries use IgnoreQueryFilters(), which EF applies to the whole query,
+        // so the receipt's own soft-delete filter must not be relied on.
+        var company = TestCompanies.Next();
+        var source = await SeedOrderAsync(company, "PO-SDK-1");
+        await using var db = Context(company);
+        var kept = await Drafts(db, company).CreateAsync(Save(source, 1m, new DateOnly(2028, 2, 1)), Ct);
+        var gone = await Drafts(db, company).CreateAsync(Save(source, 2m, new DateOnly(2028, 2, 2)), Ct);
+        await Lifecycle(db, company).DeleteAsync(gone.Id, gone.Version, Ct);
+
+        await using var read = Context(company);
+        var queries = Queries(read, company, DataScope.Company);
+        foreach (var query in new[] { new PurchaseReceiptQuery(), new PurchaseReceiptQuery { Keyword = " PO-SDK " },
+                     new PurchaseReceiptQuery { PurchaseOrderId = source.OrderId } })
+        {
+            var page = await queries.ListAsync(query, Ct);
+            Assert.Equal(1, page.TotalCount);
+            var item = Assert.Single(page.Items);
+            Assert.Equal(kept.Id, item.Id);
+            Assert.Equal("PO-SDK-1", item.PurchaseOrderDocumentNo);
+
+            using var output = new MemoryStream();
+            Assert.Equal(1, await queries.ExportAsync(query, "en", output, token: Ct));
+            var csv = Encoding.UTF8.GetString(output.ToArray()[3..]);
+            Assert.Contains(kept.DocumentNo, csv);
+            Assert.DoesNotContain(gone.DocumentNo, csv);
+        }
+        Assert.Empty((await queries.ListAsync(new PurchaseReceiptQuery { Keyword = gone.DocumentNo }, Ct)).Items);
+    }
+
     private static PurchaseReceiptSaveInput Save((long OrderId, long LineId) source, decimal quantity, DateOnly date) =>
         new(source.OrderId, date, [new(1, source.LineId, quantity, 91)]);
 

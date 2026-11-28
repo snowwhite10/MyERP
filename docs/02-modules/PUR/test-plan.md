@@ -1075,6 +1075,7 @@ U=單元、I=真實 SQL／HTTP 整合、E=Playwright 畫面與保存資料雙斷
 | PUR-RECV-LST-003 | 權限 | Self 只見本人、Company 見全部、他公司 0 筆、只有 EDIT 403；EXPORT 窄於 VIEW 取交集；缺 EXPORT 403。 | I | REQ_F4114.2.1 | DONE |
 | PUR-RECV-LST-004 | 檔案 | CSV 每保存行一列、列表排序且同單按行號、BOM、CRLF、繁中表頭與狀態、公式防護、忽略分頁、0 行只有表頭；超過上限 422 PUR.RECEIPT.EXPORT_LIMIT 且零輸出、不送標頭。 | I | REQ_F4114.2.1 | DONE |
 | PUR-RECV-LST-005 | 權限／HTTP | LIST 需 VIEW、400 未知狀態；EXPORT 需 EXPORT＋VIEW，200 text/csv、檔名、X-Export-Row-Count。 | I | REQ_F4114.2.1 | DONE（PurchaseOrderHttpTests） |
+| PUR-RECV-LST-006 | 已刪除記錄 | 軟刪 Draft 收貨在 LIST（無篩選、採購單號 keyword 去空白、purchaseOrderId）的 items、totalCount 與 CSV 皆不出現，以其單號 keyword 0 筆；同單未刪收貨照常出現並帶採購單號（WU-PUR-007a11，ADR-227；移除明確 !IsDeleted 即紅）。 | I | REQ_F4114.2.1 | DONE |
 | PUR-RECV-LST-U01～U02 | 檔案 | CSV 行格式、三語狀態、未知狀態拋例外、空值欄、表頭數；上限含 10000、10001 422。 | U | REQ_F4114.2.1 | DONE（PurchaseReceiptCsvTests） |
 | PUR-RECV-LST-NA | 部分結果／併發 | 列表與單筆刪除無批次，部分成功不適用；刪除與 SUBMIT 同取收貨 UPDLOCK 並以版本判定，先者勝、後者 409／404。 | - | REQ_F4114.2.6 | 不適用 |
 

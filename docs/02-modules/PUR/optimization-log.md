@@ -1,5 +1,10 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-28T21:48:07+08:00 — WU-PUR-007a11 收貨查詢軟刪洩漏
+
+- 問題：新增真實 SQL PUR-RECV-LST-006 首跑紅——無任何篩選的 LIST 已回傳 2 筆 items（含軟刪 Draft），totalCount 卻為 1。原因：摘要投影以 `PurchaseOrderSource.IgnoreQueryFilters()` 讀採購單號，EF 對整個分頁查詢關閉全域篩選（不只 007c5 推測的 keyword 子查詢）；count 查詢不含投影故正確，造成筆數與頁面不一致；CSV 在 keyword 篩選時同樣洩漏。修改：基底查詢明確 `!IsDeleted`。效果：PUR 收貨／退貨／採購單真實 SQL 140/140 綠。
+- 審查：PurchaseReturnQueryService 已明確（ADR-226）；RfqQueryService 來源查詢已明確 `!IsDeleted`；PurchaseOrderQueryService 只對請購／詢價解除篩選，連接的行表不可軟刪或為獨立查詢；PurchaseInvoiceQueryService 無 IgnoreQueryFilters。無需修改。其他模組（例如 SD 對出貨／訂單 `IgnoreQueryFilters([SoftDelete])` 連接）未在本單元審查，已列 backlog WU-ARCH-SOFTDEL-AUDIT。
+
 ## 2026-11-28T21:34:33+08:00 — WU-PUR-007c5 退貨 LIST／CSV
 
 - 問題：首次真實 SQL CSV 匯出 4 行（預期 3），軟刪退貨被匯出。原因：CSV 連收貨表頭用 `IgnoreQueryFilters()`（讀可能軟刪來源的單號），EF Core 對整個查詢關閉全域篩選，包括退貨自身的軟刪篩選；keyword 子查詢同理。修改：退貨查詢基底明確 `!IsDeleted`。效果：3/3 綠；移除條件即紅（ADR-226 第 5 點）。

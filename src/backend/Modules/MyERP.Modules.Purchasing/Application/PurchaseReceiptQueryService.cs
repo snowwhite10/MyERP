@@ -24,7 +24,7 @@ public sealed record PurchaseReceiptSummary(long Id, string DocumentNo, DateOnly
 
 /// <summary>
 /// REQ_F4114.2.1：收貨單列表與 CSV 只讀已保存單據，先套公司與 VIEW 資料範圍；匯出另交集 EXPORT 範圍。
-/// 舊發票專用來源列（無單號或業務日）與軟刪單據不出現。
+/// 舊發票專用來源列（無單號或業務日）與軟刪單據不出現（軟刪以明確條件排除，不依賴全域篩選，ADR-227）。
 /// </summary>
 public sealed class PurchaseReceiptQueryService(MyErpDbContext db, RequisitionCompanyAccess access,
     ICurrentAuthorization authorization)
@@ -112,8 +112,11 @@ public sealed class PurchaseReceiptQueryService(MyErpDbContext db, RequisitionCo
         if (SortSpec.Parse(request.Sort, SortFields, DefaultSort).Count != 1)
             throw new RequestValidationException("sort", "Choose one sort field.");
         var scope = await ScopeAsync(companyId, PurchasingPermissions.ReceiptView, token);
+        // Explicit IsDeleted (ADR-227): the purchase order number subqueries (LIST projection, keyword) use
+        // IgnoreQueryFilters(), which EF applies to the whole query, turning off this set's soft-delete filter too.
         var query = ApplyScope(db.Set<PurchaseReceiptSource>().AsNoTracking()
-            .Where(x => x.CompanyId == companyId && x.DocumentNo != null && x.BusinessDate != null), scope);
+            .Where(x => x.CompanyId == companyId && !x.IsDeleted && x.DocumentNo != null && x.BusinessDate != null),
+            scope);
         if (!string.IsNullOrWhiteSpace(request.Keyword))
         {
             var keyword = request.Keyword.Trim();
