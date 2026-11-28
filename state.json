@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-007a",
-    "lastCompletedWorkUnit":  "WU-PUR-006f4",
-    "nextAction":  "做 WU-PUR-007a：採購入庫／收貨後端草稿。先依 007d 規格與 PUR-RECV-001～028 核對需求、資料結構、API、BR 及現有 007a1～a6 離線規則；測一次 Test-SqlMemoryGate.ps1，PASS 後按第 14 節先寫真實 SQL／HTTP 紅燈，再做收貨表／行、採購單已收及待審量、草稿 CREATE／EDIT／READ 與雙連線餘量，建置、全量測試、migration Down／Up、文件和提交。若單輪超過 90 分鐘，按可驗收邊界先拆 007a 子單元；DEFER 就依第 1 節延後 SQL 驗證並改做不依賴 SQL 的工作。勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
+    "currentWorkUnit":  "WU-PUR-007a7",
+    "lastCompletedWorkUnit":  "WU-PUR-007a7",
+    "nextAction":  "做 WU-PUR-007a8：依 ADR-218 與 007d／007a1～a7，在既有收貨表建立授權草稿 CREATE／EDIT／READ。先以 myerp-test-scenarios 補完整情境並寫真實 SQL／HTTP 紅燈；按目前公司與 SYS 動作範圍守衛、於 SQL 鎖內重讀 Approved 採購單與同公司保存行，保存單號／日期／成本／倉儲快照，EDIT 帶版本只允許 Draft／Rejected 且來源身份不可改，草稿不佔量、不寫 INV。驗 400／403／404／409／422、無部分保存、建置／全量測試與 migration 相容；若超 90 分鐘再按可驗收邊界拆小。SUBMIT 與雙連線餘量留 007a9。勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  221,
-                       "ADR":  217,
+                       "ADR":  218,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -124,5 +124,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T12:51:56+08:00",
-    "updatedAt":  "2026-11-28T12:51:56+08:00"
+    "updatedAt":  "2026-11-28T13:13:20+08:00"
 }

@@ -48,12 +48,15 @@ public sealed class PurchaseInvoiceSourceDbModel : IModuleDbModel
                 t.HasCheckConstraint("ck_pur_order_line_values", "[quantity] > 0 AND [unit_price] >= 0 AND [tax_rate_percent] BETWEEN 0 AND 100");
                 t.HasCheckConstraint("ck_pur_order_line_conversion_amount", "([base_net] IS NULL AND [base_tax] IS NULL AND [base_gross] IS NULL) OR ([base_net] >= 0 AND [base_tax] >= 0 AND [base_gross] = [base_net] + [base_tax])");
                 t.HasCheckConstraint("ck_pur_order_line_original_amount", "([original_net] IS NULL AND [original_tax] IS NULL AND [original_gross] IS NULL) OR ([original_net] >= 0 AND [original_tax] >= 0 AND [original_gross] = [original_net] + [original_tax])");
+                t.HasCheckConstraint("ck_pur_order_line_receipt_capacity", "[posted_received] >= 0 AND [pending_receipt_reserved] >= 0 AND [posted_received] + [pending_receipt_reserved] <= [quantity]");
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();
             e.Property(x => x.Quantity).HasPrecision(19, 6);
             e.Property(x => x.UnitPrice).HasPrecision(19, 6);
             e.Property(x => x.TaxRatePercent).HasPrecision(9, 4);
+            e.Property(x => x.PostedReceived).HasPrecision(19, 6).HasDefaultValue(0m);
+            e.Property(x => x.PendingReceiptReserved).HasPrecision(19, 6).HasDefaultValue(0m);
             e.Property(x => x.ExchangeRate).HasPrecision(19, 8);
             e.Property(x => x.BaseNet).HasPrecision(19, 4);
             e.Property(x => x.BaseTax).HasPrecision(19, 4);
@@ -99,6 +102,8 @@ public sealed class PurchaseInvoiceSourceDbModel : IModuleDbModel
             e.Property(x => x.Id).ValueGeneratedOnAdd();
             e.Property(x => x.Currency).HasMaxLength(3).IsUnicode(false).IsFixedLength();
             e.Property(x => x.Status).HasMaxLength(30).IsUnicode(false);
+            e.Property(x => x.DocumentNo).HasMaxLength(50);
+            e.HasIndex(x => new { x.CompanyId, x.DocumentNo }).IsUnique().HasFilter("[document_no] IS NOT NULL");
             e.HasAlternateKey(x => new { x.CompanyId, x.Id }).HasName("ak_pur_purchase_receipt_company_id_id");
             e.HasIndex(x => new { x.CompanyId, x.PurchaseOrderId, x.Status, x.Id });
             e.HasOne<PurchaseOrderSource>().WithMany()
@@ -110,11 +115,12 @@ public sealed class PurchaseInvoiceSourceDbModel : IModuleDbModel
             e.ToTable("pur_purchase_receipt_line", t =>
             {
                 t.HasCheckConstraint("ck_pur_receipt_line_refs", "[purchase_receipt_id] > 0 AND [purchase_order_line_id] > 0 AND [line_no] > 0 AND [material_id] > 0");
-                t.HasCheckConstraint("ck_pur_receipt_line_quantities", "[posted_received] > 0 AND [posted_returned] >= 0 AND [pending_return_reserved] >= 0 AND [posted_invoiced] >= 0 AND [matched_reserved] >= 0 AND [posted_returned]+[pending_return_reserved]+[posted_invoiced]+[matched_reserved] <= [posted_received]");
+                t.HasCheckConstraint("ck_pur_receipt_line_quantities", "((([quantity] IS NULL AND [posted_received] > 0) OR ([quantity] IS NOT NULL AND [quantity] > 0 AND [warehouse_id] IS NOT NULL AND [warehouse_id] > 0 AND [posted_received] >= 0 AND [posted_received] <= [quantity])) AND [posted_returned] >= 0 AND [pending_return_reserved] >= 0 AND [posted_invoiced] >= 0 AND [matched_reserved] >= 0 AND [posted_returned]+[pending_return_reserved]+[posted_invoiced]+[matched_reserved] <= [posted_received])");
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();
             e.Property(x => x.PostedReceived).HasPrecision(19, 6);
+            e.Property(x => x.Quantity).HasPrecision(19, 6);
             e.Property(x => x.PostedReturned).HasPrecision(19, 6);
             e.Property(x => x.PendingReturnReserved).HasPrecision(19, 6);
             e.Property(x => x.PostedInvoiced).HasPrecision(19, 6);
@@ -123,6 +129,7 @@ public sealed class PurchaseInvoiceSourceDbModel : IModuleDbModel
             e.HasIndex(x => new { x.CompanyId, x.PurchaseReceiptId, x.LineNo }).IsUnique();
             e.HasIndex(x => new { x.CompanyId, x.PurchaseOrderLineId });
             e.HasIndex(x => new { x.CompanyId, x.MaterialId });
+            e.HasIndex(x => new { x.CompanyId, x.WarehouseId });
             e.HasOne<PurchaseReceiptSource>().WithMany()
                 .HasForeignKey(x => new { x.CompanyId, x.PurchaseReceiptId })
                 .HasPrincipalKey(x => new { x.CompanyId, x.Id }).OnDelete(DeleteBehavior.Restrict);

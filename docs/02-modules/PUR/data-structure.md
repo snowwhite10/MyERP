@@ -62,6 +62,8 @@ erDiagram
 
 ## WU-PUR-007d 收貨與退貨預定模型（尚未建表）
 
+WU-PUR-007a7（2026-11-28T13:01:04+08:00，ADR-218）：沿用既有發票來源用 `pur_purchase_receipt`／`pur_purchase_receipt_line`，加可空 `document_no`／`business_date`（保留歷史來源列）、草稿行 `quantity`／`warehouse_id`；採購單行加非空預設零的 `posted_received`／`pending_receipt_reserved`，migration 在加容量約束前由同公司有效 Posted 收貨行回填已收量。`(company_id,document_no)` 非空單號永久唯一。訂單行 SQL CHECK 守住兩量非負及總和不超訂單量；收貨行允許舊式正數已收行或正數草稿量加正數倉庫，保留退貨／開票量約束。`Purchasing_ReceiptDraftFoundation` 可逆；草稿 API、成本、儲位及追蹤欄仍待 007a8／007b。下文為原 007d 預案，未實作欄位不可視為已交付。
+
 `pur_purchase_receipt`／`pur_purchase_receipt_line` 保存公司、單號、採購單與其行、業務日、倉儲／儲位、基本單位六位數量、本位幣未稅六位單位成本、批序號快照、狀態 Draft／PendingApproval／Rejected／Posted、版本、SYS 審批 ID 與審計。`pur_purchase_return`／`pur_purchase_return_line` 另保存原 Posted 入庫行及 INV movement ID、原入庫成本／追蹤快照、退貨量和相同生命週期。實際表與追蹤子表可於 migration 細化，REQ_DS43 只在真實建表時分配；目前沒有新增資料表。
 
 採購單行要能在同交易維護待審收貨預留量與已過帳收貨量；入庫行要能維護待審退貨預留量與已過帳退貨量。各量以 `DECIMAL(19,6)`、非負及不超來源量 CHECK 保護。按 `(company_id,order_line_id)` 與 `(company_id,receipt_line_id)` 建查詢索引；同公司 PUR 內 FK 與每個 FK 欄位索引手動建立。對 MD／SYS／INV 只存 ID，不建跨模組 FK；`(company_id,document_no)` 永久唯一，來源行號在單據內唯一。已過帳來源連結和 movement ID 不可刪改。DB 交易與鎖序按 BR-PUR-028／032，migration 必須可 Down，並以真實 SQL 驗證約束、併發及隔離。
@@ -246,9 +248,9 @@ erDiagram
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
 | REQ_DS43.186 | 1.3 | pur_purchase_order | This table stores company-scoped purchase order supplier, currency, number, totals, remark, requisition consumption state and cancellation reason. | Developer | REQ_F4114.1.2, REQ_F4114.1.6, REQ_F4114.6.3, REQ_F4114.8.2 |
-| REQ_DS43.187 | 1.2 | pur_purchase_order_line | This table stores order line price, tax, exchange, original and base amounts, and company-scoped requisition source. | Developer | REQ_F4114.1.2, REQ_F4114.6.3, REQ_F4114.8.3 |
-| REQ_DS43.188 | 1.0 | pur_purchase_receipt | This table stores purchase receipt order, supplier, currency and posting identity. | Developer | REQ_F4114.2.2, REQ_F4114.8.2 |
-| REQ_DS43.211 | 1.0 | pur_purchase_receipt_line | This table stores receipt line order references and committed quantity counters. | Developer | REQ_F4114.2.2, REQ_F4114.8.2 |
+| REQ_DS43.187 | 1.3 | pur_purchase_order_line | This table stores order line price, tax, exchange, amounts, requisition source, and receipt capacity counters. | Developer | REQ_F4114.1.2, REQ_F4114.2.2, REQ_F4114.2.4, REQ_F4114.8.3 |
+| REQ_DS43.188 | 1.1 | pur_purchase_receipt | This table stores purchase receipt order, supplier, currency, optional draft document number and business date, and posting identity. | Developer | REQ_F4114.2.2, REQ_F4114.8.2 |
+| REQ_DS43.211 | 1.1 | pur_purchase_receipt_line | This table stores receipt line order references, optional draft quantity and warehouse, and committed quantity counters. | Developer | REQ_F4114.2.2, REQ_F4114.8.2 |
 
 Change record (2026-11-25T21:44:40+08:00, WU-P0-043): the receipt-line source row originally reused REQ_DS43.189, which ADR-106 assigns to FI `ar_sales_source`. The row now has the next unallocated ID, REQ_DS43.211; table identity, schema and related functional requirements are unchanged. The duplicate historical ID is not reused for another table.
 

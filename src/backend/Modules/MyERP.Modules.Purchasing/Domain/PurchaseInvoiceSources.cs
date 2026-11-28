@@ -46,6 +46,8 @@ public sealed class PurchaseOrderSourceLine : BusinessEntity
     public decimal Quantity { get; set; }
     public decimal UnitPrice { get; set; }
     public decimal TaxRatePercent { get; set; }
+    public decimal PostedReceived { get; set; }
+    public decimal PendingReceiptReserved { get; set; }
 }
 
 /// <summary>Permanent, company-scoped evidence that an award was converted once.</summary>
@@ -57,6 +59,8 @@ public sealed class PurchaseOrderAwardSource : BusinessEntity
 
 public sealed class PurchaseReceiptSource : BusinessEntity, ISoftDeletable
 {
+    public string? DocumentNo { get; set; }
+    public DateOnly? BusinessDate { get; set; }
     public long PurchaseOrderId { get; set; }
     public long SupplierId { get; set; }
     public required string Currency { get; set; }
@@ -67,6 +71,8 @@ public sealed class PurchaseReceiptSource : BusinessEntity, ISoftDeletable
 
 public sealed class PurchaseReceiptSourceLine : BusinessEntity
 {
+    public decimal? Quantity { get; set; }
+    public long? WarehouseId { get; set; }
     public long PurchaseReceiptId { get; set; }
     public long PurchaseOrderLineId { get; set; }
     public int LineNo { get; set; }

@@ -8779,6 +8779,20 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnType("decimal(19,4)")
                         .HasColumnName("original_tax");
 
+                    b.Property<decimal>("PendingReceiptReserved")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("pending_receipt_reserved");
+
+                    b.Property<decimal>("PostedReceived")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("posted_received");
+
                     b.Property<long>("PurchaseOrderId")
                         .HasColumnType("bigint")
                         .HasColumnName("purchase_order_id");
@@ -8844,6 +8858,8 @@ namespace MyERP.Migrations.Migrations
 
                             t.HasCheckConstraint("ck_pur_order_line_original_amount", "([original_net] IS NULL AND [original_tax] IS NULL AND [original_gross] IS NULL) OR ([original_net] >= 0 AND [original_tax] >= 0 AND [original_gross] = [original_net] + [original_tax])");
 
+                            t.HasCheckConstraint("ck_pur_order_line_receipt_capacity", "[posted_received] >= 0 AND [pending_receipt_reserved] >= 0 AND [posted_received] + [pending_receipt_reserved] <= [quantity]");
+
                             t.HasCheckConstraint("ck_pur_order_line_refs", "[purchase_order_id] > 0 AND [line_no] > 0 AND [material_id] > 0");
 
                             t.HasCheckConstraint("ck_pur_order_line_values", "[quantity] > 0 AND [unit_price] >= 0 AND [tax_rate_percent] BETWEEN 0 AND 100");
@@ -8858,6 +8874,10 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnName("id");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateOnly?>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
 
                     b.Property<long>("CompanyId")
                         .HasColumnType("bigint")
@@ -8882,6 +8902,11 @@ namespace MyERP.Migrations.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2(6)")
                         .HasColumnName("deleted_at");
+
+                    b.Property<string>("DocumentNo")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("document_no");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit")
@@ -8920,6 +8945,11 @@ namespace MyERP.Migrations.Migrations
 
                     b.HasAlternateKey("CompanyId", "Id")
                         .HasName("ak_pur_purchase_receipt_company_id_id");
+
+                    b.HasIndex("CompanyId", "DocumentNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pur_purchase_receipt_company_id_document_no")
+                        .HasFilter("[document_no] IS NOT NULL");
 
                     b.HasIndex("CompanyId", "PurchaseOrderId", "Status", "Id")
                         .HasDatabaseName("ix_pur_purchase_receipt_company_id_purchase_order_id_status_id");
@@ -8994,6 +9024,11 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("purchase_receipt_id");
 
+                    b.Property<decimal?>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2(6)")
                         .HasColumnName("updated_at");
@@ -9007,6 +9042,10 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnType("int")
                         .HasColumnName("version");
 
+                    b.Property<long?>("WarehouseId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("warehouse_id");
+
                     b.HasKey("Id")
                         .HasName("pk_pur_purchase_receipt_line");
 
@@ -9019,13 +9058,16 @@ namespace MyERP.Migrations.Migrations
                     b.HasIndex("CompanyId", "PurchaseOrderLineId")
                         .HasDatabaseName("ix_pur_purchase_receipt_line_company_id_purchase_order_line_id");
 
+                    b.HasIndex("CompanyId", "WarehouseId")
+                        .HasDatabaseName("ix_pur_purchase_receipt_line_company_id_warehouse_id");
+
                     b.HasIndex("CompanyId", "PurchaseReceiptId", "LineNo")
                         .IsUnique()
                         .HasDatabaseName("ix_pur_purchase_receipt_line_company_id_purchase_receipt_id_line_no");
 
                     b.ToTable("pur_purchase_receipt_line", null, t =>
                         {
-                            t.HasCheckConstraint("ck_pur_receipt_line_quantities", "[posted_received] > 0 AND [posted_returned] >= 0 AND [pending_return_reserved] >= 0 AND [posted_invoiced] >= 0 AND [matched_reserved] >= 0 AND [posted_returned]+[pending_return_reserved]+[posted_invoiced]+[matched_reserved] <= [posted_received]");
+                            t.HasCheckConstraint("ck_pur_receipt_line_quantities", "((([quantity] IS NULL AND [posted_received] > 0) OR ([quantity] IS NOT NULL AND [quantity] > 0 AND [warehouse_id] IS NOT NULL AND [warehouse_id] > 0 AND [posted_received] >= 0 AND [posted_received] <= [quantity])) AND [posted_returned] >= 0 AND [pending_return_reserved] >= 0 AND [posted_invoiced] >= 0 AND [matched_reserved] >= 0 AND [posted_returned]+[pending_return_reserved]+[posted_invoiced]+[matched_reserved] <= [posted_received])");
 
                             t.HasCheckConstraint("ck_pur_receipt_line_refs", "[purchase_receipt_id] > 0 AND [purchase_order_line_id] > 0 AND [line_no] > 0 AND [material_id] > 0");
                         });

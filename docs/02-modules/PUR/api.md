@@ -1,5 +1,7 @@
 # PUR API
 
+WU-PUR-007a7（2026-11-28T13:01:04+08:00，ADR-218）只交付收貨草稿資料庫基礎，沒有新增路由或 Swagger；`/api/v1/pur/purchase-receipts` 的 CREATE／EDIT／READ 留 007a8，SUBMIT 留 007a9。前端 4.4～4.6 留 007e。
+
 WU-PUR-008b6（2026-11-27T05:30:01+08:00）：`GET /api/v1/pur/invoices/{id}` 新增 `postedAt`、`fiPurchaseSourceId`、`fiPayableId`、`fiJournalId`（只在 Posted 有值，其餘 null），供 4.19 明細顯示財務參照。
 
 WU-PUR-008b4（2026-11-27T04:36:46+08:00，ADR-208）：`POST /api/v1/pur/invoices/{id}/post?version=N`（`PUR.INVOICE.POST`，僅全公司資料範圍；無 body）。200 回 `{id, version, status:"Posted", replayed, fiPurchaseSourceId, fiPayableId, fiJournalId, postedAt}`；首次過帳 `replayed=false`、版本＝N+1；已 Posted 時以 N（過帳版本）或 N+1 重送回同一結果且 `replayed=true`。錯誤：400 版本／ID 非正數；401；403 無權限或範圍不足；404 `PUR.INVOICE.NOT_FOUND`（他公司、不存在、已刪）或 FI `SOURCE_NOT_FOUND`；409 舊版本、`PUR.INVOICE.DRAFT_LOCK_UNAVAILABLE`、FI `SOURCE_MISMATCH`／`SOURCE_CONFLICT`／`LOCK_TIMEOUT`；422 `PUR.INVOICE.INVALID_POST_STATUS`、`RATE_SNAPSHOT_MISSING`、`BASE_CURRENCY_NOT_SET`／`BASE_CURRENCY_CHANGED`、`INVALID_POSTING_SNAPSHOT`、`INVALID_POSTING_DIFFERENCE`、`INVALID_SOURCE_IDENTITY`、FI `MAPPING_MISSING`／`ACCOUNT_INVALID`（`journalLineNo`）／`INVALID_AMOUNTS`（`lineNo`）；500 `PUR.INVOICE.FI_RECEIPT_MISMATCH`、`PUR.INVOICE.FI_POSTING_FAILED` 或 FI 故障碼。任何錯誤都不保存。Swagger 摘要與狀態碼見 `PurchaseInvoicesController.Post`。
